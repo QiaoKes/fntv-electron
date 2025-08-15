@@ -1,0 +1,31 @@
+{
+    "name": "fntv",
+    "version": "1.0.0",
+    "description": "A fntv app built with Electron",
+    "main": "main.js",
+    "scripts": {
+        "start": "electron .",
+        "build": "electron-builder"
+    },
+    "author": "tracing",
+    "devDependencies": {
+        "electron": "^37.2.6",
+        "electron-builder": "^26.0.12"
+    },
+    "build": {
+        "directories": {
+            "output": "dist"
+        },
+        "icon": "icon.ico",
+        "productName": "飞牛影视", 
+        "win": {
+            "target": "nsis"
+        },
+        "nsis": {
+            "allowToChangeInstallationDirectory": true,
+            "oneClick": false,
+            "createDesktopShortcut": true,
+            "createStartMenuShortcut": true
+        }
+    }
+}
