@@ -26,6 +26,9 @@
             "oneClick": false,
             "createDesktopShortcut": true,
             "createStartMenuShortcut": true
-        }
+        },
+        "files": [
+            "*.js"
+        ]
     }
 }
