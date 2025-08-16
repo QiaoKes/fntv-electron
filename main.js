@@ -28,6 +28,7 @@ function createWindow() {
         frame: false, // 隐藏原生标题栏
         transparent: true, // 窗口背景透明
         webPreferences: {
+            webgl: true,
             partition: 'persist:fntv',
             preload: path.join(__dirname, 'preload.js')
         }
@@ -83,6 +84,10 @@ function createWindow() {
     });
 
     // mainWindow.webContents.openDevTools()
+
+    // app.getGPUInfo('complete').then(info => {
+    //     console.log(JSON.stringify(info, null, 2));
+    // });
 }
 
 app.whenReady().then(createWindow);

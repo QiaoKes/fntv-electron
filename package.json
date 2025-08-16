@@ -9,15 +9,15 @@
     },
     "author": "tracing",
     "devDependencies": {
-        "electron": "^37.2.6",
+        "electron": "file:./third_party/electron",
         "electron-builder": "^26.0.12"
     },
     "build": {
         "directories": {
-            "output": "dist"
+            "output": "build"
         },
         "icon": "icon.ico",
-        "productName": "飞牛影视", 
+        "productName": "飞牛影视",
         "win": {
             "target": "nsis"
         },
