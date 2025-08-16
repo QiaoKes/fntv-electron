@@ -5,7 +5,7 @@
 
 飞牛影视桌面客户端，基于Electron构建，提供更好的桌面体验和增强功能。
 
-<img src="resource/simple.png" width="50%">
+<img src="resource/simple.png" width="75%">
 
 ## ✨ 主要功能
 
@@ -29,6 +29,8 @@
 ```bash
 git clone https://github.com/QiaoKes/fntv-electron.git
 cd fntv-electron
+# 下载https://github.com/QiaoKes/fntv-electron/releases中的third_party.zip
+#解压到third_party中
 ```
 
 2. 安装依赖：

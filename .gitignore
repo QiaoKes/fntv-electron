@@ -3,3 +3,4 @@ build
 third_party/*
 package-lock.json
 !.gitkip
+*.zip
