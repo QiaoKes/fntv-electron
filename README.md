@@ -5,7 +5,7 @@
 
 飞牛影视桌面客户端，基于Electron构建，提供更好的桌面体验和增强功能。
 
-<img src="resource/simple.png" width="75%">
+<img src="resource/simple.png" width="90%">
 
 ## ✨ 主要功能
 
