@@ -38,6 +38,10 @@ async function createWindow() {
         }
     });
 
+    mainWindow.once('ready-to-show', () => {
+        mainWindow.show()
+    })
+
     // 添加 IPC 监听
     ipcMain.on('window-minimize', () => mainWindow.minimize());
     ipcMain.on('window-maximize', () => {
@@ -54,12 +58,7 @@ async function createWindow() {
     };
     mainWindow.webContents.on('did-navigate', saveCookies);
     mainWindow.webContents.on('did-navigate-in-page', saveCookies);
-
-    // 页面加载完成后再显示窗口
-    mainWindow.webContents.on('did-finish-load', async () => {
-        saveCookies();
-        mainWindow.show(); // 页面加载完才显示窗口
-    });
+    mainWindow.webContents.on('did-finish-load', saveCookies);
 
     // F11切换全屏/半屏
     let isFullScreen = false;
@@ -76,9 +75,9 @@ async function createWindow() {
     });
 
     // 禁止自由缩放窗口
-    mainWindow.on('will-resize', (e) => {
-        e.preventDefault();
-    });
+    // mainWindow.on('will-resize', (e) => {
+    //     e.preventDefault();
+    // });
 
     // mainWindow.webContents.openDevTools()
 
