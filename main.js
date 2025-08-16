@@ -16,7 +16,11 @@ function setFullScreen() {
     mainWindow.maximize();
 }
 
-function createWindow() {
+async function createWindow() {
+    // 预先恢复 Cookie
+    const ses = session.fromPartition('persist:fntv');
+    setToken = restoreCookie(ses).catch(console.error);
+
     mainWindow = new BrowserWindow({
         width: 1200,
         height: 800,
@@ -41,28 +45,21 @@ function createWindow() {
     });
     ipcMain.on('window-close', () => mainWindow.close());
 
-    //   setFullScreen(); // 默认全屏
-
-    const ses = session.fromPartition('persist:fntv');
-
-    mainWindow.once('ready-to-show', async () => {
-        await restoreCookie(ses);
-    });
-
-    mainWindow.webContents.on('did-finish-load', () => {
-        ses.cookies.get({ url: SITE_URL }).then(saveTokens);
-        mainWindow.show(); // 网页加载完毕后显示窗口
-    });
-
-    mainWindow.webContents.on('did-navigate', () => {
-        ses.cookies.get({ url: SITE_URL }).then(saveTokens);
-    });
-
-    mainWindow.webContents.on('did-navigate-in-page', () => {
-        ses.cookies.get({ url: SITE_URL }).then(saveTokens);
-    });
-
+    // 加载 URL
     mainWindow.loadURL(`${SITE_URL}/v`);
+
+    // 页面加载完成时，保存 token
+    const saveCookies = () => {
+        ses.cookies.get({ url: SITE_URL }).then(saveTokens).catch(console.error);
+    };
+    mainWindow.webContents.on('did-navigate', saveCookies);
+    mainWindow.webContents.on('did-navigate-in-page', saveCookies);
+
+    // 页面加载完成后再显示窗口
+    mainWindow.webContents.on('did-finish-load', async () => {
+        saveCookies();
+        mainWindow.show(); // 页面加载完才显示窗口
+    });
 
     // F11切换全屏/半屏
     let isFullScreen = false;

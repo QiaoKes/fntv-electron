@@ -22,6 +22,19 @@
 
 ## 📦 安装方法
 
+### 预编译版本
+
+前往 [Releases页面](https://github.com/QiaoKes/fntv-electron/releases) 下载最新版本：
+
+* Windows: `fFNMedia_{version}_{protoctl}_{domain}_{port}.exe`
+
+字段含义：
+
+- version：版本号，默认
+- protocol：协议，http/https，必填
+- domain：你的服务器域名或者ip，必填
+- port：你的服务器端口，选填
+
 ### 从源码构建
 
 1. 克隆仓库：
@@ -42,7 +55,7 @@ npm i
 3. 运行开发模式：
 
 ```bash
-# 修改define.js下的SITE_URL为你的服务器地址
+# 修改config.json下的server为你的服务器地址
 npm start
 ```
 

@@ -18,17 +18,20 @@
         },
         "icon": "icon.ico",
         "productName": "飞牛影视",
+        "artifactName": "FNMedia_${version}_https_nas.test.com_3400.${ext}",
         "win": {
             "target": "nsis"
         },
         "nsis": {
+            "include": "installer.nsh",
             "allowToChangeInstallationDirectory": true,
             "oneClick": false,
             "createDesktopShortcut": true,
             "createStartMenuShortcut": true
         },
         "files": [
-            "*.js"
+            "*.js",
+            "installer.nsh"
         ]
     }
 }
