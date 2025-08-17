@@ -10,7 +10,8 @@
     "author": "tracing",
     "devDependencies": {
         "electron": "file:./third_party/electron",
-        "electron-builder": "^26.0.12"
+        "electron-builder": "^26.0.12",
+        "axios": "^ 1.11.0 "
     },
     "build": {
         "directories": {

@@ -2,6 +2,8 @@
 const { app, BrowserWindow, session, screen, ipcMain } = require('electron');
 const path = require('node:path');
 const { saveTokens, restoreCookie, SITE_URL } = require('./token');
+const { fnApi } = require('./fn_api');
+const playWithMpv = require('./mpv');
 
 let mainWindow;
 
@@ -19,7 +21,8 @@ function setFullScreen() {
 async function createWindow() {
     // 预先恢复 Cookie
     const ses = session.fromPartition('persist:fntv');
-    setToken = restoreCookie(ses).catch(console.error);
+    restoreCookie(ses).catch(console.error);
+
 
     mainWindow = new BrowserWindow({
         width: 1200,
@@ -34,7 +37,7 @@ async function createWindow() {
         webPreferences: {
             webgl: true,
             partition: 'persist:fntv',
-            preload: path.join(__dirname, 'preload.js')
+            preload: path.join(__dirname, 'preload.js'),
         }
     });
 
@@ -48,6 +51,7 @@ async function createWindow() {
         mainWindow.isMaximized() ? setHalfScreen() : setFullScreen();
     });
     ipcMain.on('window-close', () => mainWindow.close());
+    ipcMain.on('play-movie', playMovie);
 
     // 加载 URL
     mainWindow.loadURL(`${SITE_URL}/v`);
@@ -84,6 +88,44 @@ async function createWindow() {
     // app.getGPUInfo('complete').then(info => {
     //     console.log(JSON.stringify(info, null, 2));
     // });
+}
+
+function playMovie(event, { itemGuid, token }) {
+    console.log('Play movie event received:', itemGuid, token);
+    // 获取播放信息
+    fnApi(SITE_URL, '/v/api/v1/play/info', token, {
+        item_guid: itemGuid,
+    }).then(response => {
+        if (response.success) {
+            console.log('Play event sent successfully:', response.data);
+            // 配置播放参数（使用自定义路径和额外参数）
+            playUrl = SITE_URL + '/v/api/v1/media/range/' + response.data.media_guid;
+            last = response.data.ts;
+            total = response.data.item.duration;
+            console.log('Play URL:', playUrl, 'Last:', last, 'Total:', total);
+            // 转为字符串+%
+            p = last / total * 100 + '%';
+            playWithMpv({
+                url: playUrl,
+                mpvPath: 'third_party\\mpv\\mpvnet.exe',
+                headers: {
+                    Authorization: token,
+                },
+                extraArgs: [
+                    '--ontop',
+                    '--start=' + p,
+                ],
+                debug: true,
+                onData: (data) => console.log('MPV output:', data),
+                onError: (err) => console.error('MPV error:', err),
+                onExit: (code) => console.log('MPV exited with code:', code)
+            });
+        } else {
+            console.error('Failed to send play event:', response.message);
+        }
+    }).catch(error => {
+        console.error('Error sending play event:', error);
+    });
 }
 
 app.whenReady().then(createWindow);

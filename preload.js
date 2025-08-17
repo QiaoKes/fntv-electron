@@ -1,6 +1,7 @@
 const { ipcRenderer } = require('electron');
 
 function injectTitleBar() {
+    console.log('Injecting custom title bar...');
     if (document.getElementById('custom-titlebar')) return;
 
     const bar = document.createElement('div');
@@ -115,12 +116,98 @@ function injectTitleBar() {
     });
 }
 
-function initTitleBar() {
+function checkMovieUrl() {
+    const url = window.location.href;
+    return url.includes('/v/movie/') || url.includes('/v/tv/episode/');
+}
+
+function evaluateXPath(xpath, contextNode = document) {
+    const result = [];
+    const query = document.evaluate(
+        xpath,
+        contextNode,
+        null,
+        XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
+        null
+    );
+
+    for (let i = 0, length = query.snapshotLength; i < length; ++i) {
+        result.push(query.snapshotItem(i));
+    }
+
+    return result;
+}
+
+function injectCustomPlayBtn() {
+    console.log('Injecting custom play button...');
+    if (!checkMovieUrl()) {
+        return;
+    }
+
+    console.log('Detected movie or TV episode page, injecting play button...');
+
+    const BUTTON_XPATH = '//*[@id="root"]/div/div[3]/div/div/div[2]/div/div[2]/div[1]/div[2]/div/div[1]/button';
+    const buttons = evaluateXPath(BUTTON_XPATH);
+    if (!buttons.length) return;
+
+    const referenceButton = buttons[0];
+    if (referenceButton.hasAttribute('data-js-injected')) return;
+
+    // 标记原始按钮已处理
+    referenceButton.setAttribute('data-js-injected', 'true');
+
+    // 克隆按钮
+    const newButton = referenceButton.cloneNode(true);
+
+    // 更新按钮文本
+    const buttonText = newButton.querySelector('span > span > span');
+    if (buttonText) buttonText.textContent = 'MPV播放';
+
+    // 添加点击事件
+    newButton.addEventListener('click', sendPlayEventToMain);
+
+    // 插入按钮
+    referenceButton.parentNode.insertBefore(newButton, referenceButton.nextSibling);
+}
+
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+function sendPlayEventToMain() {
+    const url = window.location.href;
+    const itemGuid = url.split('/').pop();
+    const token = getCookie('Trim-MC-token')
+
+    console.log('Sending play event to main process:', url);
+    ipcRenderer.send('play-movie', {
+        itemGuid: itemGuid,
+        token: token,
+    });
+
+    // console.log('Play event sent successfully, itemGuid:', itemGuid, 'token:', token);
+}
+
+
+function initInjectr() {
     if (document.readyState !== 'loading') {
         injectTitleBar();
+        injectCustomPlayBtn();
     } else {
-        document.addEventListener('DOMContentLoaded', injectTitleBar);
+        document.addEventListener('DOMContentLoaded', () => {
+            injectTitleBar();
+            injectCustomPlayBtn();
+            // 优化DOM检测方式
+            const observer = new MutationObserver(injectCustomPlayBtn);
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true,
+                attributes: false
+            });
+        });
     }
 }
 
-initTitleBar();
+initInjectr();
