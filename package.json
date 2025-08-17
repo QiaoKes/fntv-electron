@@ -34,21 +34,7 @@
         },
         "files": [
             "*.js",
-            "installer.nsh",
-            {
-                "from": "third_party/mpv",
-                "to": "third_party/mpv",
-                "filter": [
-                    "**/*"
-                ]
-            },
-            {
-                "from": "third_party/mpv",
-                "to": "third_party/mpv",
-                "filter": [
-                    "**/*"
-                ]
-            }
+            "installer.nsh"
         ],
         "extraFiles": [
             {

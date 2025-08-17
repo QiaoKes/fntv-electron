@@ -95,7 +95,7 @@ function playMovie(event, { itemGuid, token }) {
     // 获取播放信息
     fnApi(SITE_URL, '/v/api/v1/play/info', token, {
         item_guid: itemGuid,
-    }, 3).then(response => {
+    }).then(response => {
         if (response.success) {
             console.log('Play event sent successfully:', response.data);
             // 配置播放参数（使用自定义路径和额外参数）
