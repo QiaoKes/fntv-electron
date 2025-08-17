@@ -63,9 +63,9 @@ async function fnApi(baseUrl, url, token, data, tryTimes = 0) {
                 };
             }
             
-            console.log(`fn_api 请求时签名错误，重试中 tryTimes = ${tryTimes}`);
-            await setTimeout(500); // 等待500ms
-            return fnApi(url, data, tryTimes + 1);
+            console.log(`fn_api 请求时签名错误，重试中 tryTimes = ${tryTimes}, url: ${fullUrl}`);
+            await setTimeout(300); // 等待300ms
+            return fnApi(baseUrl, url, token, data, tryTimes + 1);
         }
         
         // 处理业务错误
