@@ -6,6 +6,9 @@
 飞牛影视桌面客户端，基于Electron构建，提供更好的桌面体验和增强功能。
 
 <img src="resource/simple.png" width="90%">
+<img src="resource/mpv.png" width="90%">
+
+![演示视频](https://github.com/QiaoKes/fntv-electron/tree/develop/resource/mpv.mp4)
 
 ## ✨ 主要功能
 
@@ -15,7 +18,8 @@
 - **直链播放** - 支持调用内置mpv播放器播放视频
 
 ## 更新记录
-- 2025.8.17 支持视频直链解析，拒绝转码，使用内置mpv播放器播放
+
+- 2025.8.17 支持视频直链解析，拒绝转码，使用内置mpv播放器播放(只支持剧集页和电影播放页)
 - 2025.8.16 浏览器解码集成H264 / HEVC / VP9 / AV1
 - 2025.8.15 飞牛客户端初版支持, 支持持久化登录信息
 
@@ -27,7 +31,6 @@
 - [electron-media-patch](https://github.com/5rahim/electron-media-patch) - Electron硬解码补丁
 - [fnToPotplayer](https://github.com/gudqs7/fnToPotplayer) - 飞牛影视调用Potplayer
 - [fnos-tv](https://github.com/thshu/fnos-tv) - fnos-tv 支持弹幕的飞牛影视
-
 
 ## 📦 安装方法
 
