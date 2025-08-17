@@ -25,7 +25,7 @@ async function createWindow() {
 
 
     mainWindow = new BrowserWindow({
-        width: 1200,
+        width: 1400,
         height: 800,
         minWidth: 800,
         minHeight: 800,
