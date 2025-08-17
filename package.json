@@ -1,6 +1,6 @@
 {
     "name": "fntv",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "A fntv app built with Electron",
     "main": "main.js",
     "scripts": {
@@ -10,8 +10,10 @@
     "author": "tracing",
     "devDependencies": {
         "electron": "file:./third_party/electron",
-        "electron-builder": "^26.0.12",
-        "axios": "^ 1.11.0 "
+        "electron-builder": "^26.0.12"
+    },
+    "dependencies": {
+        "axios": "^1.11.0"
     },
     "build": {
         "directories": {
@@ -32,7 +34,30 @@
         },
         "files": [
             "*.js",
-            "installer.nsh"
+            "installer.nsh",
+            {
+                "from": "third_party/mpv",
+                "to": "third_party/mpv",
+                "filter": [
+                    "**/*"
+                ]
+            },
+            {
+                "from": "third_party/mpv",
+                "to": "third_party/mpv",
+                "filter": [
+                    "**/*"
+                ]
+            }
+        ],
+        "extraFiles": [
+            {
+                "from": "third_party/mpv",
+                "to": "third_party/mpv",
+                "filter": [
+                    "**/*"
+                ]
+            }
         ]
     }
 }

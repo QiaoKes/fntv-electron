@@ -12,13 +12,22 @@
 - **原生桌面体验** - 将飞牛影视Web版封装为原生应用，F11全屏缩放
 - **自动登录** - 支持cookie保存，避免重复登录
 - **硬解播放** - 支持H264 / HEVC / VP9 / AV1，具体支持查看下面感谢项目
+- **直链播放** - 支持调用内置mpv播放器播放视频
+
+## 更新记录
+- 2025.8.17 支持视频直链解析，拒绝转码，使用内置mpv播放器播放
+- 2025.8.16 浏览器解码集成H264 / HEVC / VP9 / AV1
+- 2025.8.15 飞牛客户端初版支持, 支持持久化登录信息
 
 ## 🙏 特别感谢
 
-本项目使用以下开源项目实现HEVC硬解码功能：
+本项目参考以下开源项目：
 
 - [enable-chromium-hevc-hardware-decoding](https://github.com/StaZhu/enable-chromium-hevc-hardware-decoding) - Chromium HEVC硬解码支持
 - [electron-media-patch](https://github.com/5rahim/electron-media-patch) - Electron硬解码补丁
+- [fnToPotplayer](https://github.com/gudqs7/fnToPotplayer) - 飞牛影视调用Potplayer
+- [fnos-tv](https://github.com/thshu/fnos-tv) - fnos-tv 支持弹幕的飞牛影视
+
 
 ## 📦 安装方法
 
@@ -28,12 +37,20 @@
 
 * Windows: `fFNMedia_{version}_{protoctl}_{domain}_{port}.exe`
 
-字段含义：
+1.字段含义：
 
 - version：版本号，默认
 - protocol：协议，http/https，必填
 - domain：你的服务器域名或者ip，必填
 - port：你的服务器端口，选填
+
+2.按照你的服务器实际地址修改安装包名，以下为几种例子：
+
+FNMedia_1.0.0_https_nas.test.top_4000.exe
+FNMedia_1.0.0_https_nas.test.top.exe
+FNMedia_1.0.0_http_10.0.0.115_4000.exe
+
+3.直接安装即可使用
 
 ### 从源码构建
 
