@@ -245,6 +245,7 @@ async function playMovie(event, { itemGuid, token }) {
                 extraArgs: [
                     '--ontop',
                     '--start=' + p,
+                    '--cache-secs=20', // 缓冲20秒，防止网络波动卡顿
                     subArgs,
                 ],
                 debug: true,
