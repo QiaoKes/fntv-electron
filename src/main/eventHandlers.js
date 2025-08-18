@@ -75,15 +75,17 @@ async function playMovie(event, { itemGuid, token }) {
         play_link: new URL(playUrl).pathname
     }
 
+    title = `${response.data.item.tv_title || ''} ${response.data.item.episode_number || ''} ${response.data.item.title || ''}`;
     // 创建播放器实例
     const player = new MpvPlayer({
         url: playUrl,
         mpvPath: 'third_party\\mpv\\mpv.exe',
+        title: title,
         headers: {
             Authorization: token,
         },
         extraArgs: [
-            '--ontop',
+            // '--ontop',
             `--start=${startPosition}`,
             '--cache-secs=20', // 缓冲20秒，防止网络波动卡顿
             subArgs // 添加所有字幕文件参数

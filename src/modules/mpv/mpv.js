@@ -2,6 +2,7 @@ const { spawn } = require('child_process');
 const os = require('os');
 const path = require('path');
 const fs = require('fs');
+const { title } = require('process');
 
 class MpvPlayer {
     // 全局存储播放状态
@@ -16,6 +17,7 @@ class MpvPlayer {
         this.config = {
             url: '',
             mpvPath: 'mpv',
+            title: 'Media Player',
             headers: {},
             debug: false,
             extraArgs: [],
@@ -86,7 +88,7 @@ class MpvPlayer {
 
         // 添加其他参数
         args.push(
-            '--title=Media Player',
+            '--title=' + this.config.title,
             ...this.config.extraArgs,
             this.config.url
         );
