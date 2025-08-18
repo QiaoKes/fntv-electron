@@ -166,8 +166,7 @@ class apiService {
 
     /**
      * 记录播放状态
-     * @param {string} itemGuid - 视频项目的唯一标识符
-     * @param {string} mediaGuid - 视频媒体的唯一标识符
+     * @param {Object} statusData - 播放状态数据
      * @param {number} ts - 当前播放时间戳
      * @returns {Promise} 返回记录结果的Promise
      */

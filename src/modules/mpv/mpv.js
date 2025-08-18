@@ -88,7 +88,7 @@ class MpvPlayer {
 
         // 添加其他参数
         args.push(
-            '--title=' + this.config.title,
+            '--force-media-title=' + this.config.title,
             ...this.config.extraArgs,
             this.config.url
         );

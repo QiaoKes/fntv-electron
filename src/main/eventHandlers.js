@@ -54,7 +54,7 @@ async function playMovie(event, { itemGuid, token }) {
         return;
     }
 
-    // console.log('获取播放信息成功:', response.data);
+    console.log('获取播放信息成功:', response.data);
 
     mediaGuid = response.data.media_guid;
 
@@ -63,7 +63,12 @@ async function playMovie(event, { itemGuid, token }) {
     last = response.data.ts;
     total = response.data.item.duration;
     console.log('Play URL:', playUrl, 'Last:', last, 'Total:', total);
-    const percentage = last / total * 100;
+    if (total <= 0) {
+        percentage = 0;
+    } else {
+        percentage = last / total * 100;
+    }
+    
     const startPosition = `${percentage}%`;
 
     playStatus = {
@@ -75,7 +80,7 @@ async function playMovie(event, { itemGuid, token }) {
         play_link: new URL(playUrl).pathname
     }
 
-    title = `${response.data.item.tv_title || ''} ${response.data.item.episode_number || ''} ${response.data.item.title || ''}`;
+    title = `${response.data.item.tv_title || ''} - S${response.data.item.season_number || ''}E${response.data.item.episode_number || ''}: ${response.data.item.title || ''}`
     // 创建播放器实例
     const player = new MpvPlayer({
         url: playUrl,
@@ -86,7 +91,7 @@ async function playMovie(event, { itemGuid, token }) {
         },
         extraArgs: [
             // '--ontop',
-            `--start=${startPosition}`,
+            `--start=${startPosition}`, // 设置起始播放位置
             '--cache-secs=20', // 缓冲20秒，防止网络波动卡顿
             subArgs // 添加所有字幕文件参数
         ],
