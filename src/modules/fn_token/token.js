@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('node:path');
 const { app } = require('electron');
-const { SITE_URL, USER_DATA_PATH } = require('./define');
+const { SITE_URL, USER_DATA_PATH } = require('../../main/define');
 
 app.setPath('userData', USER_DATA_PATH);
 

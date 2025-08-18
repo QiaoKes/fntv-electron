@@ -66,7 +66,6 @@ function playWithMpv({
   // 启动播放器进程
   const player = spawn(executable, args, {
     stdio: ['ignore', 'pipe', 'pipe'],
-    windowsHide: true,
     detached: true
   });
   
