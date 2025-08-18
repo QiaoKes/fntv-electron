@@ -10,21 +10,21 @@ class apiService {
      * 创建字幕服务实例
      * @param {string} baseURL - API基础URL
      */
-    constructor(baseURL) {
+    constructor(baseURL, token) {
         this.baseURL = baseURL;
         this.tempDir = path.join(app.getPath('temp'), 'fntv_subtitles');
+        this.token = token;
 
         this.downloadSubtitle = this.downloadSubtitle.bind(this);
     }
 
     /**
      * 获取视频播放信息
-     * @param {string} token - 用户认证token
      * @param {string} itemGuid - 视频项目的唯一标识符
      * @returns {Promise} 返回播放信息的Promise
      */
-    getPlayInfo(token, itemGuid) {
-        return fn.request(this.baseURL, '/v/api/v1/play/info', 'post', token, {
+    getPlayInfo(itemGuid) {
+        return fn.request(this.baseURL, '/v/api/v1/play/info', 'post', this.token, {
             item_guid: itemGuid,
         });
     }
@@ -32,11 +32,10 @@ class apiService {
     /**
      * 获取字幕文件列表
      * @param {string} itemGuid - 视频项目的唯一标识符
-     * @param {string} token - 用户认证token
      * @returns {Promise<Array>} 返回字幕对象数组的Promise
      */
-    getSubtitle(itemGuid, token) {
-        return fn.request(this.baseURL, '/v/api/v1/stream/list/' + itemGuid, 'get', token, null)
+    getSubtitle(itemGuid) {
+        return fn.request(this.baseURL, '/v/api/v1/stream/list/' + itemGuid, 'get', this.token, null)
             .then(response => {
                 if (response.success) {
                     const streams = response.data.subtitle_streams || [];
@@ -152,6 +151,28 @@ class apiService {
      */
     getVideoUrl(mediaGuid) {
         return `${this.baseURL}/v/api/v1/media/range/${mediaGuid}`;
+    }
+
+    /**
+     * 设置视频为已观看状态
+     * @param {string} itemGuid - 视频项目的唯一标识符
+     * @returns {Promise} 返回设置结果的Promise
+     */
+    setWatched(itemGuid) {
+        return fn.request(this.baseURL, '/v/api/v1/item/watched', 'post', this.token, {
+            item_guid: itemGuid,
+        });
+    }
+
+    /**
+     * 记录播放状态
+     * @param {string} itemGuid - 视频项目的唯一标识符
+     * @param {string} mediaGuid - 视频媒体的唯一标识符
+     * @param {number} ts - 当前播放时间戳
+     * @returns {Promise} 返回记录结果的Promise
+     */
+    recordPlayState(statusData) {
+        return fn.request(this.baseURL, '/v/api/v1/play/record', 'post', this.token, statusData);
     }
 }
 

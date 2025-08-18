@@ -28,6 +28,9 @@ function createMainWindow() {
         }
     });
 
+    // 调试
+    // mainWindow.webContents.openDevTools();
+
     // 加载URL
     mainWindow.loadURL(`${SITE_URL}/v`);
     return mainWindow;

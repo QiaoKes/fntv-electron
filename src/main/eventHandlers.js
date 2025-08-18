@@ -1,11 +1,9 @@
 const { ipcMain } = require('electron');
 const { getMainWindow } = require('./windowManager');
 const { setHalfScreen, setFullScreen } = require('./screenControl');
-const playWithMpv = require('../modules/mpv/mpv');
+const MpvPlayer = require('../modules/mpv/mpv');
 const { SITE_URL } = require('../public/constants');
 const fn = require('../modules/fn_api/api');
-
-fnapi = new fn.apiService(SITE_URL); // 创建 fn_api 实例
 
 // 窗口最小化处理函数
 function handleMinimize() {
@@ -35,56 +33,97 @@ function handleClose() {
 
 // 处理播放事件
 async function playMovie(event, { itemGuid, token }) {
-    console.log('Play movie event received:', itemGuid, token);
+    console.log('Play movie event received:', itemGuid, 'with token:', token);
 
-    subFiles = fnapi.getSubtitle(itemGuid, token).then(fnapi.downloadSubtitle).catch(error => {
+    fnapi = new fn.apiService(SITE_URL, token);
+
+    subFiles = await fnapi.getSubtitle(itemGuid).then(fnapi.downloadSubtitle).catch(error => {
         console.error('获取字幕文件失败:', error);
         return [];
     });
+    subArgs = subFiles.map(sub => `--sub-file=${sub}`).join(' ');
 
-    // 获取播放信息
-    fnapi.getPlayInfo(token, itemGuid).then(async response => {
-        if (response.success) {
-            // 等待字幕文件
-            subs = await subFiles
-            console.log('字幕文件已准备好:', subs);
-            // 拼接字幕参数
-            subArgs = '';
-            if (subs.length > 0) {
-                subArgs = subs.map(sub => `--sub-file=${sub}`).join(' ');
+    response = await fnapi.getPlayInfo(itemGuid)
+        .catch(error => {
+            console.error('获取播放信息失败:', error);
+            return null;
+        });
+
+    if (!response || !response.success) {
+        console.error('获取播放信息失败:', response ? response.message : '未知错误');
+        return;
+    }
+
+    // console.log('获取播放信息成功:', response.data);
+
+    mediaGuid = response.data.media_guid;
+
+    // 计算起始播放位置百分比
+    const playUrl = fnapi.getVideoUrl(mediaGuid);
+    last = response.data.ts;
+    total = response.data.item.duration;
+    console.log('Play URL:', playUrl, 'Last:', last, 'Total:', total);
+    const percentage = last / total * 100;
+    const startPosition = `${percentage}%`;
+
+    playStatus = {
+        item_guid: itemGuid,
+        media_guid: mediaGuid,
+        video_guid: response.data.video_guid,
+        audio_guid: response.data.audio_guid,
+        subtitle_guid: response.data.subtitle_guid,
+        play_link: new URL(playUrl).pathname
+    }
+
+    // 创建播放器实例
+    const player = new MpvPlayer({
+        url: playUrl,
+        mpvPath: 'third_party\\mpv\\mpv.exe',
+        headers: {
+            Authorization: token,
+        },
+        extraArgs: [
+            '--ontop',
+            `--start=${startPosition}`,
+            '--cache-secs=20', // 缓冲20秒，防止网络波动卡顿
+            subArgs // 添加所有字幕文件参数
+        ],
+        debug: true,
+        onData: (progress) => {
+            if (progress.percentage > 90) {
+                console.log('视频播放接近结束，更新状态...');
+                fnapi.setWatched(itemGuid);
+                return;
             }
 
-            // console.log('Play event sent successfully:', response.data);
-            // 配置播放参数（使用自定义路径和额外参数）
-            playUrl = SITE_URL + '/v/api/v1/media/range/' + response.data.media_guid;
-            last = response.data.ts;
-            total = response.data.item.duration;
-            console.log('Play URL:', playUrl, 'Last:', last, 'Total:', total);
-            // 转为字符串+%
-            p = last / total * 100 + '%';
-            playWithMpv({
-                url: playUrl,
-                mpvPath: 'third_party\\mpv\\mpv.exe',
-                headers: {
-                    Authorization: token,
-                },
-                extraArgs: [
-                    '--ontop',
-                    '--start=' + p,
-                    '--cache-secs=20', // 缓冲20秒，防止网络波动卡顿
-                    subArgs,
-                ],
-                debug: true,
-                onData: (data) => console.log('MPV output:', data),
-                onError: (err) => console.error('MPV error:', err),
-                onExit: (code) => console.log('MPV exited with code:', code)
-            });
-        } else {
-            console.error('Failed to send play event:', response.message);
+            console.log('当前播放进度:', progress);
+            playStatus.ts = progress.currentSeconds;
+            playStatus.duration = progress.totalSeconds;
+            fnapi.recordPlayState(playStatus);
+        },
+        onError: (err) => console.error('MPV error:', err),
+        onExit: (code, progress) => {
+            if (code !== 0 && code !== null) {
+                console.error(`播放器异常退出 (code ${code})`);
+                return;
+            }
+            console.log('MPV exited with code:', code);
+            console.log('最后播放位置:', progress);
+            if (progress.percentage > 90) {
+                console.log('视频播放接近结束，更新状态...');
+                fnapi.setWatched(itemGuid);
+                return;
+            }
+
+            playStatus.ts = progress.currentSeconds;
+            playStatus.duration = progress.totalSeconds;
+            fnapi.recordPlayState(playStatus);
         }
-    }).catch(error => {
-        console.error('Error sending play event:', error);
     });
+
+    // 开始播放
+    player.play();
+
 }
 
 // 播放电影处理函数

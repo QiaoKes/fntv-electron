@@ -187,7 +187,7 @@ function sendPlayEventToMain() {
         token: token,
     });
 
-    // console.log('Play event sent successfully, itemGuid:', itemGuid, 'token:', token);
+    console.log('Play event sent successfully, itemGuid:', itemGuid, 'token:', token);
 }
 
 

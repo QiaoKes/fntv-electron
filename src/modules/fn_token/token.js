@@ -53,5 +53,6 @@ async function restoreCookie(ses) {
 module.exports = {
     saveTokens,
     restoreCookie,
+    readTokens,
     SITE_URL
 };
