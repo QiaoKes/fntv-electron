@@ -144,7 +144,17 @@ class apiService {
         console.log('成功下载的字幕文件:', successfulDownloads);
         return successfulDownloads;
     }
+
+    /**
+     * 获取视频直链地址
+     * @param {string} mediaGuid - 视频项目的唯一标识符
+     * @returns {Promise<string>} 返回视频直链地址的Promise
+     */
+    getVideoUrl(mediaGuid) {
+        return `${this.baseURL}/v/api/v1/media/range/${mediaGuid}`;
+    }
 }
+
 
 module.exports = {
     apiService
