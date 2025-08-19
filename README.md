@@ -34,6 +34,7 @@
 - [electron-media-patch](https://github.com/5rahim/electron-media-patch) - Electron硬解码补丁
 - [fnToPotplayer](https://github.com/gudqs7/fnToPotplayer) - 飞牛影视调用Potplayer
 - [fnos-tv](https://github.com/thshu/fnos-tv) - fnos-tv 支持弹幕的飞牛影视
+- [mpv弹幕插件](https://github.com/Tony15246/uosc_danmaku) - uosc_danmaku 基于uosc的弹幕插件
 
 ## 📦 安装方法
 
