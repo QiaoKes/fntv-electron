@@ -24,7 +24,9 @@ function createMainWindow() {
         webPreferences: {
             webgl: true,
             partition: 'persist:fntv',
-            preload: path.join(__dirname, '../preload/preload.js'),
+            preload: path.join(__dirname, '../preload/index.js'),
+            nodeIntegration: true,   // ✅ 开启 Node.js 支持
+            contextIsolation: false  // 如果 preload 里要直接改 DOM，通常要关掉
         }
     });
 
@@ -36,11 +38,11 @@ function createMainWindow() {
     return mainWindow;
 }
 
-function getMainWindow () {
+function getMainWindow() {
     return mainWindow;
 }
 
-function setupWindowShowEvents (mainWindow) {
+function setupWindowShowEvents(mainWindow) {
     mainWindow.once('ready-to-show', () => mainWindow.show());
 }
 
