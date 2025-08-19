@@ -14,12 +14,6 @@ function evaluateXPath(xpath, contextNode = document) {
     return result;
 }
 
-// function getCookie(name) {
-//     const value = `; ${document.cookie}`;
-//     const parts = value.split(`; ${name}=`);
-//     if (parts.length === 2) return parts.pop().split(';').shift();
-// }
-
 function getCookie(name) {
     const cookies = document.cookie.split(';');
     const nameEQ = name + '=';
@@ -33,13 +27,7 @@ function getCookie(name) {
     return null;
 }
 
-function checkMovieUrl() {
-    const url = window.location.href;
-    return url.includes('/v/movie/') || url.includes('/v/tv/episode/');
-}
-
 module.exports = {
     evaluateXPath,
     getCookie,
-    checkMovieUrl
 };
