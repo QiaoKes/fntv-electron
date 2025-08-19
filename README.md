@@ -7,6 +7,7 @@
 
 <img src="resource/simple.png" width="90%">
 <img src="resource/mpv.png" width="90%">
+<img src="resource/danmu.png" width="90%">
 
 ![演示视频](https://github.com/QiaoKes/fntv-electron/tree/develop/resource/mpv.mp4)
 
@@ -20,6 +21,7 @@
 
 ## 更新记录
 
+* 2025.8.20 - v1.5.0 所有可播放页面添加mpv播放按钮，mpv播放结束自动刷新页面，可继续点击观看下一集
 * 2025.8.19 - v1.4.0 MPV播放器支持弹幕自动加载，无法识别时可手动搜索
 * 2025.8.19 - v1.3.0 支持MPV播放器播放进度回传，优化mpv播放器配置
 * 2025.8.18 - v1.2.0 MPV播放器支持自动读取外挂字幕
