@@ -179,6 +179,8 @@ class MpvPlayer {
      */
     stop() {
         if (this.playerProcess) {
+            this.config.onExit(0, MpvPlayer.globalStatus); // 传递当前状态
+            console.log('停止播放');
             this.playerProcess.kill();
             this.playerProcess = null;
         }
@@ -190,6 +192,14 @@ class MpvPlayer {
      */
     getStatus() {
         return MpvPlayer.globalStatus;
+    }
+
+    /**
+     * 检查播放器是否正在播放
+     * @returns {boolean} 是否正在播放
+     */
+    isPlaying() {
+        return this.playerProcess !== null && !this.playerProcess.killed;
     }
 }
 

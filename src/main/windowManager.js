@@ -26,7 +26,7 @@ function createMainWindow() {
             partition: 'persist:fntv',
             preload: path.join(__dirname, '../preload/index.js'),
             nodeIntegration: true,   // ✅ 开启 Node.js 支持
-            contextIsolation: false  // 如果 preload 里要直接改 DOM，通常要关掉
+            contextIsolation: false,  // 如果 preload 里要直接改 DOM，通常要关掉
         }
     });
 

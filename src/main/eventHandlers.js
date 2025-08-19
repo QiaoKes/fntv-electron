@@ -1,9 +1,16 @@
-const { ipcMain } = require('electron');
+const { ipcMain, app, remote, BrowserWindow } = require('electron');  // 增加app引用
 const { getMainWindow } = require('./windowManager');
 const { setHalfScreen, setFullScreen } = require('./screenControl');
 const MpvPlayer = require('../modules/mpv/mpv');
 const { SITE_URL } = require('../public/constants');
 const fn = require('../modules/fn_api/api');
+
+async function refreshWindow() {
+    const focusedWindow = BrowserWindow.getFocusedWindow()
+    if (focusedWindow) {
+        focusedWindow.webContents.reload()
+    }
+}
 
 // 窗口最小化处理函数
 function handleMinimize() {
@@ -31,8 +38,17 @@ function handleClose() {
     });
 }
 
+// 全局播放器实例引用
+let currentPlayer = null;
+
 // 处理播放事件
 async function playMovie(event, { itemGuid, token }) {
+    // 检查是否已有播放器在播放
+    if (currentPlayer && currentPlayer.isPlaying()) {
+        console.warn('已有播放器在播放，无法重复播放');
+        return;
+    }
+
     console.log('Play movie event received:', itemGuid, 'with token:', token);
 
     fnapi = new fn.apiService(SITE_URL, token);
@@ -68,7 +84,7 @@ async function playMovie(event, { itemGuid, token }) {
     } else {
         percentage = last / total * 100;
     }
-    
+
     const startPosition = `${percentage}%`;
 
     playStatus = {
@@ -119,25 +135,36 @@ async function playMovie(event, { itemGuid, token }) {
             console.log('最后播放位置:', progress);
             if (progress.percentage > 90) {
                 console.log('视频播放接近结束，更新状态...');
-                fnapi.setWatched(itemGuid);
+                fnapi.setWatched(itemGuid).then(refreshWindow);
                 return;
             }
 
             playStatus.ts = progress.currentSeconds;
             playStatus.duration = progress.totalSeconds;
-            fnapi.recordPlayState(playStatus);
+            fnapi.recordPlayState(playStatus).then(refreshWindow);
         }
     });
 
+    // 保存全局引用
+    currentPlayer = player;
+
     // 开始播放
     player.play();
-
 }
 
 // 播放电影处理函数
 function handlePlayMovie() {
     ipcMain.on('play-movie', playMovie);
 }
+
+// 监听应用退出事件
+app.on('before-quit', () => {
+    if (currentPlayer) {
+        console.log('应用退出前关闭播放器');
+        currentPlayer.stop();
+        currentPlayer = null;
+    }
+});
 
 // 注册所有IPC处理器的聚合函数
 function registerIpcHandlers() {
