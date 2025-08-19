@@ -1,98 +1,93 @@
 // preload/plugins/playButton.js
 const { ipcRenderer } = require('electron');
 const { registerHook } = require('../core/hooks');
-const { evaluateXPath, getCookie } = require('../core/utils');
+const { getCookie } = require('../core/utils');
 
-// 检查当前页面是否最后一层(电影或剧集页面或者其他页面)
+// 检查是否最后一级页面(单集&电影&其他)
 function checkFinalPageUrl() {
     const url = window.location.href;
     return url.includes('/v/movie/') || url.includes('/v/tv/episode/') || url.includes('/v/other/');
 }
 
-// 检查当前页面是否为季页面
+// 检查是否是季度页面
 function checkSeasonPageUrl() {
     const url = window.location.href;
     return url.includes('/v/tv/season/');
 }
 
-// 检查当前页面是否为剧集页面
+// 检查是否是TV页面
 function checkTVPageUrl() {
     const url = window.location.href;
     return url.includes('/v/tv/');
 }
 
+// 发送播放信息到主进程
 function sendPlayEventToMain() {
     const url = window.location.href;
-    const itemGuid = url.split('/').pop();
+    const id = url.split('/').pop();
     const token = getCookie('Trim-MC-token');
-    ipcRenderer.send('play-movie', { itemGuid, token });
+    ipcRenderer.send('play-movie', { id, token });
 }
 
-function cloneBtnAndInject(xpath, callback) {
-    const buttons = evaluateXPath(xpath);
-    if (!buttons.length) return;
+// 基于共同DOM特征搜索播放按钮
+function findReferenceButton(context = document) {
+    // 主要特征：特定播放图标路径
+    const PLAY_ICON_PATH = "M5.984 18.819V5.18c0-1.739 1.939-2.776 3.386-1.812l10.228 6.82a2.177 2.177 0 010 3.623L9.37 20.63c-1.447.964-3.386-.073-3.386-1.812z";
+    
+    // 查找包含特定播放图标的按钮
+    const buttonsWithPlayIcon = context.querySelectorAll('button');
+    for (const button of buttonsWithPlayIcon) {
+        // 检测特定播放图标
+        const icon = button.querySelector('svg > path[d^="M5.984"]');
+        if (icon && icon.getAttribute('d').startsWith(PLAY_ICON_PATH.substring(0, 10))) {
+            return button;
+        }
+        
+        // 备用检测：按钮类名组合
+        const classes = button.getAttribute('class') || '';
+        if (classes.includes('semi-button') && 
+            classes.includes('semi-button-primary') && 
+            classes.includes('!min-w-[150px]')) {
+            return button;
+        }
+    }
+    
+    return null;
+}
 
-    const referenceButton = buttons[0];
-    if (referenceButton.hasAttribute('mpv-btn')) return;
+function clonePlayBtnAndInject(callback, btnText) {
+    const referenceButton = findReferenceButton();
+    if (!referenceButton || referenceButton.hasAttribute('data-mpv-btn')) return;
 
-    // 标记原始按钮已处理
-    referenceButton.setAttribute('mpv-btn', 'true');
-
-    // 克隆按钮
+    console.log('Detected inject page, injecting play button...');
+    
+    // 标记原始按钮
+    referenceButton.setAttribute('data-mpv-btn', 'processed');
+    
+    // 克隆并修改按钮
     const newButton = referenceButton.cloneNode(true);
-
-    // 更新按钮文本
-    const buttonText = newButton.querySelector('span > span > span');
-    if (buttonText) buttonText.textContent = 'MPV播放';
-
+    newButton.removeAttribute('data-mpv-btn');
+    
+    // 更新按钮文本（保留图标）
+    const textSpans = newButton.querySelector('span > span > span');
+    if (textSpans) textSpans.textContent = btnText;
+    
+    // 添加唯一标识
+    newButton.setAttribute('data-custom-play', 'true');
+    
     // 添加点击事件
     newButton.addEventListener('click', callback);
-
-    // 插入按钮
+    
+    // 插入到参考按钮旁边
     referenceButton.parentNode.insertBefore(newButton, referenceButton.nextSibling);
 }
 
-// 注入自定义播放按钮到最后一级页面
-function injectFinalPageCustomPlayBtn() {
-    if (!checkFinalPageUrl()) {
-        return;
-    }
-
-    console.log('Detected movie or TV episode page, injecting play button...');
-
-    const BUTTON_XPATH = '//*[@id="root"]/div/div[3]/div/div/div[2]/div/div[2]/div[1]/div[2]/div/div[1]/button';
-    cloneBtnAndInject(BUTTON_XPATH, sendPlayEventToMain);
+function injectCustomPlayBtn() {
+    clonePlayBtnAndInject(sendPlayEventToMain, 'MPV播放');
 }
 
-// 注入自定义播放按钮到季页面
-function injectSeasonPageCustomPlayBtn() {
-    if (!checkSeasonPageUrl()) {
-        return;
-    }
-
-    console.log('Detected season page, injecting play button...');
-    const BUTTON_XPATH = '//*[@id="root"]/div/div[3]/div/div/div[2]/div/div[2]/div[1]/div[2]/div[2]/div[1]/div[3]/div[1]/button';
-    cloneBtnAndInject(BUTTON_XPATH, sendPlayEventToMain);
-}
-
-// 注入自定义播放按钮到剧集页面
-function injectTVPageCustomPlayBtn() {
-    if (!checkTVPageUrl()) {
-        return;
-    }
-
-    console.log('Detected TV page, injecting play button...');
-    const BUTTON_XPATH = '//*[@id="root"]/div/div[3]/div/div/div[2]/div/div[2]/div[1]/div[2]/div/div[1]/button';
-    cloneBtnAndInject(BUTTON_XPATH, sendPlayEventToMain);
-}
-
-// 注册到 hook
-registerHook('onReady', injectFinalPageCustomPlayBtn);
-registerHook('onReady', injectSeasonPageCustomPlayBtn);
-registerHook('onReady', injectTVPageCustomPlayBtn);
-
-registerHook('onDomChange', injectFinalPageCustomPlayBtn);
-registerHook('onDomChange', injectSeasonPageCustomPlayBtn);
-registerHook('onDomChange', injectTVPageCustomPlayBtn);
+// 注册hook
+registerHook('onReady', injectCustomPlayBtn);
+registerHook('onDomChange', injectCustomPlayBtn);
 
 module.exports = {};

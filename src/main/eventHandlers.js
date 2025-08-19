@@ -42,42 +42,44 @@ function handleClose() {
 let currentPlayer = null;
 
 // 处理播放事件
-async function playMovie(event, { itemGuid, token }) {
+async function playMovie(event, { id, token }) {
     // 检查是否已有播放器在播放
     if (currentPlayer && currentPlayer.isPlaying()) {
         console.warn('已有播放器在播放，无法重复播放');
         return;
     }
 
-    console.log('Play movie event received:', itemGuid, 'with token:', token);
+    console.log('Play movie event received id:', id, 'with token:', token);
 
-    fnapi = new fn.apiService(SITE_URL, token);
+    const fnapi = new fn.apiService(SITE_URL, token);
 
-    subFiles = await fnapi.getSubtitle(itemGuid).then(fnapi.downloadSubtitle).catch(error => {
-        console.error('获取字幕文件失败:', error);
-        return [];
-    });
-    subArgs = subFiles.map(sub => `--sub-file=${sub}`).join(' ');
-
-    response = await fnapi.getPlayInfo(itemGuid)
+    const response = await fnapi.getPlayInfo(id)
         .catch(error => {
             console.error('获取播放信息失败:', error);
             return null;
         });
 
     if (!response || !response.success) {
-        console.error('获取播放信息失败:', response ? response.message : '未知错误');
+        console.error('获取播放信息失败:', response ? response.message : '未知错误'); 
         return;
     }
 
     console.log('获取播放信息成功:', response.data);
 
-    mediaGuid = response.data.media_guid;
+    const mediaGuid = response.data.media_guid;
+    // 从季度或者TV页面跳过来id其实不是真正的item_guid，使用返回值的修正
+    const itemGuid = response.data.guid;
+
+    const subFiles = await fnapi.getSubtitle(itemGuid).then(fnapi.downloadSubtitle).catch(error => {
+        console.error('获取字幕文件失败:', error);
+        return [];
+    });
+    const subArgs = subFiles.map(sub => `--sub-file=${sub}`).join(' ');
 
     // 计算起始播放位置百分比
     const playUrl = fnapi.getVideoUrl(mediaGuid);
-    last = response.data.ts;
-    total = response.data.item.duration;
+    const last = response.data.ts;
+    const total = response.data.item.duration;
     console.log('Play URL:', playUrl, 'Last:', last, 'Total:', total);
     if (total <= 0) {
         percentage = 0;
@@ -87,7 +89,7 @@ async function playMovie(event, { itemGuid, token }) {
 
     const startPosition = `${percentage}%`;
 
-    playStatus = {
+    const playStatus = {
         item_guid: itemGuid,
         media_guid: mediaGuid,
         video_guid: response.data.video_guid,
@@ -96,7 +98,11 @@ async function playMovie(event, { itemGuid, token }) {
         play_link: new URL(playUrl).pathname
     }
 
-    title = `${response.data.item.tv_title || ''} - S${response.data.item.season_number || ''}E${response.data.item.episode_number || ''}: ${response.data.item.title || ''}`
+    title = response.data.item.title
+    if (response.data.item.tv_title) {
+        title = `${response.data.item.tv_title || ''} - S${response.data.item.season_number || ''}E${response.data.item.episode_number || ''}: ${response.data.item.title || ''}`
+    }
+
     // 创建播放器实例
     const player = new MpvPlayer({
         url: playUrl,
