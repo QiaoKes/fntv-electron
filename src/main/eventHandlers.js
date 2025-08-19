@@ -91,6 +91,7 @@ async function playMovie(event, { itemGuid, token }) {
         },
         extraArgs: [
             // '--ontop',
+            '--force-window=immediate',
             `--start=${startPosition}`, // 设置起始播放位置
             '--cache-secs=20', // 缓冲20秒，防止网络波动卡顿
             subArgs // 添加所有字幕文件参数
