@@ -113,7 +113,6 @@ function setupWindowShowEvents(mainWindow) {
 
 /**
  * 清空登录信息和Cookie
- * 实现TODO: 清空配置中的cookie
  */
 function clearLoginCookies() {
     console.log('清空登录信息和Cookie');

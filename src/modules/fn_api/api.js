@@ -32,6 +32,13 @@ class apiService {
     }
 
     /**
+     * 用户登出
+     */
+    logout() {
+        return fn.request(this.baseURL, '/v/api/v1/logout', 'post', this.token);
+    }
+
+    /**
      * 获取视频播放信息
      * @param {string} itemGuid - 视频项目的唯一标识符
      * @returns {Promise} 返回播放信息的Promise
