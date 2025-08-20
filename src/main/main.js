@@ -4,6 +4,10 @@ const { registerIpcHandlers } = require('./eventHandlers');
 const { createMainWindow, setupWindowShowEvents } = require('./windowManager');
 const { setupFullScreenToggle } = require('./screenControl');
 
+// 禁用输入法自动切换
+app.commandLine.appendSwitch('--lang', 'en-US');
+app.commandLine.appendSwitch('--disable-features', 'VizDisplayCompositor');
+
 let tray = null;
 let mainWindow = null;
 let trayNotificationShown = false; // 托盘提示是否已显示过

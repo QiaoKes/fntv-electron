@@ -47,17 +47,18 @@ function readConfig() {
     return null;
 }
 
-// 保存配置（账号、域名、token）
-function saveConfig({ account, domain, token }) {
+// 保存配置（账号、域名、token、HTTPS设置）
+function saveConfig({ account, domain, token, useHttps }) {
     const config = readConfig() || {};
     config.account = account;
     config.domain = domain;
     config.token = token;
+    config.useHttps = useHttps || false;
     fs.writeFileSync(getConfigPath(), JSON.stringify(config, null, 2));
 }
 
-// 添加历史记录（域名、账号、加密密码）
-function addHistory({ domain, account, password }) {
+// 添加历史记录（域名、账号、加密密码、HTTPS设置）
+function addHistory({ domain, account, password, useHttps }) {
     const config = readConfig() || {};
     config.history = config.history || [];
     // 移除重复项
@@ -68,7 +69,8 @@ function addHistory({ domain, account, password }) {
     config.history.unshift({
         domain,
         account,
-        password: encrypt(password)
+        password: encrypt(password),
+        useHttps: useHttps || false
     });
     // 限制最多数量
     if (config.history.length > HISTORY_LIMIT) {
@@ -84,7 +86,8 @@ function getHistory() {
     return config.history.map(item => ({
         domain: item.domain,
         account: item.account,
-        password: decrypt(item.password)
+        password: decrypt(item.password),
+        useHttps: item.useHttps || false
     }));
 }
 

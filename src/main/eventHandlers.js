@@ -2,7 +2,6 @@ const { ipcMain, app, dialog, BrowserWindow } = require('electron');  // 增加a
 const { getMainWindow } = require('./windowManager');
 const { setHalfScreen, setFullScreen } = require('./screenControl');
 const MpvPlayer = require('../modules/mpv/mpv');
-const { SITE_URL } = require('../public/constants');
 const fn = require('../modules/fn_api/api');
 const { restoreCookies } = require('../modules/fn_config/cookie');
 const fnConfig = require('../modules/fn_config/config');
@@ -53,7 +52,12 @@ async function playMovie(event, { id, token }) {
 
     console.log('Play movie event received id:', id, 'with token:', token);
 
-    const fnapi = new fn.apiService(SITE_URL, token);
+    const config = fnConfig.readConfig();
+    if (!config || !config.domain) {
+        throw new Error('无法找到服务器地址配置');
+    }
+
+    const fnapi = new fn.apiService(config.domain, token);
 
     const response = await fnapi.getPlayInfo(id)
         .catch(error => {
@@ -272,14 +276,16 @@ function handleLogin() {
         saveConfig({
             account: loginData.username,
             domain: domain,
-            token: response.data.token
+            token: response.data.token,
+            useHttps: loginData.useHttps
         });
 
         // 添加到登录历史
         addHistory({
             domain: loginData.domain,
             account: loginData.username,
-            password: loginData.password
+            password: loginData.password,
+            useHttps: loginData.useHttps
         });
 
         // 跳转到主页

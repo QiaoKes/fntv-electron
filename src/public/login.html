@@ -988,10 +988,10 @@
             }
 
             const historyHtml = historyData.map((item, index) => `
-                <div class="history-item" data-domain="${item.domain}" data-account="${item.account}" data-password="${item.password}" data-index="${index}">
+                <div class="history-item" data-domain="${item.domain}" data-account="${item.account}" data-password="${item.password}" data-use-https="${item.useHttps || false}" data-index="${index}">
                     <div class="history-content">
                         <div class="history-account">${item.account}</div>
-                        <div class="history-domain">${item.domain}</div>
+                        <div class="history-domain">${item.domain}${item.useHttps ? ' (HTTPS)' : ' (HTTP)'}</div>
                     </div>
                     <button class="history-delete" data-index="${index}" title="删除此记录">×</button>
                 </div>
@@ -1007,10 +1007,12 @@
                     const domain = item.dataset.domain;
                     const account = item.dataset.account;
                     const password = item.dataset.password;
+                    const useHttps = item.dataset.useHttps === 'true';
 
                     domainInput.value = domain;
                     usernameInput.value = account;
                     passwordInput.value = password;
+                    document.getElementById('httpsSwitch').checked = useHttps;
 
                     // 关闭下拉框
                     historyDropdown.classList.remove('show');
@@ -1080,6 +1082,10 @@
             if (config && config.domain) {
                 // 去除掉http://和https://
                 domainInput.value = config.domain.replace(/^https?:\/\//, '');
+                // 根据保存的useHttps设置复选框状态
+                if (config.useHttps) {
+                    document.getElementById('httpsSwitch').checked = config.useHttps;
+                }
             }
             if (config && config.account) {
                 usernameInput.value = config.account;

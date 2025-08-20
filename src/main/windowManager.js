@@ -23,6 +23,7 @@ function createMainWindow() {
             preload: path.join(__dirname, '../preload/index.js'),
             nodeIntegration: true,   // 开启 Node.js 支持
             contextIsolation: false,  // 如果 preload 里要直接改 DOM，通常要关掉
+            spellcheck: false,  // 禁用拼写检查，避免输入法干扰
         }
     });
 
@@ -66,6 +67,21 @@ function createMainWindow() {
         }
     );
 
+    // 禁用输入法相关功能
+    mainWindow.webContents.on('dom-ready', () => {
+        // 注入CSS来禁用输入法自动切换
+        mainWindow.webContents.insertCSS(`
+            * {
+                ime-mode: disabled !important;
+                -webkit-ime-mode: disabled !important;
+            }
+            input, textarea {
+                ime-mode: inactive !important;
+                -webkit-ime-mode: inactive !important;
+            }
+        `);
+    });
+
     // 调试
     // mainWindow.webContents.openDevTools();
 
@@ -105,11 +121,12 @@ function clearLoginCookies() {
     // 清空配置中保存的token
     const config = readConfig() || {};
     if (config.token || config.domain) {
-        // 保留domain但清空token
+        // 保留domain和useHttps但清空token
         saveConfig({
             account: config.account,
             domain: config.domain,
-            token: ''
+            token: '',
+            useHttps: config.useHttps
         });
         console.log('已清空配置中的登录token');
     }
