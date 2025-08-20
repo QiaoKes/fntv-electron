@@ -1,4 +1,4 @@
-const { BrowserWindow, session } = require('electron');
+const { BrowserWindow, session, ipcMain } = require('electron');
 const path = require('path');
 const { SITE_URL } = require('../public/constants');
 const { restoreCookie } = require('../modules/fn_token/token');
@@ -25,7 +25,7 @@ function createMainWindow() {
             webgl: true,
             partition: 'persist:fntv',
             preload: path.join(__dirname, '../preload/index.js'),
-            nodeIntegration: true,   // ✅ 开启 Node.js 支持
+            nodeIntegration: true,   // 开启 Node.js 支持
             contextIsolation: false,  // 如果 preload 里要直接改 DOM，通常要关掉
         }
     });
@@ -33,8 +33,9 @@ function createMainWindow() {
     // 调试
     // mainWindow.webContents.openDevTools();
 
-    // 加载URL
-    mainWindow.loadURL(`${SITE_URL}/v`);
+    // 先加载本地静态页面
+    mainWindow.loadFile(path.join(__dirname, '../public/login.html'));
+
     return mainWindow;
 }
 

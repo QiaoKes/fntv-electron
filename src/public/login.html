@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- 修改 favicon 为 base64 图标 -->
+    <link rel="icon" href="./image/logo.png" type="image/png" />
+    <title>飞牛影视</title>
+    <style>
+        body {
+            background: url("./image/bg-login.webp") no-repeat center center fixed;
+            background-size: cover;
+            /* 拉伸铺满整个页面 */
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+                'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial,
+                sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .login-container {
+            width: 380px;
+            background: rgba(37, 43, 55, 0.5);
+            /* 半透明背景 */
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+
+            backdrop-filter: blur(12px);
+            /* 毛玻璃模糊效果 */
+            -webkit-backdrop-filter: blur(12px);
+            /* 兼容 Safari */
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            /* 轻微边框，增强质感 */
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo img {
+            width: 120px;
+            height: auto;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        input[type='text'],
+        input[type='password'] {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(47, 53, 66, 0.4);
+            /* 半透明输入框 */
+            backdrop-filter: blur(6px);
+            color: #fff;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        input[type='text']:focus,
+        input[type='password']:focus {
+            outline: none;
+            border-color: #3370ff;
+        }
+
+        .switch-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .switch-label {
+            margin-left: 10px;
+            font-size: 14px;
+        }
+
+        /* 开关样式 */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #3c4250;
+            transition: 0.4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: '';
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: #3370ff;
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(20px);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #3370ff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: not-allowed;
+            opacity: 0.6;
+            transition: background-color 0.2s, opacity 0.2s, cursor 0.2s;
+        }
+
+        .login-btn.enabled {
+            cursor: pointer;
+            opacity: 1;
+        }
+
+        .login-btn.enabled:hover {
+            background-color: #2856c4;
+        }
+
+        input.error {
+            border: 1px solid red !important;
+            /* 输入框红色边框 */
+        }
+
+        .error-msg {
+            color: red;
+            /* 提示文字红色 */
+            font-size: 12px;
+            /* 小字体 */
+            margin-top: 5px;
+            /* 上方间距 */
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            -webkit-user-modify: read-write-plaintext-only;
+            /* 取消拼写波浪线 */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <!-- 修改 logo 图标为 base64 -->
+            <img src="./image/logo.png" alt="飞牛影视" />
+        </div>
+        <div class="form-group">
+            <label for="domain">域名/IP地址</label>
+            <input type="text" id="domain" placeholder="请输入服务器域名或IP地址" spellcheck="false" />
+            <div id="domainError" class="error-msg" style="display:none;">请正确填写IPV4、IPV6或者域名</div>
+        </div>
+        <div class="form-group">
+            <label for="username">用户名</label>
+            <input type="text" id="username" placeholder="请输入用户名" spellcheck="false" />
+        </div>
+        <div class="form-group">
+            <label for="password">密码</label>
+            <input type="password" id="password" placeholder="请输入密码" spellcheck="false" />
+        </div>
+        <div class="switch-container">
+            <label class="switch">
+                <input type="checkbox" id="httpsSwitch" />
+                <span class="slider"></span>
+            </label>
+            <span class="switch-label">HTTPS安全访问</span>
+        </div>
+        <button class="login-btn" id="loginBtn" disabled>登录</button>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron'); // 渲染进程可用
+        const loginBtn = document.getElementById('loginBtn');
+        const domainInput = document.getElementById('domain');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+
+        function isValidDomainOrIP(value) {
+            const domainRegex = /^([\u4e00-\u9fa5a-zA-Z0-9-]+\.)+[\u4e00-\u9fa5a-zA-Z]{2,}$/;
+            const ipv4Regex = /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}$/;
+            const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
+            return domainRegex.test(value) || ipv4Regex.test(value) || ipv6Regex.test(value);
+        }
+
+        function checkInputs() {
+            const domain = domainInput.value.trim();
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value.trim();
+            const domainError = document.getElementById('domainError');
+
+            if (domain && isValidDomainOrIP(domain) && username && password) {
+                loginBtn.disabled = false;
+                loginBtn.classList.add('enabled');
+            } else {
+                loginBtn.disabled = true;
+                loginBtn.classList.remove('enabled');
+            }
+        }
+
+        // 失去焦点时显示红色提示
+        domainInput.addEventListener('blur', function () {
+            const domain = domainInput.value.trim();
+            if (domain && !isValidDomainOrIP(domain)) {
+                domainInput.classList.add('error');
+                domainError.style.display = 'block';
+            } else {
+                domainInput.classList.remove('error');
+                domainError.style.display = 'none';
+            }
+        });
+
+        domainInput.addEventListener('input', checkInputs);
+        usernameInput.addEventListener('input', checkInputs);
+        passwordInput.addEventListener('input', checkInputs);
+
+        // 登录逻辑
+        loginBtn.addEventListener('click', function () {
+            if (loginBtn.disabled) return;
+            const domain = domainInput.value.trim();
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value.trim();
+            const useHttps = document.getElementById('httpsSwitch').checked;
+
+            console.log('登录信息:', { domain, username, password, useHttps });
+            // alert('登录信息已准备就绪（在Electron环境中将发送到主进程）');
+            const loginData = {
+                domain: domain,
+                username: username,
+                password: password,
+                useHttps: useHttps
+            };
+
+            // 直接调用 ipcRenderer.send
+            ipcRenderer.send('login', loginData);
+        });
+
+        // Enter 键触发
+        document.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter' && !loginBtn.disabled) {
+                loginBtn.click();
+            }
+        });
+    </script>
+</body>
+
+</html>

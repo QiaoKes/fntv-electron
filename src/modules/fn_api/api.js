@@ -10,12 +10,25 @@ class apiService {
      * 创建字幕服务实例
      * @param {string} baseURL - API基础URL
      */
-    constructor(baseURL, token) {
+    constructor(baseURL, token = '') {
         this.baseURL = baseURL;
         this.tempDir = path.join(app.getPath('temp'), 'fntv_subtitles');
         this.token = token;
 
         this.downloadSubtitle = this.downloadSubtitle.bind(this);
+    }
+
+    /**
+     * 获取视频播放信息
+     * @param {string} itemGuid - 视频项目的唯一标识符
+     * @returns {Promise} 返回播放信息的Promise
+     */
+    login(username, password) {
+        return fn.request(this.baseURL, '/v/api/v1/login', 'post', this.token, {
+            app_name: "trimemedia-web",
+            username: username,
+            password: password,
+        });
     }
 
     /**

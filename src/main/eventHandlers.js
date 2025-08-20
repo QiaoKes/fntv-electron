@@ -1,4 +1,4 @@
-const { ipcMain, app, remote, BrowserWindow } = require('electron');  // 增加app引用
+const { ipcMain, app, dialog, BrowserWindow } = require('electron');  // 增加app引用
 const { getMainWindow } = require('./windowManager');
 const { setHalfScreen, setFullScreen } = require('./screenControl');
 const MpvPlayer = require('../modules/mpv/mpv');
@@ -60,7 +60,7 @@ async function playMovie(event, { id, token }) {
         });
 
     if (!response || !response.success) {
-        console.error('获取播放信息失败:', response ? response.message : '未知错误'); 
+        console.error('获取播放信息失败:', response ? response.message : '未知错误');
         return;
     }
 
@@ -158,11 +158,6 @@ async function playMovie(event, { id, token }) {
     player.play();
 }
 
-// 播放电影处理函数
-function handlePlayMovie() {
-    ipcMain.on('play-movie', playMovie);
-}
-
 // 监听应用退出事件
 app.on('before-quit', () => {
     if (currentPlayer) {
@@ -172,8 +167,47 @@ app.on('before-quit', () => {
     }
 });
 
+
+// 播放电影处理函数
+function handlePlayMovie() {
+    ipcMain.on('play-movie', playMovie);
+}
+
+function handleLogin() {
+    // 监听来自渲染进程的跳转请求
+    ipcMain.on('login', async (event, loginData) => {
+        // 这里可以存储或验证token
+        console.log('Received loginData:', loginData);
+
+        // 跳转到主页面
+        // mainWindow.loadURL(`${loginData.domain}/v`);
+        if (loginData.useHttps) {
+            server = "https://" + loginData.domain
+        } else {
+            server = "http://" + loginData.domain
+        }
+
+        const fnapi = new fn.apiService(server);
+
+        const response = await fnapi.login(loginData.username, loginData.password)
+            .catch(error => {
+                console.error('获取播放信息失败:', error);
+                return null;
+            });
+
+        if (!response || !response.success) {
+            // 弹窗提示
+            dialog.showErrorBox('登录失败', '请求服务器失败，请账号、密码或者域名是否正确。');
+            return;
+        }
+        console.log("token:%s", response.data)
+    });
+}
+
+
 // 注册所有IPC处理器的聚合函数
 function registerIpcHandlers() {
+    handleLogin();
     handleMinimize();
     handleMaximize();
     handleClose();
