@@ -5,6 +5,7 @@ const MpvPlayer = require('../modules/mpv/mpv');
 const { SITE_URL } = require('../public/constants');
 const fn = require('../modules/fn_api/api');
 const { restoreCookies } = require('../modules/fn_config/cookie');
+const fnConfig = require('../modules/fn_config/config');
 
 async function refreshWindow() {
     const focusedWindow = BrowserWindow.getFocusedWindow()
@@ -175,12 +176,49 @@ function handlePlayMovie() {
 }
 
 function handleLogin() {
+    // 监听获取配置请求
+    ipcMain.on('get-config', (event) => {
+        try {
+            const config = fnConfig.readConfig() || {};
+            const history = fnConfig.getHistory() || [];
+            event.reply('config-data', { config, history });
+        } catch (error) {
+            console.error('读取配置失败:', error);
+            event.reply('config-data', { config: {}, history: [] });
+        }
+    });
+
+    // 监听清除历史记录请求
+    ipcMain.on('clear-history', (event) => {
+        try {
+            fnConfig.clearHistory();
+            event.reply('history-cleared');
+        } catch (error) {
+            console.error('清除历史记录失败:', error);
+        }
+    });
+
+    // 监听删除单个历史记录请求
+    ipcMain.on('delete-history-item', (event, { domain, account }) => {
+        try {
+            const success = fnConfig.deleteHistoryItem({ domain, account });
+            if (success) {
+                event.reply('history-item-deleted');
+            }
+        } catch (error) {
+            console.error('删除历史记录项失败:', error);
+        }
+    });
+
     // 监听来自渲染进程的跳转请求
     ipcMain.on('login', async (event, loginData) => {
         // 这里可以存储或验证token
         console.log('Received loginData:', loginData);
         if (!loginData || !loginData.domain || !loginData.username || !loginData.password) {
-            dialog.showErrorBox('登录失败', '请提供完整的登录信息。');
+            event.reply('login-error', {
+                title: '登录失败',
+                message: '请提供完整的登录信息。'
+            });
             return;
         }
 
@@ -196,20 +234,31 @@ function handleLogin() {
 
         const response = await fnapi.login(loginData.username, loginData.password)
             .catch(error => {
-                console.error('获取播放信息失败:', error);
+                console.error('登录请求失败:', error);
+                // 发送网络错误消息到渲染进程
+                event.reply('login-error', {
+                    title: '连接失败',
+                    message: '无法连接到服务器，请检查域名是否正确或网络连接是否正常。'
+                });
                 return null;
             });
 
         if (!response || !response.success) {
-            // 弹窗提示
-            dialog.showErrorBox('登录失败', '请检查账号、密码或者域名是否正确。');
+            // 发送错误消息到渲染进程
+            event.reply('login-error', {
+                title: '登录失败',
+                message: '请检查账号、密码或者域名是否正确。'
+            });
             return;
         }
         const token = response.data.token;
         console.log("token:%s", token);
         if (!token) {
-            // 弹窗提示登录失败
-            dialog.showErrorBox('登录失败', '没有有效的登录信息，无法恢复 cookies');
+            // 发送错误消息到渲染进程
+            event.reply('login-error', {
+                title: '登录失败',
+                message: '没有有效的登录信息，无法恢复 cookies'
+            });
             return;
         }
 

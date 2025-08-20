@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const { app } = require('electron');
 const { USER_DATA_PATH } = require('../../public/constants');
 
-const HISTORY_LIMIT = 10;
+const HISTORY_LIMIT = 5;
 const ENCRYPTION_KEY = 'U2XDcFsV6rdTE9wB5ZHvy6BW9hBTKJ1H'; // 32 chars for aes-256
 const IV = Buffer.alloc(16, 0); // Initialization vector
 
@@ -70,7 +70,7 @@ function addHistory({ domain, account, password }) {
         account,
         password: encrypt(password)
     });
-    // 限制最多十个
+    // 限制最多数量
     if (config.history.length > HISTORY_LIMIT) {
         config.history = config.history.slice(0, HISTORY_LIMIT);
     }
@@ -95,10 +95,28 @@ function clearHistory() {
     fs.writeFileSync(getConfigPath(), JSON.stringify(config, null, 2));
 }
 
+// 删除单个历史记录
+function deleteHistoryItem({ domain, account }) {
+    const config = readConfig() || {};
+    if (!config.history) return false;
+    
+    const originalLength = config.history.length;
+    config.history = config.history.filter(
+        item => !(item.domain === domain && item.account === account)
+    );
+    
+    if (config.history.length < originalLength) {
+        fs.writeFileSync(getConfigPath(), JSON.stringify(config, null, 2));
+        return true;
+    }
+    return false;
+}
+
 module.exports = {
     saveConfig,
     readConfig,
     addHistory,
     getHistory,
-    clearHistory
+    clearHistory,
+    deleteHistoryItem
 };

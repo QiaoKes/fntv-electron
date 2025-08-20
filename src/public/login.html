@@ -51,6 +51,7 @@
 
         .form-group {
             margin-bottom: 20px;
+            position: relative;
         }
 
         label {
@@ -178,6 +179,398 @@
             -webkit-user-modify: read-write-plaintext-only;
             /* 取消拼写波浪线 */
         }
+
+        /* 密码显示按钮 */
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 46px; /* 精确计算：label(18px) + margin(8px) + border(1px) + padding(12px) + 文本中心(7px) */
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .password-toggle:hover {
+            color: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* 历史记录按钮 */
+        .history-btn {
+            position: absolute;
+            right: 12px;
+            top: 46px; /* 精确计算：label(18px) + margin(8px) + border(1px) + padding(12px) + 文本中心(7px) */
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .history-btn:hover {
+            color: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* 历史记录下拉框 */
+        .history-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            left: 0;
+            background: rgba(37, 43, 55, 0.95);
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-height: 240px;
+            margin-top: 4px;
+            overflow-y: auto;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(-10px);
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .history-dropdown.show {
+            opacity: 1;
+            transform: translateY(0);
+            visibility: visible;
+        }
+
+        .history-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            transition: background-color 0.2s;
+            position: relative;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-item:hover {
+            background-color: rgba(51, 112, 255, 0.2);
+        }
+
+        .history-content {
+            flex: 1;
+            cursor: pointer;
+        }
+
+        .history-delete {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            font-size: 14px;
+            padding: 4px 6px;
+            border-radius: 3px;
+            transition: all 0.2s;
+            margin-left: 8px;
+            opacity: 0;
+            transform: scale(0.8);
+        }
+
+        .history-item:hover .history-delete {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .history-delete:hover {
+            color: #ff4757;
+            background: rgba(255, 71, 87, 0.1);
+        }
+
+        .history-account {
+            font-size: 14px;
+            font-weight: 500;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .history-domain {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .no-history {
+            padding: 16px;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 12px;
+        }
+
+        .clear-history {
+            padding: 8px 16px;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 12px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .clear-history:hover {
+            background-color: rgba(255, 0, 0, 0.2);
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        /* 为了给按钮留出空间，调整input的右padding */
+        .form-group.has-button input {
+            padding-right: 40px;
+        }
+
+        /* 自定义滚动条 */
+        .history-dropdown::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .history-dropdown::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        .history-dropdown::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        .history-dropdown::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        /* 自定义确认对话框 */
+        .custom-confirm {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .custom-confirm.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .confirm-dialog {
+            background: rgba(37, 43, 55, 0.95);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            min-width: 300px;
+            max-width: 400px;
+            text-align: center;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .custom-confirm.show .confirm-dialog {
+            transform: scale(1);
+        }
+
+        .confirm-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: #fff;
+            margin-bottom: 16px;
+        }
+
+        .confirm-message {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        .confirm-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .confirm-btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .confirm-btn.cancel {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .confirm-btn.cancel:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        .confirm-btn.confirm {
+            background: #ff4757;
+            color: #fff;
+        }
+
+        .confirm-btn.confirm:hover {
+            background: #ff3838;
+        }
+
+        /* 自定义消息弹窗 */
+        .custom-message {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .custom-message.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .message-dialog {
+            background: rgba(37, 43, 55, 0.95);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            min-width: 300px;
+            max-width: 400px;
+            text-align: center;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .custom-message.show .message-dialog {
+            transform: scale(1);
+        }
+
+        .message-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            position: relative;
+        }
+
+        .message-icon.error {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 107, 107, 0.5);
+            color: #ff6b6b;
+            box-shadow: none;
+        }
+
+        .message-icon.success {
+            background: linear-gradient(135deg, #2ed573, #26d0ce);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(46, 213, 115, 0.3);
+        }
+
+        .message-icon.warning {
+            background: linear-gradient(135deg, #ffa502, #ff6348);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(255, 165, 2, 0.3);
+        }
+
+        .message-icon.info {
+            background: linear-gradient(135deg, #3370ff, #2856c4);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(51, 112, 255, 0.3);
+        }
+
+        .message-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .message-dialog.error .message-title {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .message-content {
+            color: rgba(255, 255, 255, 0.85);
+            margin-bottom: 28px;
+            line-height: 1.6;
+            font-size: 15px;
+        }
+
+        .message-button {
+            padding: 12px 32px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #3370ff, #2856c4);
+            color: #fff;
+            min-width: 100px;
+            box-shadow: 0 4px 15px rgba(51, 112, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .message-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(51, 112, 255, 0.4);
+        }
+
+        .message-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(51, 112, 255, 0.3);
+        }
     </style>
 </head>
 
@@ -187,18 +580,23 @@
             <!-- 修改 logo 图标为 base64 -->
             <img src="./image/logo.png" alt="飞牛影视" />
         </div>
-        <div class="form-group">
+        <div class="form-group has-button">
             <label for="domain">域名/IP地址</label>
-            <input type="text" id="domain" placeholder="请输入服务器域名或IP地址" spellcheck="false" />
+            <input type="text" id="domain" placeholder="请输入服务器域名或IP地址" spellcheck="false" tabindex="1" />
+            <button type="button" class="history-btn" id="historyBtn" title="选择历史记录">📝</button>
+            <div class="history-dropdown" id="historyDropdown">
+                <div class="no-history">暂无历史记录</div>
+            </div>
             <div id="domainError" class="error-msg" style="display:none;">请正确填写IPV4、IPV6或者域名</div>
         </div>
         <div class="form-group">
             <label for="username">用户名</label>
-            <input type="text" id="username" placeholder="请输入用户名" spellcheck="false" />
+            <input type="text" id="username" placeholder="请输入用户名" spellcheck="false" tabindex="2" />
         </div>
-        <div class="form-group">
+        <div class="form-group has-button">
             <label for="password">密码</label>
-            <input type="password" id="password" placeholder="请输入密码" spellcheck="false" />
+            <input type="password" id="password" placeholder="请输入密码" spellcheck="false" tabindex="3" />
+            <button type="button" class="password-toggle" id="passwordToggle" title="显示/隐藏密码">👁</button>
         </div>
         <div class="switch-container">
             <label class="switch">
@@ -210,12 +608,179 @@
         <button class="login-btn" id="loginBtn" disabled>登录</button>
     </div>
 
+    <!-- 自定义确认对话框 -->
+    <div class="custom-confirm" id="customConfirm">
+        <div class="confirm-dialog">
+            <div class="confirm-title">确认操作</div>
+            <div class="confirm-message" id="confirmMessage">确定要执行此操作吗？</div>
+            <div class="confirm-buttons">
+                <button class="confirm-btn cancel" id="confirmCancel">取消</button>
+                <button class="confirm-btn confirm" id="confirmOk">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 自定义消息弹窗 -->
+    <div class="custom-message" id="customMessage">
+        <div class="message-dialog">
+            <div class="message-icon" id="messageIcon">ℹ️</div>
+            <div class="message-title" id="messageTitle">提示</div>
+            <div class="message-content" id="messageContent">这里是消息内容</div>
+            <button class="message-button" id="messageButton">确定</button>
+        </div>
+    </div>
+
     <script>
         const { ipcRenderer } = require('electron'); // 渲染进程可用
         const loginBtn = document.getElementById('loginBtn');
         const domainInput = document.getElementById('domain');
         const usernameInput = document.getElementById('username');
         const passwordInput = document.getElementById('password');
+        const passwordToggle = document.getElementById('passwordToggle');
+        const historyBtn = document.getElementById('historyBtn');
+        const historyDropdown = document.getElementById('historyDropdown');
+        const customConfirm = document.getElementById('customConfirm');
+        const confirmMessage = document.getElementById('confirmMessage');
+        const confirmCancel = document.getElementById('confirmCancel');
+        const confirmOk = document.getElementById('confirmOk');
+        const customMessage = document.getElementById('customMessage');
+        const messageIcon = document.getElementById('messageIcon');
+        const messageTitle = document.getElementById('messageTitle');
+        const messageContent = document.getElementById('messageContent');
+        const messageButton = document.getElementById('messageButton');
+        
+        let historyData = [];
+        let confirmCallback = null;
+
+        // 自定义确认对话框函数
+        function showCustomConfirm(message, callback) {
+            confirmMessage.textContent = message;
+            confirmCallback = callback;
+            customConfirm.classList.add('show');
+        }
+
+        function hideCustomConfirm() {
+            customConfirm.classList.remove('show');
+            confirmCallback = null;
+            // 对话框关闭后立即恢复焦点
+            setTimeout(() => {
+                domainInput.focus();
+            }, 100);
+        }
+
+        // 确认对话框事件监听
+        confirmCancel.addEventListener('click', () => {
+            hideCustomConfirm();
+        });
+
+        confirmOk.addEventListener('click', () => {
+            if (confirmCallback) {
+                confirmCallback();
+            }
+            hideCustomConfirm();
+        });
+
+        // 点击对话框外部区域关闭
+        customConfirm.addEventListener('click', (e) => {
+            if (e.target === customConfirm) {
+                hideCustomConfirm();
+            }
+        });
+
+        // ESC键关闭对话框
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && customConfirm.classList.contains('show')) {
+                hideCustomConfirm();
+            }
+            if (e.key === 'Escape' && customMessage.classList.contains('show')) {
+                hideCustomMessage();
+            }
+        });
+
+        // 自定义消息弹窗函数
+        function showCustomMessage(type, title, content) {
+            // 清除之前的类型类
+            const messageDialog = document.querySelector('.message-dialog');
+            messageDialog.classList.remove('error', 'success', 'warning', 'info');
+            
+            // 添加当前类型类
+            messageDialog.classList.add(type);
+            
+            // 设置图标和样式
+            messageIcon.className = `message-icon ${type}`;
+            
+            // 对于错误类型，隐藏图标以减少视觉冲击
+            if (type === 'error') {
+                messageIcon.style.display = 'none';
+            } else {
+                messageIcon.style.display = 'flex';
+                switch(type) {
+                    case 'success':
+                        messageIcon.textContent = '✓';
+                        break;
+                    case 'warning':
+                        messageIcon.textContent = '!';
+                        break;
+                    case 'info':
+                    default:
+                        messageIcon.textContent = 'i';
+                        break;
+                }
+            }
+            
+            messageTitle.textContent = title;
+            messageContent.textContent = content;
+            customMessage.classList.add('show');
+        }
+
+        function hideCustomMessage() {
+            customMessage.classList.remove('show');
+            // 消息弹窗关闭后恢复焦点
+            setTimeout(() => {
+                domainInput.focus();
+            }, 100);
+        }
+
+        // 消息弹窗事件监听
+        messageButton.addEventListener('click', () => {
+            hideCustomMessage();
+        });
+
+        // 点击消息弹窗外部区域关闭
+        customMessage.addEventListener('click', (e) => {
+            if (e.target === customMessage) {
+                hideCustomMessage();
+            }
+        });
+
+        // 强制恢复焦点的通用函数
+        function restoreFocus() {
+            try {
+                // 确保输入框可用
+                domainInput.disabled = false;
+                domainInput.readOnly = false;
+                
+                // 多种方式尝试恢复焦点
+                domainInput.focus();
+                domainInput.select();
+                
+                // 如果还是无法获取焦点，尝试点击
+                const clickEvent = new MouseEvent('click', {
+                    view: window,
+                    bubbles: true,
+                    cancelable: true
+                });
+                domainInput.dispatchEvent(clickEvent);
+                
+                // 强制设置光标位置
+                if (domainInput.setSelectionRange) {
+                    const len = domainInput.value.length;
+                    domainInput.setSelectionRange(len, len);
+                }
+            } catch (error) {
+                console.error('恢复焦点失败:', error);
+            }
+        }
 
         function isValidDomainOrIP(value) {
             const domainRegex = /^([\u4e00-\u9fa5a-zA-Z0-9-]+\.)+[\u4e00-\u9fa5a-zA-Z]{2,}(:\d+)?$/;
@@ -258,13 +823,20 @@
         // 登录逻辑
         loginBtn.addEventListener('click', function () {
             if (loginBtn.disabled) return;
+            
+            // 设置登录中状态
+            const originalText = loginBtn.textContent;
+            loginBtn.textContent = '登录中...';
+            loginBtn.disabled = true;
+            loginBtn.classList.remove('enabled');
+            
             const domain = domainInput.value.trim();
             const username = usernameInput.value.trim();
             const password = passwordInput.value.trim();
             const useHttps = document.getElementById('httpsSwitch').checked;
 
             console.log('登录信息:', { domain, username, password, useHttps });
-            // alert('登录信息已准备就绪（在Electron环境中将发送到主进程）');
+            
             const loginData = {
                 domain: domain,
                 username: username,
@@ -272,8 +844,35 @@
                 useHttps: useHttps
             };
 
-            // 直接调用 ipcRenderer.send
+            // 发送登录请求
             ipcRenderer.send('login', loginData);
+            
+            // 5秒后恢复按钮状态（防止无响应）
+            const timeoutId = setTimeout(() => {
+                loginBtn.textContent = originalText;
+                checkInputs(); // 重新检查输入状态
+            }, 5000);
+            
+            // 监听登录结果，无论成功还是失败都恢复按钮状态
+            const handleLoginResult = () => {
+                clearTimeout(timeoutId);
+                loginBtn.textContent = originalText;
+                checkInputs();
+            };
+            
+            // 临时监听器，处理完后自动移除
+            const tempErrorListener = () => {
+                handleLoginResult();
+                ipcRenderer.off('login-error', tempErrorListener);
+            };
+            
+            const tempSuccessListener = () => {
+                handleLoginResult();
+                ipcRenderer.off('login-success', tempSuccessListener);
+            };
+            
+            ipcRenderer.once('login-error', tempErrorListener);
+            ipcRenderer.once('login-success', tempSuccessListener);
         });
 
         // Enter 键触发
@@ -281,6 +880,196 @@
             if (e.key === 'Enter' && !loginBtn.disabled) {
                 loginBtn.click();
             }
+        });
+
+        // 密码显示/隐藏切换
+        passwordToggle.addEventListener('click', function () {
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                passwordToggle.textContent = '🙈';
+                passwordToggle.title = '隐藏密码';
+            } else {
+                passwordInput.type = 'password';
+                passwordToggle.textContent = '👁';
+                passwordToggle.title = '显示密码';
+            }
+        });
+
+        // 历史记录按钮点击
+        historyBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            historyDropdown.classList.toggle('show');
+        });
+
+        // 点击其他地方关闭历史记录下拉框
+        document.addEventListener('click', function (e) {
+            if (!historyDropdown.contains(e.target) && e.target !== historyBtn) {
+                historyDropdown.classList.remove('show');
+            }
+        });
+
+        // 渲染历史记录列表
+        function renderHistoryList() {
+            if (!historyData || historyData.length === 0) {
+                historyDropdown.innerHTML = '<div class="no-history">暂无历史记录</div>';
+                return;
+            }
+
+            const historyHtml = historyData.map((item, index) => `
+                <div class="history-item" data-domain="${item.domain}" data-account="${item.account}" data-password="${item.password}" data-index="${index}">
+                    <div class="history-content">
+                        <div class="history-account">${item.account}</div>
+                        <div class="history-domain">${item.domain}</div>
+                    </div>
+                    <button class="history-delete" data-index="${index}" title="删除此记录">×</button>
+                </div>
+            `).join('');
+
+            const clearButton = historyData.length > 0 ? '<div class="clear-history" id="clearHistoryBtn">清除所有历史记录</div>' : '';
+            historyDropdown.innerHTML = historyHtml + clearButton;
+
+            // 为历史记录项添加点击事件
+            historyDropdown.querySelectorAll('.history-content').forEach(content => {
+                content.addEventListener('click', function () {
+                    const item = this.parentNode;
+                    const domain = item.dataset.domain;
+                    const account = item.dataset.account;
+                    const password = item.dataset.password;
+
+                    domainInput.value = domain;
+                    usernameInput.value = account;
+                    passwordInput.value = password;
+
+                    // 关闭下拉框
+                    historyDropdown.classList.remove('show');
+                    
+                    // 检查输入状态
+                    checkInputs();
+                });
+            });
+
+            // 为删除按钮添加点击事件
+            historyDropdown.querySelectorAll('.history-delete').forEach(deleteBtn => {
+                deleteBtn.addEventListener('click', function (e) {
+                    e.stopPropagation(); // 防止触发父元素的点击事件
+                    e.preventDefault(); // 防止默认行为
+                    
+                    const index = parseInt(this.dataset.index);
+                    const item = historyData[index];
+                    
+                    // 立即关闭下拉框
+                    historyDropdown.classList.remove('show');
+                    
+                    // 使用自定义确认对话框
+                    showCustomConfirm(
+                        `确定要删除 ${item.account}@${item.domain} 的登录记录吗？`,
+                        () => {
+                            // 发送删除单个历史记录的请求
+                            ipcRenderer.send('delete-history-item', { domain: item.domain, account: item.account });
+                        }
+                    );
+                });
+            });
+
+            // 清除历史记录按钮事件
+            const clearBtn = document.getElementById('clearHistoryBtn');
+            if (clearBtn) {
+                clearBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    
+                    // 立即关闭下拉框
+                    historyDropdown.classList.remove('show');
+                    
+                    // 使用自定义确认对话框
+                    showCustomConfirm(
+                        '确定要清除所有历史记录吗？',
+                        () => {
+                            ipcRenderer.send('clear-history');
+                            historyData = [];
+                            renderHistoryList();
+                        }
+                    );
+                });
+            }
+        }
+
+        // 加载配置和历史记录
+        function loadConfigData() {
+            ipcRenderer.send('get-config');
+        }
+
+        // 监听配置数据返回
+        ipcRenderer.on('config-data', (event, data) => {
+            const { config, history } = data;
+            historyData = history || [];
+            
+            // 如果有当前配置，填充到表单中
+            if (config && config.domain) {
+                // 去除掉http://和https://
+                domainInput.value = config.domain.replace(/^https?:\/\//, '');
+            }
+            if (config && config.account) {
+                usernameInput.value = config.account;
+            }
+            
+            // 渲染历史记录
+            renderHistoryList();
+            
+            // 检查输入状态
+            checkInputs();
+        });
+
+        // 监听历史记录删除成功
+        ipcRenderer.on('history-item-deleted', (event, data) => {
+            // 重新加载配置数据
+            loadConfigData();
+        });
+
+        // 监听登录错误消息
+        ipcRenderer.on('login-error', (event, data) => {
+            const { title, message } = data;
+            showCustomMessage('error', title, message);
+        });
+
+        // 监听登录成功消息
+        ipcRenderer.on('login-success', (event, data) => {
+            const { title, message } = data;
+            showCustomMessage('success', title, message);
+        });
+
+        // 添加额外的焦点管理事件监听器
+        document.addEventListener('click', function(e) {
+            // 如果点击的不是历史记录相关元素，确保输入框可以正常获取焦点
+            if (!historyDropdown.contains(e.target) && 
+                e.target !== historyBtn && 
+                !e.target.classList.contains('history-delete') &&
+                e.target.id !== 'clearHistoryBtn') {
+                // 如果没有其他输入元素获得焦点，默认聚焦到域名输入框
+                setTimeout(() => {
+                    if (!document.activeElement || 
+                        (document.activeElement.tagName !== 'INPUT' && 
+                         document.activeElement.tagName !== 'BUTTON')) {
+                        domainInput.focus();
+                    }
+                }, 50);
+            }
+        });
+
+        // 监听窗口焦点事件
+        window.addEventListener('focus', function() {
+            // 当窗口重新获得焦点时，确保输入框可以正常工作
+            setTimeout(restoreFocus, 100);
+        });
+
+        // 页面加载完成后读取配置
+        window.addEventListener('DOMContentLoaded', function () {
+            loadConfigData();
+            
+            // 确保页面加载后域名输入框能够正确获取焦点
+            setTimeout(() => {
+                domainInput.focus();
+            }, 500);
         });
     </script>
 </body>

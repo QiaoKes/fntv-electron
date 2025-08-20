@@ -67,7 +67,7 @@ function createMainWindow() {
     );
 
     // 调试
-    mainWindow.webContents.openDevTools();
+    // mainWindow.webContents.openDevTools();
 
     // 从配置中恢复 cookie
     const savedConfig = readConfig();
