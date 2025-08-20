@@ -1,6 +1,6 @@
 {
     "name": "fntv",
-    "version": "1.5.0",
+    "version": "1.6.0",
     "description": "A fntv app built with Electron",
     "main": "src/main/main.js",
     "scripts": {
@@ -21,12 +21,16 @@
         },
         "icon": "build/icon.ico",
         "productName": "飞牛影视",
-        "artifactName": "FNMedia_${version}_https_nas.test.com_3400.${ext}",
+        "artifactName": "FNMedia_${version}_${os}_${arch}.${ext}",
         "win": {
-            "target": "nsis"
+            "target": [
+                {
+                    "target": "nsis",
+                    "arch": ["x64"]
+                }
+            ]
         },
         "nsis": {
-            "include": "build/installer.nsh",
             "allowToChangeInstallationDirectory": true,
             "oneClick": false,
             "createDesktopShortcut": true,
@@ -34,7 +38,7 @@
         },
         "files": [
             "src",
-            "build/installer.nsh"
+            "build"
         ],
         "extraFiles": [
             {
