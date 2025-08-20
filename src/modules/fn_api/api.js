@@ -28,7 +28,7 @@ class apiService {
             app_name: "trimemedia-web",
             username: username,
             password: password,
-        });
+        }, 0, 2000);
     }
 
     /**

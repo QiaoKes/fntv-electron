@@ -4,6 +4,7 @@ const { setHalfScreen, setFullScreen } = require('./screenControl');
 const MpvPlayer = require('../modules/mpv/mpv');
 const { SITE_URL } = require('../public/constants');
 const fn = require('../modules/fn_api/api');
+const { restoreCookies } = require('../modules/fn_config/cookie');
 
 async function refreshWindow() {
     const focusedWindow = BrowserWindow.getFocusedWindow()
@@ -178,6 +179,10 @@ function handleLogin() {
     ipcMain.on('login', async (event, loginData) => {
         // 这里可以存储或验证token
         console.log('Received loginData:', loginData);
+        if (!loginData || !loginData.domain || !loginData.username || !loginData.password) {
+            dialog.showErrorBox('登录失败', '请提供完整的登录信息。');
+            return;
+        }
 
         // 跳转到主页面
         // mainWindow.loadURL(`${loginData.domain}/v`);
@@ -197,13 +202,48 @@ function handleLogin() {
 
         if (!response || !response.success) {
             // 弹窗提示
-            dialog.showErrorBox('登录失败', '请求服务器失败，请账号、密码或者域名是否正确。');
+            dialog.showErrorBox('登录失败', '请检查账号、密码或者域名是否正确。');
             return;
         }
-        console.log("token:%s", response.data)
+        const token = response.data.token;
+        console.log("token:%s", token);
+        if (!token) {
+            // 弹窗提示登录失败
+            dialog.showErrorBox('登录失败', '没有有效的登录信息，无法恢复 cookies');
+            return;
+        }
+
+        // 保存登录信息
+        const { saveConfig, addHistory } = require('../modules/fn_config/config');
+
+        // 构建完整的域名URL
+        const domain = loginData.useHttps ? `https://${loginData.domain}` : `http://${loginData.domain}`;
+
+        // 保存配置
+        saveConfig({
+            account: loginData.username,
+            domain: domain,
+            token: response.data.token
+        });
+
+        // 添加到登录历史
+        addHistory({
+            domain: loginData.domain,
+            account: loginData.username,
+            password: loginData.password
+        });
+
+        // 跳转到主页
+        const mainWindow = getMainWindow();
+        if (mainWindow) {
+            // 恢复 cookie
+            console.log('恢复登录状态，跳转到主页面, domain:', domain);
+            restoreCookies(domain, token).then(() => {
+                mainWindow.loadURL(`${domain}/v`);
+            });
+        }
     });
 }
-
 
 // 注册所有IPC处理器的聚合函数
 function registerIpcHandlers() {

@@ -36,8 +36,11 @@ function genFnAuthx(url, data) {
     return `nonce=${nonce}&timestamp=${timestamp}&sign=${getMd5(signStr)}`;
 }
 
+// 默认超时时间（毫秒）
+const DEFAULT_TIMEOUT = 10000;
+
 // API请求函数
-async function request(baseUrl, url, method, token, data, tryTimes = 0) {
+async function request(baseUrl, url, method, token, data, tryTimes = 0, timeout = DEFAULT_TIMEOUT) {
     const fullUrl = baseUrl + url;
     const authx = genFnAuthx(url, data);
 
@@ -46,25 +49,31 @@ async function request(baseUrl, url, method, token, data, tryTimes = 0) {
         "Authorization": token,
         "Authx": authx
     };
+    
+    // 设置请求配置，包含超时时间
+    const config = {
+        headers,
+        timeout: timeout
+    };
 
     try {
         switch (method.toLowerCase()) {
             case 'get':
-                response = await axios.get(fullUrl, { headers });
+                response = await axios.get(fullUrl, config);
                  break;
             case 'post':
-                response = await axios.post(fullUrl, data, { headers });
+                response = await axios.post(fullUrl, data, config);
                  break;
             case 'put':
-                response = await axios.put(fullUrl, data, { headers });
+                response = await axios.put(fullUrl, data, config);
                 break;
             case 'delete':
-                response = await axios.delete(fullUrl, { headers });
+                response = await axios.delete(fullUrl, config);
                 break;
             default:
                 throw new Error(`Unsupported method: ${method}`);
         }
-        
+
         const res = response.data;
 
         // 处理签名错误的重试逻辑
@@ -78,7 +87,7 @@ async function request(baseUrl, url, method, token, data, tryTimes = 0) {
 
             console.log(`fn_api 请求时签名错误，重试中 tryTimes = ${tryTimes}, url: ${fullUrl}`);
             await setTimeout(300); // 等待300ms
-            return request(baseUrl, url, method, token, data, tryTimes + 1);
+            return request(baseUrl, url, method, token, data, tryTimes + 1, timeout);
         }
 
         // 处理业务错误
@@ -108,5 +117,6 @@ module.exports = {
     getMd5,
     generateRandomDigits,
     genFnAuthx,
-    request
+    request,
+    DEFAULT_TIMEOUT
 };
