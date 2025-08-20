@@ -42,11 +42,54 @@
         .logo {
             text-align: center;
             margin-bottom: 30px;
+            position: relative;
         }
 
         .logo img {
             width: 120px;
             height: auto;
+        }
+
+        .logo-info {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .code-by {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            font-style: italic;
+            white-space: nowrap;
+        }
+
+        .github-link {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            white-space: nowrap;
+        }
+
+        .github-link:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+            text-decoration: none;
+        }
+
+        /* 在小屏幕上垂直排列 */
+        @media (max-width: 400px) {
+            .logo-info {
+                flex-direction: column;
+                gap: 8px;
+            }
         }
 
         .form-group {
@@ -178,6 +221,31 @@
         input[type="password"] {
             -webkit-user-modify: read-write-plaintext-only;
             /* 取消拼写波浪线 */
+        }
+
+        /* 禁止所有元素拖拽 */
+        * {
+            -webkit-user-drag: none;
+            -khtml-user-drag: none;
+            -moz-user-drag: none;
+            -o-user-drag: none;
+        }
+
+        /* 特别针对图片禁止拖拽和选中 */
+        img {
+            -webkit-user-drag: none;
+            -khtml-user-drag: none;
+            -moz-user-drag: none;
+            -o-user-drag: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        /* Logo图片完全禁止交互 */
+        .logo img {
+            pointer-events: none;
         }
 
         /* 密码显示按钮 */
@@ -579,6 +647,10 @@
         <div class="logo">
             <!-- 修改 logo 图标为 base64 -->
             <img src="./image/logo.png" alt="飞牛影视" />
+            <div class="logo-info">
+                <span class="code-by">code by Tag mig hånden</span>
+                <a href="https://github.com/QiaoKes/fntv-electron" class="github-link" target="_blank" rel="noopener noreferrer">github地址</a>
+            </div>
         </div>
         <div class="form-group has-button">
             <label for="domain">域名/IP地址</label>
@@ -1060,6 +1132,35 @@
         window.addEventListener('focus', function() {
             // 当窗口重新获得焦点时，确保输入框可以正常工作
             setTimeout(restoreFocus, 100);
+        });
+
+        // GitHub链接点击事件处理
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('github-link')) {
+                e.preventDefault(); // 阻止默认行为
+                const url = e.target.href;
+                // 使用Electron的shell模块在外部浏览器打开链接
+                const { shell } = require('electron');
+                shell.openExternal(url);
+            }
+        });
+
+        // 禁止拖拽事件
+        document.addEventListener('dragstart', function(e) {
+            e.preventDefault();
+            return false;
+        });
+
+        // 禁止拖拽效果
+        document.addEventListener('drag', function(e) {
+            e.preventDefault();
+            return false;
+        });
+
+        // 禁止拖拽结束
+        document.addEventListener('dragend', function(e) {
+            e.preventDefault();
+            return false;
         });
 
         // 页面加载完成后读取配置
