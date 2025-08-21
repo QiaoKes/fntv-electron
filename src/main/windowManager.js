@@ -29,6 +29,29 @@ function createMainWindow() {
 
     // 初始化 session
     const ses = session.fromPartition('persist:fntv');
+
+    // 检查并清理缓存的函数
+    const checkAndClearCache = async () => {
+        try {
+            const usage = await ses.getCacheSize();
+            console.log('当前缓存使用量：', Math.round(usage / (1024 * 1024)), 'MB');
+
+            // 如果超过100MB，清理缓存
+            if (usage > 100 * 1024 * 1024) {
+                await ses.clearCache();
+                console.log('已清理缓存文件夹');
+            }
+        } catch (err) {
+            console.error('检查缓存使用量失败:', err);
+        }
+    };
+
+    // 程序启动时立即执行一次
+    checkAndClearCache();
+
+    // 后续每6小时执行一次
+    setInterval(checkAndClearCache, 6 * 60 * 60 * 1000);
+
     // 拦截登录请求到自定义登录页面
     ses.webRequest.onBeforeRequest(
         {
