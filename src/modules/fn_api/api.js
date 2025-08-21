@@ -18,10 +18,8 @@ class apiService {
         this.downloadSubtitle = this.downloadSubtitle.bind(this);
     }
 
-    /**
-     * 获取视频播放信息
-     * @param {string} itemGuid - 视频项目的唯一标识符
-     * @returns {Promise} 返回播放信息的Promise
+     /**
+     * 用户登录
      */
     login(username, password) {
         return fn.request(this.baseURL, '/v/api/v1/login', 'post', this.token, {
