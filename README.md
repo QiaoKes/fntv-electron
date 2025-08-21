@@ -11,6 +11,8 @@
 <img src="resource/mpv.png" width="90%">
 <img src="resource/danmu.png" width="90%">
 
+[演示视频](https://www.bilibili.com/video/BV12dYXzhE6U/)
+
 ## ✨ 主要功能
 
 - **原生桌面体验** - 将飞牛影视Web版封装为原生应用，F11全屏缩放
