@@ -40,16 +40,16 @@ function genFnAuthx(url, data) {
 const DEFAULT_TIMEOUT = 10000;
 
 // API请求函数
-async function request(baseUrl, url, method, token, data, tryTimes = 0, timeout = DEFAULT_TIMEOUT) {
+async function request(baseUrl, url, method, token, data, timeout = DEFAULT_TIMEOUT, tryTimes = 0) {
     const fullUrl = baseUrl + url;
     const authx = genFnAuthx(url, data);
 
     const headers = {
         "Content-Type": "application/json",
         "Authorization": token,
-        "Authx": authx
+        "Authx": authx,
     };
-    
+
     // 设置请求配置，包含超时时间
     const config = {
         headers,
@@ -60,10 +60,10 @@ async function request(baseUrl, url, method, token, data, tryTimes = 0, timeout 
         switch (method.toLowerCase()) {
             case 'get':
                 response = await axios.get(fullUrl, config);
-                 break;
+                break;
             case 'post':
                 response = await axios.post(fullUrl, data, config);
-                 break;
+                break;
             case 'put':
                 response = await axios.put(fullUrl, data, config);
                 break;
@@ -87,11 +87,12 @@ async function request(baseUrl, url, method, token, data, tryTimes = 0, timeout 
 
             console.log(`fn_api 请求时签名错误，重试中 tryTimes = ${tryTimes}, url: ${fullUrl}`);
             await setTimeout(300); // 等待300ms
-            return request(baseUrl, url, method, token, data, tryTimes + 1, timeout);
+            return request(baseUrl, url, method, token, data, timeout, tryTimes + 1);
         }
 
         // 处理业务错误
         if (res.code !== 0) {
+            console.error(`fn_api 请求失败 - `, res);
             return {
                 success: false,
                 message: res.msg

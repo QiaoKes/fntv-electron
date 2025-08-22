@@ -74,6 +74,7 @@ class MpvPlayer {
                 '--vd-lavc-assume-old-x264=yes',
                 '--vd-lavc-fast',
                 '--video-sync=display-resample',
+                '--border=no',  // 无边框窗口
             );
         }
 
