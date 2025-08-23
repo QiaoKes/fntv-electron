@@ -70,14 +70,12 @@ class MpvPlayer {
         // Windows平台特殊参数
         if (os.platform() === 'win32') {
             args.push(
-                // '--vd-lavc-threads=4',
-                // '--vd-lavc-assume-old-x264=yes',
-                // '--vd-lavc-fast',
-                // '--video-sync=display-resample',
                 '--border=no',  // 无边框窗口
                 '--vo=gpu-next', // <gpu/gpu-next/libmpv> 视频输出驱动。许多后续选项也只能在此三项下正常工作。当前版本默认值即 gpu-next
-                'gpu-api=d3d11',
-                'hwdec=auto-copy',
+                '--gpu-api=d3d11',
+                '--hwdec=auto-copy',
+                // 统一窗口大小设置 - 保持一致的初始窗口大小
+                '--geometry=1280x720',      // 固定窗口大小为 1280x720
             );
         }
 
