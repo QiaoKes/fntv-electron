@@ -79,13 +79,17 @@ go的二进制压缩会被误报。可以查看这个issue，二进制由dandanp
 
 去C:\\Users\\{你的计算机用户名}\\.fntv 下面把config.json删除了，因为连接成功后实际上加载的还是飞牛网页端，没响应当然会透明了。
 
-## ⌨️ MPV播放器快捷键
+## ⌨️ MPV播放器
 
+1. 快捷键
 ```text
 部分快捷键兼容potpolyer
 查看安装目录下
-third_party\mpv\portable_config\input.conf
+third_party\fntv-mpv\portable_config\input.conf
 ```
+
+2. MPV配置由以下仓库单独管理:
+[飞牛影视PC客户端MPV配置](https://github.com/QiaoKes/fntv-mpv-config)
 
 ## 🙏 特别感谢
 
@@ -120,29 +124,39 @@ third_party\mpv\portable_config\input.conf
 ```bash
 git clone https://github.com/QiaoKes/fntv-electron.git
 cd fntv-electron
-# 下载https://github.com/QiaoKes/fntv-electron/releases中的third_party.zip
-#解压到third_party中
+# 下载https://github.com/QiaoKes/fntv-electron/releases/tag/v0.0.0中的electron-v36.2.1-patch-win32-x64.zip
+#解压到third_party中的electron文件夹中
 ```
 
-2. 安装依赖：
+2. 下载第三方依赖
+
+```bash
+# Windows
+# 1.下载https://github.com/QiaoKes/fntv-electron/releases/tag/v0.0.0中的electron-v36.2.1-patch-win32-x64.zip
+# 解压到third_party中的electron文件夹中
+# 2.下载https://github.com/QiaoKes/fntv-mpv-config/releases
+# 解压到third_party中的fntv-mpv文件夹中
+```
+
+3. 安装依赖：
 
 ```bash
 npm i
 ```
 
-3. 运行开发模式：
+4. 运行开发模式：
 
 ```bash
 npm start
 ```
 
-4. 构建安装包：
+5. 构建安装包：
 
 ```bash
 # Windows
 # 进入到C:\Users\{your_user_name}\AppData\Local\electron\Cache
 # 创建文件夹b3ef7c180a968a1775be99205920d296f99e12cd36db5a1b9a5a2a3bb292f8ae
-# 将third_party下的electron-v36.2.1-patch-win32-x64.zip拷贝到文件夹内
+# 将electron-v36.2.1-patch-win32-x64.zip拷贝到文件夹内
 npm run build
 ```
 
