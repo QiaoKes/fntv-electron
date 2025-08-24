@@ -1,6 +1,6 @@
 const { app, Tray, Menu, nativeImage, BrowserWindow } = require('electron');
 const path = require('path');
-const { registerIpcHandlers } = require('./eventHandlers');
+const { registerIpcHandlers, updateChecker } = require('./eventHandlers');
 const { createMainWindow, setupWindowShowEvents } = require('./windowManager');
 const { setupFullScreenToggle } = require('./screenControl');
 
@@ -46,6 +46,13 @@ if (!gotTheLock) {
 
         // 设置窗口显示事件
         setupWindowShowEvents(mainWindow);
+
+        // 延迟3秒后进行自动更新检查，避免影响应用启动速度
+        setTimeout(() => {
+            updateChecker.autoCheckForUpdates().catch(error => {
+                console.error('启动时自动检查更新失败:', error);
+            });
+        }, 3000);
     });
 }
 
@@ -71,6 +78,20 @@ function createTray() {
                     mainWindow.focus();
                 }
             }
+        },
+        {
+            type: 'separator'
+        },
+        {
+            label: '检查更新',
+            click: () => {
+                updateChecker.manualCheckForUpdates().catch(error => {
+                    console.error('手动检查更新失败:', error);
+                });
+            }
+        },
+        {
+            type: 'separator'
         },
         {
             label: '退出',

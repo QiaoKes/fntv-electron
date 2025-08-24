@@ -1,6 +1,6 @@
 {
     "name": "fntv",
-    "version": "1.6.4",
+    "version": "1.7.0",
     "description": "A fntv app built with Electron",
     "main": "src/main/main.js",
     "scripts": {
@@ -13,7 +13,8 @@
         "electron-builder": "^26.0.12"
     },
     "dependencies": {
-        "axios": "^1.11.0"
+        "axios": "^1.11.0",
+        "semver": "^7.7.2"
     },
     "build": {
         "directories": {
@@ -26,7 +27,9 @@
             "target": [
                 {
                     "target": "nsis",
-                    "arch": ["x64"]
+                    "arch": [
+                        "x64"
+                    ]
                 }
             ]
         },
