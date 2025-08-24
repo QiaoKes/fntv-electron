@@ -43,7 +43,10 @@
 
 ### 2. mpv播放器功能有点少，怎么客制化，想添加补帧滤镜等？
 
-打开你安装目录的third_party，只修改third_party\mpv\portable_config下面的插件，其余的不要动。其中input.conf是快捷键。
+1. 自动方法
+   克隆fntv-mpv仓库，自己改一下相关配置：[fntv-mpv-config](https://github.com/QiaoKes/fntv-mpv-config)
+2. 手动方法
+   打开你安装目录的third_party，只修改third_party\fntv-mpv\portable_config下面的插件，其余的不要动。其中input.conf是快捷键。
 
 注意重新安装或者更新，会清空安装目录，注意备份你的mpv插件目录。
 
@@ -82,6 +85,7 @@ go的二进制压缩会被误报。可以查看这个issue，二进制由dandanp
 ## ⌨️ MPV播放器
 
 1. 快捷键
+
 ```text
 部分快捷键兼容potpolyer
 查看安装目录下
@@ -89,7 +93,7 @@ third_party\fntv-mpv\portable_config\input.conf
 ```
 
 2. MPV配置由以下仓库单独管理:
-[飞牛影视PC客户端MPV配置](https://github.com/QiaoKes/fntv-mpv-config)
+   [fntv-mpv-config](https://github.com/QiaoKes/fntv-mpv-config)
 
 ## 🙏 特别感谢
 
