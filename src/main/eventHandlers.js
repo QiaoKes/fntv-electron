@@ -141,6 +141,7 @@ async function playMovie(event, { id, token }) {
         onExit: (code, progress) => {
             if (code !== 0 && code !== null) {
                 console.error(`播放器异常退出 (code ${code})`);
+                refreshWindow();
                 return;
             }
             console.log('MPV exited with code:', code);
