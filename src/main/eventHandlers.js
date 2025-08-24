@@ -331,6 +331,28 @@ function handleGetVersion() {
     });
 }
 
+// 处理下载代理设置
+function handleDownloadProxy() {
+    // 获取当前代理设置
+    ipcMain.on('get-download-proxy', (event) => {
+        const proxyConfig = fnConfig.getDownloadProxyConfig();
+        event.reply('download-proxy-info', proxyConfig);
+    });
+    
+    // 设置代理配置
+    ipcMain.on('set-download-proxy', (event, { enabled, proxyUrl }) => {
+        try {
+            fnConfig.setDownloadProxyConfig({ 
+                enabled: enabled !== false, 
+                proxyUrl: proxyUrl || 'https://ghfast.top' 
+            });
+            event.reply('download-proxy-set', { success: true });
+        } catch (error) {
+            event.reply('download-proxy-set', { success: false, error: error.message });
+        }
+    });
+}
+
 // 注册所有IPC处理器的聚合函数
 function registerIpcHandlers() {
     handleLogin();
@@ -341,6 +363,7 @@ function registerIpcHandlers() {
     handleCheckUpdate();
     handleAutoCheckUpdate();
     handleGetVersion();
+    handleDownloadProxy();
 }
 
 module.exports = {

@@ -1,5 +1,6 @@
 const axios = require('axios');
 const { dialog, shell } = require('electron');
+const { getDownloadProxyConfig } = require('../fn_config/config');
 
 // 尝试获取app模块，在非Electron环境中可能失败
 let app;
@@ -124,7 +125,30 @@ class UpdateChecker {
         }
 
         const asset = assets.find(asset => pattern.test(asset.name));
-        return asset ? asset.browser_download_url : null;
+        if (!asset) {
+            return null;
+        }
+        
+        // 获取原始下载链接
+        const originalUrl = asset.browser_download_url;
+        
+        // 尝试获取代理配置并应用到下载链接
+        try {
+            const proxyConfig = getDownloadProxyConfig();
+            if (proxyConfig.enabled && proxyConfig.proxyUrl && proxyConfig.proxyUrl.trim() !== '') {
+                // 如果原始URL包含github.com，则使用代理
+                if (originalUrl.includes('github.com')) {
+                    const proxiedUrl = `${proxyConfig.proxyUrl.replace(/\/$/, '')}/${originalUrl}`;
+                    console.log(`使用代理下载链接: ${proxiedUrl}`);
+                    return proxiedUrl;
+                }
+            }
+        } catch (error) {
+            console.log('获取代理配置失败，使用原始下载链接:', error.message);
+        }
+        
+        console.log(`使用原始下载链接: ${originalUrl}`);
+        return originalUrl;
     }
 
     /**

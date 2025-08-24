@@ -244,6 +244,208 @@
             opacity: 0.6;
         }
 
+        /* 代理设置按钮样式 */
+        .proxy-settings-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            color: rgba(255, 255, 255, 0.8);
+            z-index: 1000;
+        }
+
+        .proxy-settings-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+            color: white;
+            transform: rotate(90deg);
+        }
+
+        /* 代理设置面板样式 */
+        .proxy-panel {
+            position: fixed;
+            bottom: 70px;
+            right: 20px;
+            width: 280px;
+            background: rgba(37, 43, 55, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            z-index: 1001;
+            transform: translateY(10px);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .proxy-panel.show {
+            transform: translateY(0);
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .proxy-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .proxy-close-btn {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 18px;
+            cursor: pointer;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .proxy-close-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .proxy-panel-content {
+            padding: 16px;
+        }
+
+        .proxy-switch-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+        }
+
+        .proxy-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .proxy-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .proxy-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.2);
+            transition: .3s;
+            border-radius: 24px;
+        }
+
+        .proxy-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        .proxy-switch input:checked + .proxy-slider {
+            background-color: #3370ff;
+        }
+
+        .proxy-switch input:checked + .proxy-slider:before {
+            transform: translateX(20px);
+        }
+
+        .proxy-url-row {
+            margin-bottom: 16px;
+        }
+
+        .proxy-url-row label {
+            display: block;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+
+        .proxy-url-row input {
+            width: 100%;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            color: white;
+            font-size: 13px;
+            outline: none;
+            transition: all 0.2s;
+            box-sizing: border-box;
+        }
+
+        .proxy-url-row input:focus {
+            border-color: #3370ff;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .proxy-url-row input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .proxy-panel-footer {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .proxy-save-btn {
+            padding: 8px 16px;
+            background: #3370ff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .proxy-save-btn:hover {
+            background: #2856c4;
+        }
+
+        .proxy-save-btn:active {
+            transform: translateY(1px);
+        }
+
+        .proxy-save-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
         input.error {
             border: 1px solid red !important;
             /* 输入框红色边框 */
@@ -727,6 +929,37 @@
         </div>
     </div>
 
+    <!-- 代理设置按钮（右上角） -->
+    <div class="proxy-settings-btn" id="proxySettingsBtn" title="代理设置">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M12 15.5A3.5 3.5 0 0 1 8.5 12A3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+        </svg>
+    </div>
+
+    <!-- 代理设置面板 -->
+    <div class="proxy-panel" id="proxyPanel">
+        <div class="proxy-panel-header">
+            <span>代理设置</span>
+            <button class="proxy-close-btn" id="proxyCloseBtn">×</button>
+        </div>
+        <div class="proxy-panel-content">
+            <div class="proxy-switch-row">
+                <span>启用代理</span>
+                <label class="proxy-switch">
+                    <input type="checkbox" id="proxyEnabledSwitch" checked>
+                    <span class="proxy-slider"></span>
+                </label>
+            </div>
+            <div class="proxy-url-row">
+                <label for="proxyUrlInput">代理地址:</label>
+                <input type="text" id="proxyUrlInput" placeholder="https://ghfast.top" />
+            </div>
+            <div class="proxy-panel-footer">
+                <button class="proxy-save-btn" id="proxySaveBtn">保存</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 自定义确认对话框 -->
     <div class="custom-confirm" id="customConfirm">
         <div class="confirm-dialog">
@@ -769,6 +1002,12 @@
         const messageButton = document.getElementById('messageButton');
         const versionText = document.getElementById('versionText');
         const updateBtn = document.getElementById('updateBtn');
+        const proxySettingsBtn = document.getElementById('proxySettingsBtn');
+        const proxyPanel = document.getElementById('proxyPanel');
+        const proxyCloseBtn = document.getElementById('proxyCloseBtn');
+        const proxyEnabledSwitch = document.getElementById('proxyEnabledSwitch');
+        const proxyUrlInput = document.getElementById('proxyUrlInput');
+        const proxySaveBtn = document.getElementById('proxySaveBtn');
         
         let historyData = [];
         let confirmCallback = null;
@@ -1254,10 +1493,75 @@
             }
         });
 
+        // 代理设置相关函数
+        function initProxySettings() {
+            // 获取当前代理设置
+            ipcRenderer.send('get-download-proxy');
+        }
+
+        function toggleProxyPanel() {
+            proxyPanel.classList.toggle('show');
+        }
+
+        function closeProxyPanel() {
+            proxyPanel.classList.remove('show');
+        }
+
+        function saveProxySettings() {
+            const enabled = proxyEnabledSwitch.checked;
+            const proxyUrl = proxyUrlInput.value.trim();
+            
+            ipcRenderer.send('set-download-proxy', { 
+                enabled: enabled,
+                proxyUrl: proxyUrl || 'https://ghfast.top'
+            });
+            
+            // 显示保存状态
+            const originalText = proxySaveBtn.textContent;
+            proxySaveBtn.textContent = '保存中...';
+            proxySaveBtn.disabled = true;
+            
+            // 3秒后恢复按钮状态
+            setTimeout(() => {
+                proxySaveBtn.textContent = originalText;
+                proxySaveBtn.disabled = false;
+                closeProxyPanel(); // 保存后关闭面板
+            }, 1000);
+        }
+
+        // 代理设置事件监听
+        proxySettingsBtn.addEventListener('click', toggleProxyPanel);
+        proxyCloseBtn.addEventListener('click', closeProxyPanel);
+        proxySaveBtn.addEventListener('click', saveProxySettings);
+
+        // 点击面板外部关闭面板
+        document.addEventListener('click', (e) => {
+            if (!proxyPanel.contains(e.target) && !proxySettingsBtn.contains(e.target)) {
+                closeProxyPanel();
+            }
+        });
+
+        // 监听代理设置响应
+        ipcRenderer.on('download-proxy-info', (event, data) => {
+            if (data) {
+                proxyEnabledSwitch.checked = data.enabled !== false; // 默认开启
+                proxyUrlInput.value = data.proxyUrl || 'https://ghfast.top';
+            }
+        });
+
+        ipcRenderer.on('download-proxy-set', (event, data) => {
+            if (data && data.success) {
+                console.log('代理设置保存成功');
+            } else {
+                console.error('代理设置保存失败:', data.error);
+            }
+        });
+
         // 页面加载完成后读取配置
         window.addEventListener('DOMContentLoaded', function () {
             loadConfigData();
             initVersionInfo(); // 初始化版本信息
+            initProxySettings(); // 初始化代理设置
             
             // 确保页面加载后域名输入框能够正确获取焦点
             setTimeout(() => {

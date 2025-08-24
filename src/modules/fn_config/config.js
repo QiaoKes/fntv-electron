@@ -115,11 +115,42 @@ function deleteHistoryItem({ domain, account }) {
     return false;
 }
 
+// 获取下载代理配置
+function getDownloadProxyConfig() {
+    const config = readConfig() || {};
+    return {
+        enabled: config.downloadProxyEnabled !== false, // 默认开启
+        proxyUrl: config.downloadProxy || 'https://ghfast.top'
+    };
+}
+
+// 设置下载代理配置
+function setDownloadProxyConfig({ enabled = true, proxyUrl = 'https://ghfast.top' }) {
+    const config = readConfig() || {};
+    config.downloadProxyEnabled = enabled;
+    config.downloadProxy = proxyUrl;
+    fs.writeFileSync(getConfigPath(), JSON.stringify(config, null, 2));
+}
+
+// 向后兼容的函数
+function getDownloadProxyUrl() {
+    return getDownloadProxyConfig().proxyUrl;
+}
+
+function setDownloadProxyUrl(proxyUrl) {
+    const current = getDownloadProxyConfig();
+    setDownloadProxyConfig({ enabled: current.enabled, proxyUrl });
+}
+
 module.exports = {
     saveConfig,
     readConfig,
     addHistory,
     getHistory,
     clearHistory,
-    deleteHistoryItem
+    deleteHistoryItem,
+    getDownloadProxyUrl,
+    setDownloadProxyUrl,
+    getDownloadProxyConfig,
+    setDownloadProxyConfig
 };
