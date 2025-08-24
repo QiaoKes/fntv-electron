@@ -112,14 +112,14 @@ async function playMovie(event, { id, token }) {
     // 创建播放器实例
     const player = new MpvPlayer({
         url: playUrl,
-        mpvPath: 'third_party\\mpv\\mpv.exe',
+        mpvPath: 'third_party\\fntv-mpv\\mpv.exe',
         title: title,
         headers: {
             Authorization: token,
         },
         extraArgs: [
             // '--ontop',
-            '--force-window=immediate',
+            '--force-window=immediate', // 强制窗口立即显示
             `--start=${startPosition}`, // 设置起始播放位置
             '--cache-secs=20', // 缓冲20秒，防止网络波动卡顿
             subArgs // 添加所有字幕文件参数
@@ -141,6 +141,7 @@ async function playMovie(event, { id, token }) {
         onExit: (code, progress) => {
             if (code !== 0 && code !== null) {
                 console.error(`播放器异常退出 (code ${code})`);
+                refreshWindow();
                 return;
             }
             console.log('MPV exited with code:', code);

@@ -23,6 +23,7 @@
 
 ## 更新记录
 
+* 2025.8.24 - v1.6.4 mpv配置管理抽为单独仓库，支持Anime4K着色器预设方案
 * 2025.8.23 - v1.6.3 优化mpv启动参数，固定启动时的初始窗口大小
 * 2025.8.22 - v1.6.2 修改部分快捷键为potplayer常用键位，mpv播放器改为无边框
 * 2025.8.21 - v1.6.1 修复缓存目录过大，超过100m自动清理
@@ -43,7 +44,10 @@
 
 ### 2. mpv播放器功能有点少，怎么客制化，想添加补帧滤镜等？
 
-打开你安装目录的third_party，只修改third_party\mpv\portable_config下面的插件，其余的不要动。其中input.conf是快捷键。
+1. 自动方法
+   克隆fntv-mpv仓库，自己改一下相关配置：[fntv-mpv-config](https://github.com/QiaoKes/fntv-mpv-config)
+2. 手动方法
+   打开你安装目录的third_party，只修改third_party\fntv-mpv\portable_config下面的插件，其余的不要动。其中input.conf是快捷键。
 
 注意重新安装或者更新，会清空安装目录，注意备份你的mpv插件目录。
 
@@ -79,13 +83,31 @@ go的二进制压缩会被误报。可以查看这个issue，二进制由dandanp
 
 去C:\\Users\\{你的计算机用户名}\\.fntv 下面把config.json删除了，因为连接成功后实际上加载的还是飞牛网页端，没响应当然会透明了。
 
-## ⌨️ MPV播放器快捷键
+### 10.打开弹幕视频掉帧
+
+打开弹幕时，默认开启fps平滑滤镜，比较吃性能，不需要可以去安装目录下的third_party\fntv-mpv\portable_config\script-opts下uosc_danmaku.conf关闭相关配置
+
+### 11.双显卡，调用时发现使用核显
+
+以下两种方法任选其一：
+
+1) NVIDIA控制面板-管理3D设置-程序设置-添加飞牛影视-应用
+2) 设置-系统-屏幕-图形显示-添加飞牛影视-选择高性能
+
+## ⌨️ MPV播放器
+
+1. 快捷键
 
 ```text
 部分快捷键兼容potpolyer
 查看安装目录下
-third_party\mpv\portable_config\input.conf
+third_party\fntv-mpv\portable_config\input.conf
 ```
+
+2. MPV配置由以下仓库单独管理:
+   [fntv-mpv-config](https://github.com/QiaoKes/fntv-mpv-config)
+3. 预设着色器方案
+   [mpv.conf](https://github.com/QiaoKes/fntv-mpv-config/blob/release/custom_config/mpv/mpv.conf)
 
 ## 🙏 特别感谢
 
@@ -120,29 +142,39 @@ third_party\mpv\portable_config\input.conf
 ```bash
 git clone https://github.com/QiaoKes/fntv-electron.git
 cd fntv-electron
-# 下载https://github.com/QiaoKes/fntv-electron/releases中的third_party.zip
-#解压到third_party中
+# 下载https://github.com/QiaoKes/fntv-electron/releases/tag/v0.0.0中的electron-v36.2.1-patch-win32-x64.zip
+#解压到third_party中的electron文件夹中
 ```
 
-2. 安装依赖：
+2. 下载第三方依赖
+
+```bash
+# Windows
+# 1.下载https://github.com/QiaoKes/fntv-electron/releases/tag/v0.0.0中的electron-v36.2.1-patch-win32-x64.zip
+# 解压到third_party中的electron文件夹中
+# 2.下载https://github.com/QiaoKes/fntv-mpv-config/releases
+# 解压到third_party中的fntv-mpv文件夹中
+```
+
+3. 安装依赖：
 
 ```bash
 npm i
 ```
 
-3. 运行开发模式：
+4. 运行开发模式：
 
 ```bash
 npm start
 ```
 
-4. 构建安装包：
+5. 构建安装包：
 
 ```bash
 # Windows
 # 进入到C:\Users\{your_user_name}\AppData\Local\electron\Cache
 # 创建文件夹b3ef7c180a968a1775be99205920d296f99e12cd36db5a1b9a5a2a3bb292f8ae
-# 将third_party下的electron-v36.2.1-patch-win32-x64.zip拷贝到文件夹内
+# 将electron-v36.2.1-patch-win32-x64.zip拷贝到文件夹内
 npm run build
 ```
 
