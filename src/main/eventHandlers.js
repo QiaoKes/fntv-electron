@@ -5,6 +5,7 @@ const MpvPlayer = require('../modules/mpv/mpv');
 const fn = require('../modules/fn_api/api');
 const { restoreCookies } = require('../modules/fn_config/cookie');
 const fnConfig = require('../modules/fn_config/config');
+const UpdateChecker = require('../modules/updater/updateChecker');
 
 async function refreshWindow() {
     const focusedWindow = BrowserWindow.getFocusedWindow()
@@ -301,6 +302,35 @@ function handleLogin() {
     });
 }
 
+// 创建更新检查器实例
+const updateChecker = new UpdateChecker();
+
+// 处理手动检查更新
+function handleCheckUpdate() {
+    ipcMain.on('check-update', async (event) => {
+        console.log('收到手动检查更新请求');
+        await updateChecker.manualCheckForUpdates();
+    });
+}
+
+// 处理自动检查更新
+function handleAutoCheckUpdate() {
+    ipcMain.on('auto-check-update', async (event) => {
+        console.log('收到自动检查更新请求');
+        await updateChecker.autoCheckForUpdates();
+    });
+}
+
+// 获取当前版本信息
+function handleGetVersion() {
+    ipcMain.on('get-version', (event) => {
+        event.reply('version-info', {
+            version: app.getVersion(),
+            name: app.getName()
+        });
+    });
+}
+
 // 注册所有IPC处理器的聚合函数
 function registerIpcHandlers() {
     handleLogin();
@@ -308,8 +338,12 @@ function registerIpcHandlers() {
     handleMaximize();
     handleClose();
     handlePlayMovie();
+    handleCheckUpdate();
+    handleAutoCheckUpdate();
+    handleGetVersion();
 }
 
 module.exports = {
     registerIpcHandlers,
+    updateChecker,
 };

@@ -203,6 +203,47 @@
             background-color: #2856c4;
         }
 
+        /* 版本信息样式 */
+        .version-info {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .version-text {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .update-btn {
+            padding: 6px 12px;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .update-btn:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .update-btn:active {
+            transform: translateY(1px);
+        }
+
+        .update-btn.checking {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
         input.error {
             border: 1px solid red !important;
             /* 输入框红色边框 */
@@ -678,6 +719,12 @@
             <span class="switch-label">HTTPS安全访问</span>
         </div>
         <button class="login-btn" id="loginBtn" disabled>登录</button>
+        
+        <!-- 版本信息和更新检查 -->
+        <div class="version-info">
+            <div class="version-text" id="versionText">版本 1.6.4</div>
+            <button class="update-btn" id="updateBtn" title="检查更新">检查更新</button>
+        </div>
     </div>
 
     <!-- 自定义确认对话框 -->
@@ -720,6 +767,8 @@
         const messageTitle = document.getElementById('messageTitle');
         const messageContent = document.getElementById('messageContent');
         const messageButton = document.getElementById('messageButton');
+        const versionText = document.getElementById('versionText');
+        const updateBtn = document.getElementById('updateBtn');
         
         let historyData = [];
         let confirmCallback = null;
@@ -1169,9 +1218,46 @@
             return false;
         });
 
+        // 更新检查相关函数
+        function initVersionInfo() {
+            // 获取版本信息
+            ipcRenderer.send('get-version');
+        }
+
+        function handleUpdateCheck() {
+            const btn = updateBtn;
+            const originalText = btn.textContent;
+            
+            // 设置检查中状态
+            btn.textContent = '检查中...';
+            btn.classList.add('checking');
+            btn.disabled = true;
+            
+            // 发送检查更新请求
+            ipcRenderer.send('check-update');
+            
+            // 5秒后恢复按钮状态（防止无响应）
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.classList.remove('checking');
+                btn.disabled = false;
+            }, 5000);
+        }
+
+        // 更新按钮点击事件
+        updateBtn.addEventListener('click', handleUpdateCheck);
+
+        // 监听版本信息
+        ipcRenderer.on('version-info', (event, data) => {
+            if (data && data.version) {
+                versionText.textContent = `版本 ${data.version}`;
+            }
+        });
+
         // 页面加载完成后读取配置
         window.addEventListener('DOMContentLoaded', function () {
             loadConfigData();
+            initVersionInfo(); // 初始化版本信息
             
             // 确保页面加载后域名输入框能够正确获取焦点
             setTimeout(() => {
