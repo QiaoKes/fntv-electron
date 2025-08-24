@@ -23,6 +23,7 @@
 
 ## 更新记录
 
+* 2025.8.24 - v1.6.4 mpv配置管理抽为单独仓库，支持Anime4K着色器预设方案
 * 2025.8.23 - v1.6.3 优化mpv启动参数，固定启动时的初始窗口大小
 * 2025.8.22 - v1.6.2 修改部分快捷键为potplayer常用键位，mpv播放器改为无边框
 * 2025.8.21 - v1.6.1 修复缓存目录过大，超过100m自动清理
@@ -82,6 +83,17 @@ go的二进制压缩会被误报。可以查看这个issue，二进制由dandanp
 
 去C:\\Users\\{你的计算机用户名}\\.fntv 下面把config.json删除了，因为连接成功后实际上加载的还是飞牛网页端，没响应当然会透明了。
 
+### 10.打开弹幕视频掉帧
+
+打开弹幕时，默认开启fps平滑滤镜，比较吃性能，不需要可以去安装目录下的third_party\fntv-mpv\portable_config\script-opts下uosc_danmaku.conf关闭相关配置
+
+### 11.双显卡，调用时发现使用核显
+
+以下两种方法任选其一：
+
+1) NVIDIA控制面板-管理3D设置-程序设置-添加飞牛影视-应用
+2) 设置-系统-屏幕-图形显示-添加飞牛影视-选择高性能
+
 ## ⌨️ MPV播放器
 
 1. 快捷键
@@ -94,6 +106,8 @@ third_party\fntv-mpv\portable_config\input.conf
 
 2. MPV配置由以下仓库单独管理:
    [fntv-mpv-config](https://github.com/QiaoKes/fntv-mpv-config)
+3. 预设着色器方案
+   [mpv.conf](https://github.com/QiaoKes/fntv-mpv-config/blob/release/custom_config/mpv/mpv.conf)
 
 ## 🙏 特别感谢
 
