@@ -4,41 +4,162 @@ const { registerHook } = require('../core/hooks');
 const log = require('../logger');
 const { getCookie } = require('../core/utils');
 
+// 尝试通过执行原有逻辑获取 item_guid
+function tryGetItemGuidFromOriginalLogic(button) {
+    return new Promise((resolve) => {
+        try {
+            // 创建一个临时的网络请求拦截器
+            const originalFetch = window.fetch;
+            const originalXHROpen = XMLHttpRequest.prototype.open;
+            const originalXHRSend = XMLHttpRequest.prototype.send;
+            
+            let interceptedGuid = null;
+            const timeout = setTimeout(() => {
+                // 恢复原有方法
+                window.fetch = originalFetch;
+                XMLHttpRequest.prototype.open = originalXHROpen;
+                XMLHttpRequest.prototype.send = originalXHRSend;
+                resolve(null);
+            }, 2000);
+            
+            // 拦截 fetch 请求
+            window.fetch = function(url, options) {
+                log.info('Intercepted fetch request:', url, options);
+                if (url.includes('/api/v1/play/info') && options && options.body) {
+                    try {
+                        const body = JSON.parse(options.body);
+                        if (body.item_guid) {
+                            interceptedGuid = body.item_guid;
+                            log.info('Found item_guid in fetch request:', interceptedGuid);
+                        }
+                    } catch (e) {
+                        log.error('Error parsing fetch body:', e);
+                    }
+                }
+                // 不执行实际的播放请求，直接返回一个假的 Promise
+                if (url.includes('/api/v1/play/info')) {
+                    return Promise.resolve({
+                        ok: false,
+                        status: 200,
+                        json: () => Promise.resolve({ success: false, message: 'Intercepted for guid extraction' })
+                    });
+                }
+                return originalFetch.apply(this, arguments);
+            };
+            
+            // 拦截 XMLHttpRequest
+            XMLHttpRequest.prototype.open = function(method, url) {
+                this._url = url;
+                return originalXHROpen.apply(this, arguments);
+            };
+            
+            XMLHttpRequest.prototype.send = function(data) {
+                if (this._url && this._url.includes('/api/v1/play/info') && data) {
+                    try {
+                        const parsedData = JSON.parse(data);
+                        if (parsedData.item_guid) {
+                            interceptedGuid = parsedData.item_guid;
+                            log.info('Found item_guid in XHR request:', interceptedGuid);
+                        }
+                    } catch (e) {
+                        log.error('Error parsing XHR data:', e);
+                    }
+                    // 不发送实际请求，模拟一个错误响应
+                    setTimeout(() => {
+                        if (this.onreadystatechange) {
+                            this.readyState = 4;
+                            this.status = 404;
+                            this.responseText = JSON.stringify({ success: false, message: 'Intercepted for guid extraction' });
+                            this.onreadystatechange();
+                        }
+                    }, 100);
+                    return;
+                }
+                return originalXHRSend.apply(this, arguments);
+            };
+            
+            // 触发原有点击事件
+            button.setAttribute('data-allow-original-play', 'true');
+            setTimeout(() => {
+                const clickEvent = new MouseEvent('click', {
+                    view: window,
+                    bubbles: true,
+                    cancelable: true
+                });
+                button.dispatchEvent(clickEvent);
+                
+                // 检查是否获取到了 guid
+                setTimeout(() => {
+                    clearTimeout(timeout);
+                    // 恢复原有方法
+                    window.fetch = originalFetch;
+                    XMLHttpRequest.prototype.open = originalXHROpen;
+                    XMLHttpRequest.prototype.send = originalXHRSend;
+                    button.removeAttribute('data-allow-original-play');
+                    resolve(interceptedGuid);
+                }, 1000);
+            }, 50);
+            
+        } catch (error) {
+            log.error('Error in tryGetItemGuidFromOriginalLogic:', error);
+            resolve(null);
+        }
+    });
+}
+
+// 从DOM获取id
+function getItemGuidFromDOM(button) {
+    try {
+        // 检查按钮父元素中的 A 标签 href
+        let parent = button.parentElement;
+        while (parent && parent !== document.body) {
+            if (parent.tagName === 'A' && parent.href) {
+                // 匹配32位十六进制字符串
+                const guidMatch = parent.href.match(/([a-f0-9]{32})/i);
+                if (guidMatch && guidMatch[1]) {
+                    log.info('Found guid from href:', guidMatch[1]);
+                    return guidMatch[1];
+                }
+            }
+            parent = parent.parentElement;
+        }
+        
+        // 如果A标签中没有找到，检查当前URL
+        const url = window.location.href;
+        const urlMatch = url.match(/([a-f0-9]{32})/i);
+        if (urlMatch && urlMatch[1]) {
+            log.info('Found guid from URL:', urlMatch[1]);
+            return urlMatch[1];
+        }
+        
+        return null;
+        
+    } catch (error) {
+        log.error('Error extracting guid from DOM:', error);
+        return null;
+    }
+}
 // 发送播放信息到主进程
-function sendPlayEventToMain() {
-    const url = window.location.href;
-    log.info('Current URL:', url);
-
-    // 更好的ID提取逻辑
+function sendPlayEventToMain(button = null) {
     let id = '';
-
-    // 尝试从URL路径中提取ID
-    if (url.includes('/play/')) {
-        // 提取 /play/ 后面的部分
-        const match = url.match(/\/play\/([^\/\?#]+)/);
-        if (match && match[1]) {
-            id = match[1];
-        }
+    
+    // 尝试从DOM中获取guid
+    if (button) {
+        id = getItemGuidFromDOM(button);
     }
-
-    // 如果还是没有找到ID，尝试其他模式
+    
     if (!id) {
-        // 尝试从URL的最后一段提取（排除查询参数）
-        const urlPath = url.split('?')[0]; // 移除查询参数
-        const pathSegments = urlPath.split('/').filter(segment => segment.length > 0);
-        if (pathSegments.length > 0) {
-            id = pathSegments[pathSegments.length - 1];
-        }
+        return null; // 返回 null 表示需要使用拦截方法
     }
-
+    
     const token = getCookie('Trim-MC-token');
-
-    log.info('Extracted ID:', id, 'Token:', token);
 
     if (id && token) {
         ipcRenderer.send('play-movie', { id, token });
+        return id;
     } else {
         log.error('Failed to extract ID or token. ID:', id, 'Token:', token);
+        return null;
     }
 }
 
@@ -230,10 +351,32 @@ function createPlayModal(originalButton) {
         }
     });
 
-    mpvPlayBtn.addEventListener('click', () => {
+    mpvPlayBtn.addEventListener('click', async () => {
         modalOverlay.remove();
-        sendPlayEventToMain();
         log.info('用户选择了MPV播放');
+        
+        // 先尝试简化的 DOM 方法
+        const domResult = sendPlayEventToMain(originalButton);
+        
+        if (!domResult) {
+            // DOM 方法失败，使用拦截方法作为 fallback
+            log.info('DOM method failed, trying original logic interception...');
+            const itemGuid = await tryGetItemGuidFromOriginalLogic(originalButton);
+            
+            if (itemGuid) {
+                log.info('Successfully obtained item_guid from original logic:', itemGuid);
+                const token = getCookie('Trim-MC-token');
+                if (token) {
+                    ipcRenderer.send('play-movie', { id: itemGuid, token });
+                } else {
+                    log.error('No token found');
+                }
+            } else {
+                log.error('All methods failed to get item_guid');
+            }
+        } else {
+            log.info('Successfully used DOM method to get item_guid');
+        }
     });
 
     cancelBtn.addEventListener('click', () => {
