@@ -2,10 +2,12 @@ const { logger } = require('./logger');
 
 /**
  * 简化的日志接口，替换console的使用
+ * 自动进行数据脱敏，对使用者完全透明
  * 用法：
  * const log = require('./path/to/logger');
  * log.info('这是一条信息');
  * log.error('这是一个错误', error);
+ * log.debug('用户信息:', { username: 'admin', password: '123456' }); // 密码会被自动脱敏
  */
 module.exports = {
     debug: (...args) => logger.debug(...args),
@@ -22,5 +24,20 @@ module.exports = {
     
     // 获取日志相关信息
     getLogFile: () => logger.getCurrentLogFile(),
-    getLogDir: () => logger.getLogDir()
+    getLogDir: () => logger.getLogDir(),
+    
+    // 方便的方法别名
+    d: (...args) => logger.debug(...args),   // debug简写
+    i: (...args) => logger.info(...args),    // info简写
+    w: (...args) => logger.warn(...args),    // warn简写
+    e: (...args) => logger.error(...args),   // error简写
+    
+    // 专门的错误日志方法（自动格式化错误对象）
+    logError: (message, error, ...extraArgs) => {
+        if (error instanceof Error) {
+            logger.error(message, error, ...extraArgs);
+        } else {
+            logger.error(message, error, ...extraArgs);
+        }
+    }
 };

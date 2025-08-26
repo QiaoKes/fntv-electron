@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { logConfig, getLogLevel, LogLevel } = require('./config');
+const { maskLogArguments, maskError } = require('./masking');
 
 // 尝试获取app模块，在非Electron环境中可能失败
 let app;
@@ -148,11 +149,16 @@ class Logger {
     formatMessage(level, message, ...args) {
         const timestamp = new Date().toISOString();
         const levelName = LogLevelNames[level];
-        const formattedArgs = args.length > 0 ? ' ' + args.map(arg => 
+        
+        // 对参数进行脱敏处理
+        const maskedArgs = maskLogArguments(message, ...args);
+        const [maskedMessage, ...restMaskedArgs] = maskedArgs;
+        
+        const formattedArgs = restMaskedArgs.length > 0 ? ' ' + restMaskedArgs.map(arg => 
             typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
         ).join(' ') : '';
         
-        return `[${timestamp}] [${levelName}] ${message}${formattedArgs}`;
+        return `[${timestamp}] [${levelName}] ${maskedMessage}${formattedArgs}`;
     }
 
     /**
@@ -225,7 +231,15 @@ class Logger {
      * Error级别日志
      */
     error(message, ...args) {
-        this.log(LogLevel.ERROR, message, ...args);
+        // 特殊处理错误对象
+        const processedArgs = args.map(arg => {
+            if (arg instanceof Error) {
+                return maskError(arg);
+            }
+            return arg;
+        });
+        
+        this.log(LogLevel.ERROR, message, ...processedArgs);
     }
 
     /**

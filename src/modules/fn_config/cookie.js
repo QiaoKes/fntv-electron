@@ -44,7 +44,7 @@ async function restoreCookies(domain, token) {
         });
         
         if (cookies && cookies.length > 0) {
-            log.info('Cookie 恢复成功，验证通过:', cookies[0].name, '=', cookies[0].value.substring(0, 10) + '...');
+            log.info('Cookie 恢复成功，验证通过:', cookies[0].name, '=', cookies[0].value);
             return true;
         } else {
             log.error('Cookie 恢复失败：验证未通过，未找到设置的cookie');

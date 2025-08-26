@@ -62,7 +62,7 @@ function createMainWindow() {
             ]
         },
         (details, callback) => {
-            console.log('检测到登录请求，清空登录信息并跳转到登录页面');
+            log.info('检测到登录请求，清空登录信息并跳转到登录页面');
             // 清空配置cookie
             clearLoginCookies();
             // 取消请求
@@ -81,7 +81,7 @@ function createMainWindow() {
             ]
         },
         (details, callback) => {
-            console.log('检测到登出请求，清空登录信息并跳转到登录页面');
+            log.info('检测到登出请求，清空登录信息并跳转到登录页面');
             // 清空配置cookie
             clearLoginCookies();
             // 取消请求
@@ -114,7 +114,7 @@ function createMainWindow() {
     // 检查配置中是否有已保存的登录信息
     if (savedConfig && savedConfig.token && savedConfig.domain) {
         // 恢复 cookie 并跳转到对应的 URL
-        console.log('恢复登录状态，跳转到主页面, domain:', savedConfig.domain, ' token:', savedConfig.token);
+        log.info('恢复登录状态，跳转到主页面, domain:', savedConfig.domain, ' token:', savedConfig.token);
         // 恢复 cookie
         restoreCookies(savedConfig.domain, savedConfig.token).then(() => {
             mainWindow.loadURL(`${savedConfig.domain}/v`);
@@ -139,7 +139,7 @@ function setupWindowShowEvents(mainWindow) {
  * 清空登录信息和Cookie
  */
 function clearLoginCookies() {
-    console.log('清空登录信息和Cookie');
+    log.info('清空登录信息和Cookie');
 
     // 清空配置中保存的token
     const config = readConfig() || {};
@@ -151,7 +151,7 @@ function clearLoginCookies() {
             token: '',
             useHttps: config.useHttps
         });
-        console.log('已清空配置中的登录token');
+        log.info('已清空配置中的登录token');
     }
 
     // 清除会话中的cookie
@@ -159,9 +159,9 @@ function clearLoginCookies() {
     ses.clearStorageData({
         storages: ['cookies']
     }).then(() => {
-        console.log('会话Cookie已清除');
+        log.info('会话Cookie已清除');
     }).catch(err => {
-        console.error('清除Cookie失败:', err);
+        log.error('清除Cookie失败:', err);
     });
 }
 

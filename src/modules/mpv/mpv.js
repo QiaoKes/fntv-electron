@@ -112,11 +112,6 @@ class MpvPlayer {
         this.playerProcess.stdout.on('data', (data) => {
             const output = data.toString().trim();
 
-            // 调试输出
-            // if (this.config.debug && output) {
-            //     console.log(`[MPV] ${output}`);
-            // }
-
             // 尝试解析进度数据
             const progressData = MpvPlayer.parseVideoData(output);
             if (progressData) {
