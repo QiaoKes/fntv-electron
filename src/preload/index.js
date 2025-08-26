@@ -1,7 +1,17 @@
 const fs = require('fs');
 const path = require('path');
+const { contextBridge } = require('electron');
 
 const { runHooks } = require('./core/hooks.js');
+
+// 导入渲染进程日志模块
+const preloadLogger = require('./logger');
+
+// 暴露日志接口到渲染进程
+contextBridge.exposeInMainWorld('log', preloadLogger);
+
+// 为了向后兼容，也暴露为logger
+contextBridge.exposeInMainWorld('logger', preloadLogger);
 
 // 自动加载插件
 const pluginsDir = path.join(__dirname, 'plugins');

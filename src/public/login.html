@@ -985,44 +985,9 @@
     <script>
         const { ipcRenderer } = require('electron'); // 渲染进程可用
         
-        // 渲染进程日志工具
-        const log = {
-            debug: (...args) => {
-                try {
-                    ipcRenderer.invoke('log-message', 'debug', ...args);
-                } catch (error) {
-                    console.debug(...args);
-                }
-            },
-            info: (...args) => {
-                try {
-                    ipcRenderer.invoke('log-message', 'info', ...args);
-                } catch (error) {
-                    console.info(...args);
-                }
-            },
-            warn: (...args) => {
-                try {
-                    ipcRenderer.invoke('log-message', 'warn', ...args);
-                } catch (error) {
-                    console.warn(...args);
-                }
-            },
-            error: (...args) => {
-                try {
-                    ipcRenderer.invoke('log-message', 'error', ...args);
-                } catch (error) {
-                    console.error(...args);
-                }
-            },
-            log: (...args) => {
-                try {
-                    ipcRenderer.invoke('log-message', 'info', ...args);
-                } catch (error) {
-                    console.log(...args);
-                }
-            }
-        };
+        // 简化的日志接口 - 完全透明使用
+        // 不再需要手动发送IPC，直接使用即可
+        // window.log 已经通过 contextBridge 暴露，会自动处理IPC通信和数据脱敏
         
         const loginBtn = document.getElementById('loginBtn');
         const domainInput = document.getElementById('domain');
@@ -1178,7 +1143,7 @@
                     domainInput.setSelectionRange(len, len);
                 }
             } catch (error) {
-                log.error('恢复焦点失败:', error);
+                window.log.error('恢复焦点失败:', error);
             }
         }
 
@@ -1235,7 +1200,7 @@
             const password = passwordInput.value.trim();
             const useHttps = document.getElementById('httpsSwitch').checked;
 
-            log.info('登录信息:', { domain, username, password, useHttps });
+            window.log.info('登录信息:', { domain, username, password, useHttps });
             
             const loginData = {
                 domain: domain,
@@ -1591,9 +1556,9 @@
 
         ipcRenderer.on('download-proxy-set', (event, data) => {
             if (data && data.success) {
-                log.info('代理设置保存成功');
+                window.log.info('代理设置保存成功');
             } else {
-                log.error('代理设置保存失败:', data.error);
+                window.log.error('代理设置保存失败:', data.error);
             }
         });
 

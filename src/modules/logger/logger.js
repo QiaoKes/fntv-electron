@@ -144,10 +144,29 @@ class Logger {
     }
 
     /**
+     * 格式化北京时间
+     */
+    formatBeijingTime() {
+        const now = new Date();
+        // 北京时间 = UTC + 8小时
+        const beijingTime = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+        
+        const year = beijingTime.getUTCFullYear();
+        const month = String(beijingTime.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(beijingTime.getUTCDate()).padStart(2, '0');
+        const hours = String(beijingTime.getUTCHours()).padStart(2, '0');
+        const minutes = String(beijingTime.getUTCMinutes()).padStart(2, '0');
+        const seconds = String(beijingTime.getUTCSeconds()).padStart(2, '0');
+        const milliseconds = String(beijingTime.getUTCMilliseconds()).padStart(3, '0');
+        
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}`;
+    }
+
+    /**
      * 格式化日志消息
      */
     formatMessage(level, message, ...args) {
-        const timestamp = new Date().toISOString();
+        const timestamp = this.formatBeijingTime();
         const levelName = LogLevelNames[level];
         
         // 对参数进行脱敏处理
