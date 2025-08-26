@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { initAppHooks } = require('./core/appHook');
+const { initSessionInterceptor } = require('./core/interceptor');
 const { getInstance: getUpdateChecker } = require('../../modules/updater/updateChecker');
 const log = require('../../modules/logger');
 
@@ -41,9 +42,13 @@ function loadPlugins() {
 }
 
 /**
- * 注册所有IPC处理器的聚合函数
+ * 注册所有插件
+ * @param {string} sessionPartition - session 分区名称
  */
-function registerAllPlugins() {
+function registerAllPlugins(sessionPartition) {
+    // 初始化 session 拦截器
+    initSessionInterceptor(sessionPartition);
+    
     // 初始化应用钩子
     initAppHooks();
     

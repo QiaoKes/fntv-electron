@@ -48,9 +48,6 @@ if (!gotTheLock) {
         // 设置全屏切换
         setupFullScreenToggle(mainWindow);
 
-        // 注册 IPC 事件处理程序
-        registerAllPlugins();
-
         // 设置窗口显示事件
         setupWindowShowEvents(mainWindow);
 

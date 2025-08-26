@@ -3,34 +3,15 @@ const path = require('path');
 const { restoreCookies } = require('../modules/fn_config/cookie');
 const { readConfig, saveConfig } = require('../modules/fn_config/config');
 const log = require('../modules/logger');
+const { registerAllPlugins } = require('./handlers');
 
 let mainWindow;
 
-function createMainWindow() {
-    // 创建窗口
-    mainWindow = new BrowserWindow({
-        width: 1400,
-        height: 800,
-        minWidth: 800,
-        minHeight: 800,
-        autoHideMenuBar: true,
-        show: false,
-        icon: path.join(__dirname, '../build/icon.ico'),
-        frame: false,
-        transparent: true,
-        webPreferences: {
-            webgl: true,
-            partition: 'persist:fntv',
-            preload: path.join(__dirname, '../preload/index.js'),
-            nodeIntegration: true,   // 开启 Node.js 支持
-            contextIsolation: false,  // 如果 preload 里要直接改 DOM，通常要关掉
-            spellcheck: false,  // 禁用拼写检查，避免输入法干扰
-        }
-    });
-
-    // 初始化 session
-    const ses = session.fromPartition('persist:fntv');
-
+/**
+ * 设置缓存管理
+ * @param {Electron.Session} ses - session 实例
+ */
+function setupCacheManagement(ses) {
     // 检查并清理缓存的函数
     const checkAndClearCache = async () => {
         try {
@@ -52,44 +33,37 @@ function createMainWindow() {
 
     // 后续每6小时执行一次
     setInterval(checkAndClearCache, 6 * 60 * 60 * 1000);
+}
 
-    // 拦截登录请求到自定义登录页面
-    ses.webRequest.onBeforeRequest(
-        {
-            urls: [
-                'http://*/v/login',
-                'https://*/v/login'
-            ]
-        },
-        (details, callback) => {
-            log.info('检测到登录请求，清空登录信息并跳转到登录页面');
-            // 清空配置cookie
-            clearLoginCookies();
-            // 取消请求
-            callback({ cancel: true });
-            // 加载自定义页面
-            mainWindow.loadFile(path.join(__dirname, '../public/login.html'));
+function createMainWindow() {
+    const partition = 'persist:fntv';
+    // 创建窗口
+    mainWindow = new BrowserWindow({
+        width: 1400,
+        height: 800,
+        minWidth: 800,
+        minHeight: 800,
+        autoHideMenuBar: true,
+        show: false,
+        icon: path.join(__dirname, '../build/icon.ico'),
+        frame: false,
+        transparent: true,
+        webPreferences: {
+            webgl: true,
+            partition: partition,
+            preload: path.join(__dirname, '../preload/index.js'),
+            nodeIntegration: true,   // 开启 Node.js 支持
+            contextIsolation: false,  // 如果 preload 里要直接改 DOM，通常要关掉
+            spellcheck: false,  // 禁用拼写检查，避免输入法干扰
         }
-    );
+    });
 
-    // 拦截登出请求
-    ses.webRequest.onBeforeRequest(
-        {
-            urls: [
-                'http://*/v/api/v1/user/logout',
-                'https://*/v/api/v1/user/logout'
-            ]
-        },
-        (details, callback) => {
-            log.info('检测到登出请求，清空登录信息并跳转到登录页面');
-            // 清空配置cookie
-            clearLoginCookies();
-            // 取消请求
-            callback({ cancel: true });
-            // 加载自定义页面
-            mainWindow.loadFile(path.join(__dirname, '../public/login.html'));
-        }
-    );
+    // 注册 IPC 事件处理程序
+    registerAllPlugins(partition);
+
+    // 初始化 session 和缓存管理
+    const ses = session.fromPartition('persist:fntv');
+    setupCacheManagement(ses);
 
     // 禁用输入法相关功能
     mainWindow.webContents.on('dom-ready', () => {
@@ -133,36 +107,6 @@ function getMainWindow() {
 
 function setupWindowShowEvents(mainWindow) {
     mainWindow.once('ready-to-show', () => mainWindow.show());
-}
-
-/**
- * 清空登录信息和Cookie
- */
-function clearLoginCookies() {
-    log.info('清空登录信息和Cookie');
-
-    // 清空配置中保存的token
-    const config = readConfig() || {};
-    if (config.token || config.domain) {
-        // 保留domain和useHttps但清空token
-        saveConfig({
-            account: config.account,
-            domain: config.domain,
-            token: '',
-            useHttps: config.useHttps
-        });
-        log.info('已清空配置中的登录token');
-    }
-
-    // 清除会话中的cookie
-    const ses = session.fromPartition('persist:fntv');
-    ses.clearStorageData({
-        storages: ['cookies']
-    }).then(() => {
-        log.info('会话Cookie已清除');
-    }).catch(err => {
-        log.error('清除Cookie失败:', err);
-    });
 }
 
 module.exports = {
