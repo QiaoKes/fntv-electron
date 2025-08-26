@@ -1,19 +1,20 @@
 const { session } = require('electron');
+const log = require('../logger');
 
 // 从配置恢复 cookies
 async function restoreCookies(domain, token) {
     if (!token) {
-        console.log('没有已保存的登录信息，跳过恢复 cookies');
+        log.info('没有已保存的登录信息，跳过恢复 cookies');
         return false;
     }
 
     if (!domain || typeof domain !== 'string' || !domain.startsWith('http')) {
-        console.log('无效的域名格式:', domain);
+        log.warn('无效的域名格式:', domain);
         return false;
     }
 
     // 使用 token 设置 cookie
-    console.log('从配置中恢复 cookies，domain:', domain, 'token长度:', token.length);
+    log.info('从配置中恢复 cookies，domain:', domain, 'token长度:', token.length);
 
     const ses = session.fromPartition('persist:fntv');
     // 根据登录接口返回的 token 格式设置相应的 cookie
@@ -43,14 +44,14 @@ async function restoreCookies(domain, token) {
         });
         
         if (cookies && cookies.length > 0) {
-            console.log('Cookie 恢复成功，验证通过:', cookies[0].name, '=', cookies[0].value.substring(0, 10) + '...');
+            log.info('Cookie 恢复成功，验证通过:', cookies[0].name, '=', cookies[0].value.substring(0, 10) + '...');
             return true;
         } else {
-            console.error('Cookie 恢复失败：验证未通过，未找到设置的cookie');
+            log.error('Cookie 恢复失败：验证未通过，未找到设置的cookie');
             return false;
         }
     } catch (error) {
-        console.error('Cookie 设置失败:', error);
+        log.error('Cookie 设置失败:', error);
         return false;
     }
 }

@@ -1,6 +1,7 @@
 const axios = require('axios');
 const { dialog, shell } = require('electron');
 const { getDownloadProxyConfig } = require('../fn_config/config');
+const log = require('../logger');
 
 // 尝试获取app模块，在非Electron环境中可能失败
 let app;
@@ -35,7 +36,7 @@ class UpdateChecker {
      */
     async checkForUpdates() {
         try {
-            console.log(`检查更新: 当前版本 ${this.currentVersion}`);
+            log.info(`检查更新: 当前版本 ${this.currentVersion}`);
             
             const response = await axios.get(this.githubApiUrl, {
                 timeout: 10000,
@@ -48,7 +49,7 @@ class UpdateChecker {
             const latestVersion = release.tag_name.replace(/^v/, ''); // 移除 'v' 前缀
             const downloadUrl = this.getDownloadUrl(release.assets);
             
-            console.log(`最新版本: ${latestVersion}`);
+            log.info(`最新版本: ${latestVersion}`);
             
             // 使用 semver 比较版本，如果没有semver则使用简单比较
             let hasUpdate;
@@ -68,7 +69,7 @@ class UpdateChecker {
                 htmlUrl: release.html_url
             };
         } catch (error) {
-            console.error('检查更新失败:', error.message);
+            log.error('检查更新失败:', error.message);
             throw new Error(`检查更新失败: ${error.message}`);
         }
     }
@@ -139,15 +140,15 @@ class UpdateChecker {
                 // 如果原始URL包含github.com，则使用代理
                 if (originalUrl.includes('github.com')) {
                     const proxiedUrl = `${proxyConfig.proxyUrl.replace(/\/$/, '')}/${originalUrl}`;
-                    console.log(`使用代理下载链接: ${proxiedUrl}`);
+                    log.info(`使用代理下载链接: ${proxiedUrl}`);
                     return proxiedUrl;
                 }
             }
         } catch (error) {
-            console.log('获取代理配置失败，使用原始下载链接:', error.message);
+            log.warn('获取代理配置失败，使用原始下载链接:', error.message);
         }
         
-        console.log(`使用原始下载链接: ${originalUrl}`);
+        log.info(`使用原始下载链接: ${originalUrl}`);
         return originalUrl;
     }
 
@@ -221,13 +222,13 @@ class UpdateChecker {
             const updateInfo = await this.checkForUpdates();
             
             if (updateInfo.hasUpdate) {
-                console.log('发现新版本，显示更新提示');
+                log.info('发现新版本，显示更新提示');
                 await this.showUpdateDialog(updateInfo);
             } else {
-                console.log('当前已是最新版本');
+                log.info('当前已是最新版本');
             }
         } catch (error) {
-            console.error('自动检查更新失败:', error.message);
+            log.error('自动检查更新失败:', error.message);
             // 自动检查失败时不显示错误提示，避免打扰用户
         }
     }

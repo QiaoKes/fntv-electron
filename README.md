@@ -143,8 +143,6 @@ third_party\fntv-mpv\portable_config\input.conf
 ```bash
 git clone https://github.com/QiaoKes/fntv-electron.git
 cd fntv-electron
-# 下载https://github.com/QiaoKes/fntv-electron/releases/tag/v0.0.0中的electron-v36.2.1-patch-win32-x64.zip
-#解压到third_party中的electron文件夹中
 ```
 
 2. 下载第三方依赖

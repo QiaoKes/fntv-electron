@@ -6,6 +6,7 @@ const fn = require('../modules/fn_api/api');
 const { restoreCookies } = require('../modules/fn_config/cookie');
 const fnConfig = require('../modules/fn_config/config');
 const UpdateChecker = require('../modules/updater/updateChecker');
+const log = require('../modules/logger');
 
 async function refreshWindow() {
     const focusedWindow = BrowserWindow.getFocusedWindow()
@@ -47,11 +48,11 @@ let currentPlayer = null;
 async function playMovie(event, { id, token }) {
     // 检查是否已有播放器在播放
     if (currentPlayer && currentPlayer.isPlaying()) {
-        console.warn('已有播放器在播放，无法重复播放');
+        log.warn('已有播放器在播放，无法重复播放');
         return;
     }
 
-    console.log('Play movie event received id:', id, 'with token:', token);
+    log.info('Play movie event received id:', id, 'with token:', token);
 
     const config = fnConfig.readConfig();
     if (!config || !config.domain) {
@@ -353,6 +354,35 @@ function handleDownloadProxy() {
     });
 }
 
+// 处理渲染进程日志消息
+function handleLogMessage() {
+    ipcMain.handle('log-message', (event, level, ...args) => {
+        try {
+            // 根据级别调用对应的日志方法
+            switch (level) {
+                case 'debug':
+                    log.debug('[Renderer]', ...args);
+                    break;
+                case 'info':
+                    log.info('[Renderer]', ...args);
+                    break;
+                case 'warn':
+                    log.warn('[Renderer]', ...args);
+                    break;
+                case 'error':
+                    log.error('[Renderer]', ...args);
+                    break;
+                default:
+                    log.info('[Renderer]', ...args);
+            }
+        } catch (error) {
+            // 如果日志记录失败，至少在控制台输出
+            console.error('日志记录失败:', error);
+            console.log('[Renderer]', level, ...args);
+        }
+    });
+}
+
 // 注册所有IPC处理器的聚合函数
 function registerIpcHandlers() {
     handleLogin();
@@ -364,6 +394,7 @@ function registerIpcHandlers() {
     handleAutoCheckUpdate();
     handleGetVersion();
     handleDownloadProxy();
+    handleLogMessage();  // 添加日志处理器
 }
 
 module.exports = {

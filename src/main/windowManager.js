@@ -1,7 +1,8 @@
 const { BrowserWindow, session, ipcMain } = require('electron');
 const path = require('path');
 const { restoreCookies } = require('../modules/fn_config/cookie');
-const { readConfig, saveConfig } = require('../modules/fn_config/config')
+const { readConfig, saveConfig } = require('../modules/fn_config/config');
+const log = require('../modules/logger');
 
 let mainWindow;
 
@@ -34,15 +35,15 @@ function createMainWindow() {
     const checkAndClearCache = async () => {
         try {
             const usage = await ses.getCacheSize();
-            console.log('当前缓存使用量：', Math.round(usage / (1024 * 1024)), 'MB');
+            log.info('当前缓存使用量：', Math.round(usage / (1024 * 1024)), 'MB');
 
             // 如果超过100MB，清理缓存
             if (usage > 100 * 1024 * 1024) {
                 await ses.clearCache();
-                console.log('已清理缓存文件夹');
+                log.info('已清理缓存文件夹');
             }
         } catch (err) {
-            console.error('检查缓存使用量失败:', err);
+            log.error('检查缓存使用量失败:', err);
         }
     };
 

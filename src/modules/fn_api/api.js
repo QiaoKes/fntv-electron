@@ -4,6 +4,7 @@ const path = require('path');
 const os = require('os');
 const axios = require('axios');
 const { app } = require('electron');
+const log = require('../logger');
 
 class apiService {
     /**
@@ -64,19 +65,19 @@ class apiService {
                     }));
 
                     if (subtitles.length > 0) {
-                        console.log('获取到字幕文件:', subtitles);
+                        log.info('获取到字幕文件:', subtitles);
                         return subtitles;
                     } else {
-                        console.warn('没有找到字幕文件');
+                        log.warn('没有找到字幕文件');
                         return [];
                     }
                 } else {
-                    console.error('获取字幕列表失败:', response.message);
+                    log.error('获取字幕列表失败:', response.message);
                     return [];
                 }
             })
             .catch(error => {
-                console.error('获取字幕列表时发生错误:', error);
+                log.error('获取字幕列表时发生错误:', error);
                 return [];
             });
     }
@@ -119,11 +120,11 @@ class apiService {
                     if (response.status >= 200 && response.status < 300) {
                         return fs.promises.writeFile(filePath, response.data)
                             .then(() => {
-                                console.log(`✅ 字幕文件已下载到: ${filePath}`);
+                                log.info(`✅ 字幕文件已下载到: ${filePath}`);
                                 return { id, filePath, success: true };
                             });
                     } else {
-                        console.error(`❌ 服务端错误: ${response.status} (ID: ${id})`);
+                        log.error(`❌ 服务端错误: ${response.status} (ID: ${id})`);
                         return { id, filePath, success: false, error: `HTTP ${response.status}` };
                     }
                 })
@@ -136,7 +137,7 @@ class apiService {
                     } else {
                         errorMsg = `请求错误: ${error.message}`;
                     }
-                    console.error(`❌ ID ${id} 下载失败: ${errorMsg}`);
+                    log.error(`❌ ID ${id} 下载失败: ${errorMsg}`);
                     return { id, filePath, success: false, error: errorMsg };
                 });
         });
@@ -151,14 +152,14 @@ class apiService {
 
         const failedCount = results.length - successfulDownloads.length;
 
-        console.log('========================================');
-        console.log('字幕下载摘要:');
-        console.log(`🔹 总数: ${subs.length}`);
-        console.log(`✅ 成功: ${successfulDownloads.length}`);
-        console.log(`❌ 失败: ${failedCount}`);
-        console.log('========================================');
+        log.info('========================================');
+        log.info('字幕下载摘要:');
+        log.info(`🔹 总数: ${subs.length}`);
+        log.info(`✅ 成功: ${successfulDownloads.length}`);
+        log.info(`❌ 失败: ${failedCount}`);
+        log.info('========================================');
 
-        console.log('成功下载的字幕文件:', successfulDownloads);
+        log.info('成功下载的字幕文件:', successfulDownloads);
         return successfulDownloads;
     }
 

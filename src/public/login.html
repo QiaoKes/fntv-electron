@@ -984,6 +984,46 @@
 
     <script>
         const { ipcRenderer } = require('electron'); // 渲染进程可用
+        
+        // 渲染进程日志工具
+        const log = {
+            debug: (...args) => {
+                try {
+                    ipcRenderer.invoke('log-message', 'debug', ...args);
+                } catch (error) {
+                    console.debug(...args);
+                }
+            },
+            info: (...args) => {
+                try {
+                    ipcRenderer.invoke('log-message', 'info', ...args);
+                } catch (error) {
+                    console.info(...args);
+                }
+            },
+            warn: (...args) => {
+                try {
+                    ipcRenderer.invoke('log-message', 'warn', ...args);
+                } catch (error) {
+                    console.warn(...args);
+                }
+            },
+            error: (...args) => {
+                try {
+                    ipcRenderer.invoke('log-message', 'error', ...args);
+                } catch (error) {
+                    console.error(...args);
+                }
+            },
+            log: (...args) => {
+                try {
+                    ipcRenderer.invoke('log-message', 'info', ...args);
+                } catch (error) {
+                    console.log(...args);
+                }
+            }
+        };
+        
         const loginBtn = document.getElementById('loginBtn');
         const domainInput = document.getElementById('domain');
         const usernameInput = document.getElementById('username');
@@ -1138,7 +1178,7 @@
                     domainInput.setSelectionRange(len, len);
                 }
             } catch (error) {
-                console.error('恢复焦点失败:', error);
+                log.error('恢复焦点失败:', error);
             }
         }
 
@@ -1195,7 +1235,7 @@
             const password = passwordInput.value.trim();
             const useHttps = document.getElementById('httpsSwitch').checked;
 
-            console.log('登录信息:', { domain, username, password, useHttps });
+            log.info('登录信息:', { domain, username, password, useHttps });
             
             const loginData = {
                 domain: domain,
@@ -1551,9 +1591,9 @@
 
         ipcRenderer.on('download-proxy-set', (event, data) => {
             if (data && data.success) {
-                console.log('代理设置保存成功');
+                log.info('代理设置保存成功');
             } else {
-                console.error('代理设置保存失败:', data.error);
+                log.error('代理设置保存失败:', data.error);
             }
         });
 

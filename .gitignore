@@ -4,3 +4,4 @@ third_party/*
 package-lock.json
 !.gitkip
 *.zip
+log/*

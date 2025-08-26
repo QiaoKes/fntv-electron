@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const axios = require('axios');
 const { setTimeout } = require('timers/promises');
+const log = require('../logger');
 
 // 全局配置
 const api_key = 'NDzZTVxnRKP8Z0jXg1VAMonaG8akvh';
@@ -85,14 +86,14 @@ async function request(baseUrl, url, method, token, data, timeout = DEFAULT_TIME
                 };
             }
 
-            console.log(`fn_api 请求时签名错误，重试中 tryTimes = ${tryTimes}, url: ${fullUrl}`);
+            log.warn(`fn_api 请求时签名错误，重试中 tryTimes = ${tryTimes}, url: ${fullUrl}`);
             await setTimeout(300); // 等待300ms
             return request(baseUrl, url, method, token, data, timeout, tryTimes + 1);
         }
 
         // 处理业务错误
         if (res.code !== 0) {
-            console.error(`fn_api 请求失败 - `, res);
+            log.error(`fn_api 请求失败 - `, res);
             return {
                 success: false,
                 message: res.msg
@@ -106,7 +107,7 @@ async function request(baseUrl, url, method, token, data, timeout = DEFAULT_TIME
 
     } catch (error) {
         // 处理网络错误
-        console.error(`fn_api 请求失败 - `, error.response?.data || error.message);
+        log.error(`fn_api 请求失败 - `, error.response?.data || error.message);
         return {
             success: false,
             message: error.response?.data || error.message

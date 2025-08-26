@@ -1,9 +1,10 @@
 // preload/plugins/titlebar.js
 const { ipcRenderer } = require('electron');
 const { registerHook } = require('../core/hooks');
+const log = require('../logger');
 
 function injectTitleBar() {
-    console.log('Injecting custom title bar...');
+    log.info('Injecting custom title bar...');
     if (document.getElementById('custom-titlebar')) return;
 
     const bar = document.createElement('div');
