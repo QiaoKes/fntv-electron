@@ -2,7 +2,6 @@ const path = require('path');
 const log = require('../../modules/logger');
 const { readConfig } = require('../../modules/fn_config/config');
 const { restoreCookies } = require('../../modules/fn_config/cookie');
-const { app } = require('electron');
 
 /**
  * 设置窗口为半屏
@@ -79,18 +78,31 @@ function setupWindowShowEvents(mainWindow) {
 function setupCookieRestore(mainWindow) {
     // 从配置中恢复 cookie
     const savedConfig = readConfig();
-    // 检查配置中是否有已保存的登录信息
-    if (savedConfig && savedConfig.token && savedConfig.domain) {
-        // 恢复 cookie 并跳转到对应的 URL
-        log.info('恢复登录状态，跳转到主页面, domain:', savedConfig.domain, ' token:', savedConfig.token);
-        // 恢复 cookie
-        restoreCookies(savedConfig.domain, savedConfig.token).then(() => {
-            mainWindow.loadURL(`${savedConfig.domain}/v`);
-        });
-    } else {
-        // 没有有效的登录信息，加载登录页面
+    if (!savedConfig || !savedConfig.token || !savedConfig.domain) {
+        log.warn('没有找到已保存的配置，无法恢复 cookie');
         mainWindow.loadFile(path.join(__dirname, '../../public/login.html'));
+        return;
     }
+
+    // 恢复 cookie 并跳转到对应的 URL
+    log.info('恢复登录状态，跳转到主页面, domain:', savedConfig.domain, ' token:', savedConfig.token);
+
+    // 恢复 cookie
+    restoreCookies(savedConfig.domain, savedConfig.token).then((result) => {
+        if (result === true) {
+            // cookie 恢复成功，跳转到主页面
+            mainWindow.loadURL(`${savedConfig.domain}/v`);
+            return;
+        }
+
+        // cookie 恢复失败，跳转到登录页面
+        log.warn('Cookie 恢复失败，跳转到登录页面');
+        mainWindow.loadFile(path.join(__dirname, '../../public/login.html'));
+    }).catch((error) => {
+        // 出现异常，也跳转到登录页面
+        log.error('Cookie 恢复过程中出现异常:', error);
+        mainWindow.loadFile(path.join(__dirname, '../../public/login.html'));
+    });
 }
 
 module.exports = {

@@ -38,6 +38,13 @@ class apiService {
     }
 
     /**
+     * 获取用户信息
+     */
+    getUserInfo() {
+        return fn.request(this.baseURL, '/v/api/v1/user/info', 'get', this.token);
+    }
+
+    /**
      * 获取视频播放信息
      * @param {string} itemGuid - 视频项目的唯一标识符
      * @returns {Promise} 返回播放信息的Promise

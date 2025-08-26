@@ -106,8 +106,15 @@ async function handleLogin(event, loginData) {
         const mainWindow = getMainWindow();
         if (mainWindow) {
             log.info('恢复登录状态，跳转到主页面, domain:', server);
-            await restoreCookies(server, token);
-            mainWindow.loadURL(`${server}/v`);
+            success = await restoreCookies(server, token);
+            if (success) {
+                mainWindow.loadURL(`${server}/v`);
+            } else {
+                event.reply('login-error', {
+                    title: '登录失败',
+                    message: '无法恢复登录状态，请重新登录。'
+                });
+            }
         }
     } catch (error) {
         log.error('登录请求失败:', error);
