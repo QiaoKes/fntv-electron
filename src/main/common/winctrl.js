@@ -2,6 +2,7 @@ const path = require('path');
 const log = require('../../modules/logger');
 const { readConfig } = require('../../modules/fn_config/config');
 const { restoreCookies } = require('../../modules/fn_config/cookie');
+const { app } = require('electron');
 
 /**
  * 设置窗口为半屏
@@ -98,5 +99,5 @@ module.exports = {
     setupFullScreenToggle,
     setupInputMethodDisable,
     setupWindowShowEvents,
-    setupCookieRestore
+    setupCookieRestore,
 };

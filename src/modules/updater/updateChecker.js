@@ -38,8 +38,8 @@ class UpdateChecker {
         this.currentVersion = currentVersion || (app ? app.getVersion() : 'unknown');
         this.githubApiUrl = `https://api.github.com/repos/${owner}/${repo}/releases/latest`;
         // 重试配置
-        this.maxRetries = 3;
-        this.retryDelay = 2000; // 2秒
+        this.maxRetries = 5;
+        this.baseRetryDelay = 2000; // 基础延迟2秒
     }
 
     /**
@@ -51,7 +51,7 @@ class UpdateChecker {
     }
 
     /**
-     * 带重试机制的检查更新
+     * 带梯度重试机制的检查更新
      * @param {number} retryCount - 当前重试次数
      * @returns {Promise<{hasUpdate: boolean, latestVersion?: string, downloadUrl?: string, releaseNotes?: string}>}
      */
@@ -94,8 +94,10 @@ class UpdateChecker {
             
             // 如果还有重试次数，则等待后重试
             if (retryCount < this.maxRetries) {
-                log.info(`等待 ${this.retryDelay}ms 后重试...`);
-                await delay(this.retryDelay);
+                // 梯度延迟
+                const retryDelay = this.baseRetryDelay * Math.pow(2, retryCount);
+                log.info(`等待 ${retryDelay}ms 后重试...`);
+                await delay(retryDelay);
                 return await this.checkForUpdatesWithRetry(retryCount + 1);
             }
             

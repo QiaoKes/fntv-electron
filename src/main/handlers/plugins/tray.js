@@ -13,13 +13,6 @@ function handleWindowAllClosed() {
     }
 }
 
-// 注册 activate 事件
-function handleActivate() {
-    if (BrowserWindow.getAllWindows().length === 0) {
-        const mainWindow = createMainWindow();
-    }
-}
-
 // 注册 before-quit 事件
 function handleBeforeQuit() {
     app.isQuiting = true;
@@ -29,7 +22,6 @@ function handleBeforeQuit() {
 // 注册更新相关处理器
 function init() {
     registerAppHook('windowAllClosed', handleWindowAllClosed);
-    registerAppHook('activate', handleActivate);
     registerAppHook('beforeQuit', handleBeforeQuit);
 }
 

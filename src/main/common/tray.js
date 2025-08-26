@@ -5,12 +5,16 @@ const log = require('../../modules/logger');
 
 let tray = null;
 let trayNotificationShown = false; // 托盘提示是否已显示过
+let mainWindow = null; // 主窗口引用
 
 /**
  * 创建系统托盘
  * @param {BrowserWindow} mainWindow - 主窗口实例
  */
-function createTray(mainWindow) {
+function createTray(mainWindowInstance) {
+    // 保存窗口引用
+    mainWindow = mainWindowInstance;
+    
     // 创建托盘图标
     const iconPath = path.join(__dirname, '../../../build/icon.ico');
     const icon = nativeImage.createFromPath(iconPath);

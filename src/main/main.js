@@ -46,7 +46,7 @@ if (!gotTheLock) {
         createTray(mainWindow);
 
         // 设置窗口关闭事件
-        setupWindowEvents();
+        setupWindowEvents(mainWindow);
 
         // 设置全屏切换
         winctrl.setupFullScreenToggle(mainWindow);
@@ -70,7 +70,7 @@ if (!gotTheLock) {
 }
 
 // 设置窗口事件
-function setupWindowEvents() {
+function setupWindowEvents(mainWindow) {
     if (mainWindow) {
         // 监听窗口关闭事件
         mainWindow.on('close', (event) => {
@@ -78,7 +78,7 @@ function setupWindowEvents() {
                 // 阻止窗口关闭，改为隐藏到托盘
                 event.preventDefault();
                 mainWindow.hide();
-                
+
                 // 显示托盘提示（仅在Windows上首次显示）
                 showTrayNotification();
             }
