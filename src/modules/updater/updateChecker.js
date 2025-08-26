@@ -21,6 +21,15 @@ try {
     semver = null;
 }
 
+/**
+ * 延时函数
+ * @param {number} ms - 延时毫秒数
+ * @returns {Promise<void>}
+ */
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 class UpdateChecker {
     constructor(owner = 'QiaoKes', repo = 'fntv-electron', currentVersion = null) {
         this.owner = owner;
@@ -28,6 +37,9 @@ class UpdateChecker {
         // 如果传入了版本号就使用传入的，否则尝试从app获取，最后使用默认值
         this.currentVersion = currentVersion || (app ? app.getVersion() : 'unknown');
         this.githubApiUrl = `https://api.github.com/repos/${owner}/${repo}/releases/latest`;
+        // 重试配置
+        this.maxRetries = 3;
+        this.retryDelay = 2000; // 2秒
     }
 
     /**
@@ -35,8 +47,17 @@ class UpdateChecker {
      * @returns {Promise<{hasUpdate: boolean, latestVersion?: string, downloadUrl?: string, releaseNotes?: string}>}
      */
     async checkForUpdates() {
+        return await this.checkForUpdatesWithRetry();
+    }
+
+    /**
+     * 带重试机制的检查更新
+     * @param {number} retryCount - 当前重试次数
+     * @returns {Promise<{hasUpdate: boolean, latestVersion?: string, downloadUrl?: string, releaseNotes?: string}>}
+     */
+    async checkForUpdatesWithRetry(retryCount = 0) {
         try {
-            log.info(`检查更新: 当前版本 ${this.currentVersion}`);
+            log.info(`检查更新: 当前版本 ${this.currentVersion}${retryCount > 0 ? ` (重试 ${retryCount}/${this.maxRetries})` : ''}`);
             
             const response = await axios.get(this.githubApiUrl, {
                 timeout: 10000,
@@ -69,8 +90,17 @@ class UpdateChecker {
                 htmlUrl: release.html_url
             };
         } catch (error) {
-            log.error('检查更新失败:', error.message);
-            throw new Error(`检查更新失败: ${error.message}`);
+            log.error(`检查更新失败 (尝试 ${retryCount + 1}/${this.maxRetries + 1}):`, error.message);
+            
+            // 如果还有重试次数，则等待后重试
+            if (retryCount < this.maxRetries) {
+                log.info(`等待 ${this.retryDelay}ms 后重试...`);
+                await delay(this.retryDelay);
+                return await this.checkForUpdatesWithRetry(retryCount + 1);
+            }
+            
+            // 所有重试都失败了，抛出错误
+            throw new Error(`检查更新失败: ${error.message} (已重试 ${this.maxRetries} 次)`);
         }
     }
 

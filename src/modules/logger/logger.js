@@ -45,17 +45,17 @@ class Logger {
      */
     getLogDirectory() {
         if (app) {
-            // 在Electron环境中，使用应用安装目录下的log文件夹
-            const appPath = app.getAppPath();
+            // 在Electron环境中，优先使用用户数据目录，这样重装不会丢失日志
             const isPackaged = app.isPackaged;
             
             if (isPackaged) {
-                // 打包后，使用可执行文件所在目录的log文件夹
-                const execPath = process.execPath;
-                const execDir = path.dirname(execPath);
-                return path.join(execDir, 'log');
+                // 打包后，使用用户数据目录的logs子文件夹
+                // 这样日志文件不会在重新安装时被删除
+                const userDataPath = app.getPath('userData');
+                return path.join(userDataPath, 'logs');
             } else {
                 // 开发环境，使用项目根目录的log文件夹
+                const appPath = app.getAppPath();
                 return path.join(appPath, 'log');
             }
         } else {
