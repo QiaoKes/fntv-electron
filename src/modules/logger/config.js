@@ -42,17 +42,27 @@ const logConfig = {
  * 根据环境获取适当的日志级别
  */
 function getLogLevel() {
+    // 首先检查环境变量
+    if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'prod') {
+        return logConfig.productionLevel;
+    }
+    
+    if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'dev') {
+        return logConfig.developmentLevel;
+    }
+    
     // 尝试获取app模块来判断是否为打包环境
     let isPackaged = false;
     try {
         const { app } = require('electron');
         isPackaged = app ? app.isPackaged : false;
+        
+        // 如果成功获取到app对象，则使用isPackaged判断
+        return isPackaged ? logConfig.productionLevel : logConfig.developmentLevel;
     } catch (error) {
-        // 在非Electron环境中，假设为开发环境
-        isPackaged = false;
+        // 在非Electron环境中，如果没有明确的环境变量，默认为开发环境
+        return logConfig.developmentLevel;
     }
-    
-    return isPackaged ? logConfig.productionLevel : logConfig.developmentLevel;
 }
 
 module.exports = {

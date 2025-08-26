@@ -122,10 +122,15 @@ const maskingChars = {
     letter: '*'
 };
 
+// 引用统一的环境检测逻辑
+const { getLogLevel, LogLevel } = require('./config');
+
 /**
  * 是否启用脱敏功能
+ * 开发模式下不启用脱敏，便于调试
+ * 通过日志级别来判断：DEBUG级别表示开发环境，不启用脱敏
  */
-const maskingEnabled = true;
+const maskingEnabled = getLogLevel() !== LogLevel.DEBUG;
 
 /**
  * 敏感关键词列表（用于检测可能包含敏感信息的对象）
