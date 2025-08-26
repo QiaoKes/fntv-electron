@@ -1,5 +1,6 @@
 const { session } = require('electron');
 const log = require('../../../modules/logger');
+const MainWindow = require('../../common/mainwin');
 
 /**
  * Session 拦截管理器
@@ -84,49 +85,23 @@ class SessionInterceptorManager {
             return;
         }
 
-        // 设置 beforeRequest 拦截器
-        this.interceptors.beforeRequest.forEach(interceptor => {
-            this.session.webRequest.onBeforeRequest(
-                interceptor.filter,
-                (details, callback) => {
-                    try {
-                        interceptor.handler(details, callback);
-                    } catch (error) {
-                        log.error(`BeforeRequest 拦截器 ${interceptor.name} 执行失败:`, error);
-                        callback({});
+        // 直接遍历 this.interceptors 的 key，自动匹配 webRequest 方法
+        Object.keys(this.interceptors).forEach(type => {
+            const method = 'on' + type.charAt(0).toUpperCase() + type.slice(1);
+            if (typeof this.session.webRequest[method] !== 'function') return;
+            this.interceptors[type].forEach(interceptor => {
+                this.session.webRequest[method](
+                    interceptor.filter,
+                    (details, callback) => {
+                        try {
+                            interceptor.handler(details, callback);
+                        } catch (error) {
+                            log.error(`${type} 拦截器 ${interceptor.name} 执行失败:`, error);
+                            callback && callback({});
+                        }
                     }
-                }
-            );
-        });
-
-        // 设置 beforeSendHeaders 拦截器
-        this.interceptors.beforeSendHeaders.forEach(interceptor => {
-            this.session.webRequest.onBeforeSendHeaders(
-                interceptor.filter,
-                (details, callback) => {
-                    try {
-                        interceptor.handler(details, callback);
-                    } catch (error) {
-                        log.error(`BeforeSendHeaders 拦截器 ${interceptor.name} 执行失败:`, error);
-                        callback({});
-                    }
-                }
-            );
-        });
-
-        // 设置 headerReceived 拦截器
-        this.interceptors.headerReceived.forEach(interceptor => {
-            this.session.webRequest.onHeadersReceived(
-                interceptor.filter,
-                (details, callback) => {
-                    try {
-                        interceptor.handler(details, callback);
-                    } catch (error) {
-                        log.error(`HeaderReceived 拦截器 ${interceptor.name} 执行失败:`, error);
-                        callback({});
-                    }
-                }
-            );
+                );
+            });
         });
 
         log.info('所有 Session 拦截器已设置完成');
@@ -164,9 +139,9 @@ function getSessionInterceptorManager() {
 
 /**
  * 初始化 session 拦截管理器
- * @param {string} partition - session 分区名称
  */
-function initSessionInterceptor(partition) {
+function initSessionInterceptor() {
+    const partition = MainWindow.getPartitionName();
     sessionInterceptorManager.init(partition);
 }
 

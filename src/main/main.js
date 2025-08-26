@@ -1,10 +1,10 @@
 const { app, BrowserWindow } = require('electron');
 const { registerAllPlugins } = require('./handlers');
 const updateChecker = require('../modules/updater/updateChecker');
-const { createMainWindow, setupWindowShowEvents } = require('./windowManager');
-const { setupFullScreenToggle } = require('./screenControl');
-const { createTray, showTrayNotification, destroyTray } = require('./trayManager');
+const winctrl = require('./common/winctrl');
+const { createTray, showTrayNotification, destroyTray } = require('./common/tray');
 const log = require('../modules/logger');
+const { getMainWindow } = require('./common/mainwin');
 
 // 禁用输入法自动切换
 app.commandLine.appendSwitch('--lang', 'en-US');
@@ -37,7 +37,10 @@ if (!gotTheLock) {
         log.info('日志文件位置:', log.getLogFile());
         
         // 创建主窗口
-        mainWindow = createMainWindow();
+        mainWindow = getMainWindow();
+
+        // 注册所有插件
+        registerAllPlugins();
 
         // 创建系统托盘
         createTray(mainWindow);
@@ -46,10 +49,16 @@ if (!gotTheLock) {
         setupWindowEvents();
 
         // 设置全屏切换
-        setupFullScreenToggle(mainWindow);
+        winctrl.setupFullScreenToggle(mainWindow);
+
+        // 禁用输入法自动切换
+        winctrl.setupInputMethodDisable(mainWindow);
 
         // 设置窗口显示事件
-        setupWindowShowEvents(mainWindow);
+        winctrl.setupWindowShowEvents(mainWindow);
+
+        // 恢复 Cookie
+        winctrl.setupCookieRestore(mainWindow);
 
         // 延迟3秒后进行自动更新检查，避免影响应用启动速度
         setTimeout(() => {
@@ -76,27 +85,3 @@ function setupWindowEvents() {
         });
     }
 }
-
-app.on('window-all-closed', () => {
-    // 在 macOS 上，应用通常会保持活跃状态，即使所有窗口都关闭了
-    if (process.platform !== 'darwin') {
-        // 如果不是真正退出，不要退出应用
-        if (!app.isQuiting) {
-            return;
-        }
-        app.quit();
-    }
-});
-
-app.on('activate', () => {
-    // 在 macOS 上，当点击 dock 图标并且没有其他窗口打开时，重新创建窗口
-    if (BrowserWindow.getAllWindows().length === 0) {
-        mainWindow = createMainWindow();
-    }
-});
-
-// 应用退出前清理托盘
-app.on('before-quit', () => {
-    app.isQuiting = true;
-    destroyTray();
-});

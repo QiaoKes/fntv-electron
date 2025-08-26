@@ -43,11 +43,10 @@ function loadPlugins() {
 
 /**
  * 注册所有插件
- * @param {string} sessionPartition - session 分区名称
  */
-function registerAllPlugins(sessionPartition) {
+function registerAllPlugins() {
     // 初始化 session 拦截器
-    initSessionInterceptor(sessionPartition);
+    initSessionInterceptor();
     
     // 初始化应用钩子
     initAppHooks();

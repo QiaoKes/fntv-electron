@@ -1,5 +1,5 @@
-const { getMainWindow } = require('../../windowManager');
-const { setHalfScreen, setFullScreen } = require('../../screenControl');
+const { getMainWindow } = require('../../common/mainwin');
+const { setHalfScreen, setFullScreen } = require('../../common/winctrl');
 const { registerHandler } = require('../core/ipcHandler');
 
 /**
@@ -17,7 +17,7 @@ function handleMinimize() {
 function handleMaximize() {
     const mainWindow = getMainWindow();
     if (mainWindow) {
-        mainWindow.isMaximized() ? setHalfScreen() : setFullScreen();
+        mainWindow.isMaximized() ? setHalfScreen(mainWindow) : setFullScreen(mainWindow);
     }
 }
 

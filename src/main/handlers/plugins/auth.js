@@ -1,4 +1,4 @@
-const { getMainWindow } = require('../../windowManager');
+const { getMainWindow } = require('../../common/mainwin');
 const fn = require('../../../modules/fn_api/api');
 const { restoreCookies } = require('../../../modules/fn_config/cookie');
 const fnConfig = require('../../../modules/fn_config/config');

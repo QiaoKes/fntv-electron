@@ -1,7 +1,7 @@
 const { Tray, Menu, nativeImage } = require('electron');
 const path = require('path');
-const { getInstance: getUpdateChecker } = require('../modules/updater/updateChecker');
-const log = require('../modules/logger');
+const { getInstance: getUpdateChecker } = require('../../modules/updater/updateChecker');
+const log = require('../../modules/logger');
 
 let tray = null;
 let trayNotificationShown = false; // 托盘提示是否已显示过
@@ -12,7 +12,7 @@ let trayNotificationShown = false; // 托盘提示是否已显示过
  */
 function createTray(mainWindow) {
     // 创建托盘图标
-    const iconPath = path.join(__dirname, '../../build/icon.ico');
+    const iconPath = path.join(__dirname, '../../../build/icon.ico');
     const icon = nativeImage.createFromPath(iconPath);
     
     tray = new Tray(icon.resize({ width: 16, height: 16 }));

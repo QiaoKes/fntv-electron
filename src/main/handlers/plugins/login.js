@@ -1,7 +1,7 @@
 const path = require('path');
 const { getSessionInterceptorManager } = require('../core/interceptor');
 const { readConfig, saveConfig } = require('../../../modules/fn_config/config');
-const { getMainWindow } = require('../../windowManager');
+const { getMainWindow } = require('../../common/mainwin');
 const { session } = require('electron');
 const log = require('../../../modules/logger');
 
