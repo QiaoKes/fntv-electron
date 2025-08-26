@@ -85,7 +85,7 @@ function setupCookieRestore(mainWindow) {
     }
 
     // 恢复 cookie 并跳转到对应的 URL
-    log.info('恢复登录状态，跳转到主页面, domain:', savedConfig.domain, ' token:', savedConfig.token);
+    log.info('恢复登录状态，即将跳转到主页面, domain:', savedConfig.domain, ' token:', savedConfig.token);
 
     // 恢复 cookie
     restoreCookies(savedConfig.domain, savedConfig.token).then((result) => {

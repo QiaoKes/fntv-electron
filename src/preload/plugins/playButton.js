@@ -4,24 +4,6 @@ const { registerHook } = require('../core/hooks');
 const log = require('../logger');
 const { getCookie } = require('../core/utils');
 
-// 检查是否最后一级页面(单集&电影&其他)
-function checkFinalPageUrl() {
-    const url = window.location.href;
-    return url.includes('/v/movie/') || url.includes('/v/tv/episode/') || url.includes('/v/other/');
-}
-
-// 检查是否是季度页面
-function checkSeasonPageUrl() {
-    const url = window.location.href;
-    return url.includes('/v/tv/season/');
-}
-
-// 检查是否是TV页面
-function checkTVPageUrl() {
-    const url = window.location.href;
-    return url.includes('/v/tv/');
-}
-
 // 发送播放信息到主进程
 function sendPlayEventToMain() {
     const url = window.location.href;

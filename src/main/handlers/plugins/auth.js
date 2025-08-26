@@ -106,7 +106,7 @@ async function handleLogin(event, loginData) {
         // 跳转到主页
         const mainWindow = getMainWindow();
         if (mainWindow) {
-            log.info('恢复登录状态，跳转到主页面, domain:', server);
+            log.info('恢复登录状态，即将跳转到主页面, domain:', server);
             success = await restoreCookies(server, token, true);
             if (success) {
                 mainWindow.loadURL(`${server}/v`);

@@ -113,8 +113,6 @@ class SessionInterceptorManager {
                 );
             });
         });
-
-        log.info('所有 Session 拦截器已设置完成');
     }
 
     /**

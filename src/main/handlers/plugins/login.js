@@ -97,7 +97,9 @@ function init() {
         {
             urls: [
                 'http://*/v/login',
-                'https://*/v/login'
+                'https://*/v/login',
+                'http://*/v/welcome',
+                'https://*/v/welcome',
             ]
         },
         handleLoginRequest,
