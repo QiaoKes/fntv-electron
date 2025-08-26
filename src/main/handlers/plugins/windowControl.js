@@ -1,6 +1,6 @@
 const { getMainWindow } = require('../../windowManager');
 const { setHalfScreen, setFullScreen } = require('../../screenControl');
-const { registerHandler } = require('../core/registry');
+const { registerHandler } = require('../core/ipcHandler');
 
 /**
  * 窗口控制插件

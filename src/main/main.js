@@ -1,5 +1,5 @@
 const { app, BrowserWindow } = require('electron');
-const { registerIpcHandlers } = require('./handlers');
+const { registerAllPlugins } = require('./handlers');
 const updateChecker = require('../modules/updater/updateChecker');
 const { createMainWindow, setupWindowShowEvents } = require('./windowManager');
 const { setupFullScreenToggle } = require('./screenControl');
@@ -49,7 +49,7 @@ if (!gotTheLock) {
         setupFullScreenToggle(mainWindow);
 
         // 注册 IPC 事件处理程序
-        registerIpcHandlers();
+        registerAllPlugins();
 
         // 设置窗口显示事件
         setupWindowShowEvents(mainWindow);

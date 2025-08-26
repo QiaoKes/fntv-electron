@@ -2,8 +2,8 @@ const { BrowserWindow } = require('electron');
 const MpvPlayer = require('../../../modules/mpv/mpv');
 const fn = require('../../../modules/fn_api/api');
 const fnConfig = require('../../../modules/fn_config/config');
-const { registerHandler } = require('../core/registry');
-const { registerAppHook } = require('../core/hooks');
+const { registerHandler } = require('../core/ipcHandler');
+const { registerAppHook } = require('../core/appHook');
 const log = require('../../../modules/logger');
 
 /**

@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { initAppHooks } = require('./core/hooks');
+const { initAppHooks } = require('./core/appHook');
 const { getInstance: getUpdateChecker } = require('../../modules/updater/updateChecker');
 const log = require('../../modules/logger');
 
@@ -43,7 +43,7 @@ function loadPlugins() {
 /**
  * 注册所有IPC处理器的聚合函数
  */
-function registerIpcHandlers() {
+function registerAllPlugins() {
     // 初始化应用钩子
     initAppHooks();
     
@@ -52,5 +52,5 @@ function registerIpcHandlers() {
 }
 
 module.exports = {
-    registerIpcHandlers,
+    registerAllPlugins,
 };

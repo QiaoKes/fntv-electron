@@ -1,5 +1,5 @@
 const fnConfig = require('../../../modules/fn_config/config');
-const { registerHandler } = require('../core/registry');
+const { registerHandler } = require('../core/ipcHandler');
 
 /**
  * 系统配置插件

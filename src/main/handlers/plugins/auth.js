@@ -2,7 +2,7 @@ const { getMainWindow } = require('../../windowManager');
 const fn = require('../../../modules/fn_api/api');
 const { restoreCookies } = require('../../../modules/fn_config/cookie');
 const fnConfig = require('../../../modules/fn_config/config');
-const { registerHandler } = require('../core/registry');
+const { registerHandler } = require('../core/ipcHandler');
 const log = require('../../../modules/logger');
 
 /**

@@ -386,7 +386,7 @@ function handleLogMessage() {
 }
 
 // 注册所有IPC处理器的聚合函数
-function registerIpcHandlers() {
+function registerAllPlugins() {
     handleLogin();
     handleMinimize();
     handleMaximize();
@@ -400,6 +400,6 @@ function registerIpcHandlers() {
 }
 
 module.exports = {
-    registerIpcHandlers,
+    registerAllPlugins,
     updateChecker,
 };

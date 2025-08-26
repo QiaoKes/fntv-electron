@@ -1,4 +1,4 @@
-const { registerHandler } = require('../core/registry');
+const { registerHandler } = require('../core/ipcHandler');
 const log = require('../../../modules/logger');
 
 /**
