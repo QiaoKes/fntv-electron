@@ -34,10 +34,10 @@ function handleLogMessage(event, level, ...args) {
 }
 
 // 注册日志相关处理器
-function initLogHandlers() {
+function init() {
     registerHandler('log-message', handleLogMessage, { useHandle: true });
 }
 
 module.exports = {
-    initLogHandlers
+    init
 };

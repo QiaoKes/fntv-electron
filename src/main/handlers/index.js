@@ -21,13 +21,13 @@ function loadPlugins() {
                 try {
                     const plugin = require(path.join(pluginsDir, file));
                     
-                    // 查找并执行初始化函数
-                    Object.keys(plugin).forEach(key => {
-                        if (key.startsWith('init') && typeof plugin[key] === 'function') {
-                            log.info(`正在初始化插件: ${file} - ${key}`);
-                            plugin[key]();
-                        }
-                    });
+                    // 直接调用 init 函数
+                    if (typeof plugin.init === 'function') {
+                        log.info(`正在初始化插件: ${file}`);
+                        plugin.init();
+                    } else {
+                        log.warn(`插件 ${file} 没有导出 init 函数`);
+                    }
                 } catch (error) {
                     log.error(`加载插件 ${file} 失败:`, error);
                 }

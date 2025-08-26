@@ -28,12 +28,12 @@ function handleClose() {
 }
 
 // 注册窗口控制处理器
-function initWindowControlHandlers() {
+function init() {
     registerHandler('window-minimize', handleMinimize);
     registerHandler('window-maximize', handleMaximize);
     registerHandler('window-close', handleClose);
 }
 
 module.exports = {
-    initWindowControlHandlers
+    init
 };

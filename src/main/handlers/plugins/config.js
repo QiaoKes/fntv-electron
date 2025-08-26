@@ -26,11 +26,11 @@ function handleSetDownloadProxy(event, { enabled, proxyUrl }) {
 }
 
 // 注册配置相关处理器
-function initConfigHandlers() {
+function init() {
     registerHandler('get-download-proxy', handleGetDownloadProxy);
     registerHandler('set-download-proxy', handleSetDownloadProxy);
 }
 
 module.exports = {
-    initConfigHandlers
+    init
 };

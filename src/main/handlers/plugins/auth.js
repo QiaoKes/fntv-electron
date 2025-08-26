@@ -119,7 +119,7 @@ async function handleLogin(event, loginData) {
 }
 
 // 注册认证相关处理器
-function initAuthHandlers() {
+function init() {
     registerHandler('get-config', handleGetConfig);
     registerHandler('clear-history', handleClearHistory);
     registerHandler('delete-history-item', handleDeleteHistoryItem);
@@ -127,5 +127,5 @@ function initAuthHandlers() {
 }
 
 module.exports = {
-    initAuthHandlers
+    init
 };

@@ -32,12 +32,12 @@ function handleGetVersion(event) {
 }
 
 // 注册更新相关处理器
-function initUpdateHandlers() {
+function init() {
     registerHandler('check-update', handleCheckUpdate);
     registerHandler('auto-check-update', handleAutoCheckUpdate);
     registerHandler('get-version', handleGetVersion);
 }
 
 module.exports = {
-    initUpdateHandlers
+    init
 };

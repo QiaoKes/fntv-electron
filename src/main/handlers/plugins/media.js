@@ -155,11 +155,11 @@ function handleBeforeQuit() {
 }
 
 // 注册媒体播放处理器
-function initMediaHandlers() {
+function init() {
     registerHandler('play-movie', handlePlayMovie);
     registerAppHook('beforeQuit', handleBeforeQuit);
 }
 
 module.exports = {
-    initMediaHandlers
+    init
 };
