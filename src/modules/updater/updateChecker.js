@@ -281,4 +281,31 @@ class UpdateChecker {
     }
 }
 
-module.exports = UpdateChecker;
+// 单例实例
+let instance = null;
+
+/**
+ * 获取 UpdateChecker 单例实例
+ * @param {string} owner - GitHub 仓库所有者，默认 'QiaoKes'
+ * @param {string} repo - GitHub 仓库名称，默认 'fntv-electron'
+ * @param {string} currentVersion - 当前版本号，默认从 app.getVersion() 获取
+ * @returns {UpdateChecker} UpdateChecker 实例
+ */
+function getInstance(owner = 'QiaoKes', repo = 'fntv-electron', currentVersion = null) {
+    if (!instance) {
+        instance = new UpdateChecker(owner, repo, currentVersion);
+    }
+    return instance;
+}
+
+/**
+ * 重置单例实例（主要用于测试）
+ */
+function resetInstance() {
+    instance = null;
+}
+
+module.exports = {
+    getInstance,
+    resetInstance,
+};

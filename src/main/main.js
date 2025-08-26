@@ -1,5 +1,6 @@
 const { app, BrowserWindow } = require('electron');
-const { registerIpcHandlers, updateChecker } = require('./eventHandlers');
+const { registerIpcHandlers } = require('./handlers');
+const updateChecker = require('../modules/updater/updateChecker');
 const { createMainWindow, setupWindowShowEvents } = require('./windowManager');
 const { setupFullScreenToggle } = require('./screenControl');
 const { createTray, showTrayNotification, destroyTray } = require('./trayManager');
@@ -55,7 +56,7 @@ if (!gotTheLock) {
 
         // 延迟3秒后进行自动更新检查，避免影响应用启动速度
         setTimeout(() => {
-            updateChecker.autoCheckForUpdates().catch(error => {
+            updateChecker.getInstance().autoCheckForUpdates().catch(error => {
                 log.error('启动时自动检查更新失败:', error);
             });
         }, 3000);

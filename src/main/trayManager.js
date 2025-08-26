@@ -1,6 +1,6 @@
 const { Tray, Menu, nativeImage } = require('electron');
 const path = require('path');
-const { updateChecker } = require('./eventHandlers');
+const { getInstance: getUpdateChecker } = require('../modules/updater/updateChecker');
 const log = require('../modules/logger');
 
 let tray = null;
@@ -38,7 +38,7 @@ function createTray(mainWindow) {
         {
             label: '检查更新',
             click: () => {
-                updateChecker.manualCheckForUpdates().catch(error => {
+                getUpdateChecker().manualCheckForUpdates().catch(error => {
                     log.error('手动检查更新失败:', error);
                 });
             }
