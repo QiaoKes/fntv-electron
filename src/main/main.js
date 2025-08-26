@@ -1,17 +1,15 @@
-const { app, Tray, Menu, nativeImage, BrowserWindow } = require('electron');
-const path = require('path');
+const { app, BrowserWindow } = require('electron');
 const { registerIpcHandlers, updateChecker } = require('./eventHandlers');
 const { createMainWindow, setupWindowShowEvents } = require('./windowManager');
 const { setupFullScreenToggle } = require('./screenControl');
+const { createTray, showTrayNotification, destroyTray } = require('./trayManager');
 const log = require('../modules/logger');
 
 // 禁用输入法自动切换
 app.commandLine.appendSwitch('--lang', 'en-US');
 app.commandLine.appendSwitch('--disable-features', 'VizDisplayCompositor');
 
-let tray = null;
 let mainWindow = null;
-let trayNotificationShown = false; // 托盘提示是否已显示过
 
 // 单实例应用锁定
 const gotTheLock = app.requestSingleInstanceLock();
@@ -41,7 +39,7 @@ if (!gotTheLock) {
         mainWindow = createMainWindow();
 
         // 创建系统托盘
-        createTray();
+        createTray(mainWindow);
 
         // 设置窗口关闭事件
         setupWindowEvents();
@@ -64,66 +62,6 @@ if (!gotTheLock) {
     });
 }
 
-// 创建系统托盘
-function createTray() {
-    // 创建托盘图标
-    const iconPath = path.join(__dirname, '../../build/icon.ico');
-    const icon = nativeImage.createFromPath(iconPath);
-    
-    tray = new Tray(icon.resize({ width: 16, height: 16 }));
-    
-    // 设置托盘提示文字
-    tray.setToolTip('飞牛影视');
-    
-    // 创建托盘菜单
-    const contextMenu = Menu.buildFromTemplate([
-        {
-            label: '显示主窗口',
-            click: () => {
-                if (mainWindow) {
-                    if (mainWindow.isMinimized()) mainWindow.restore();
-                    if (!mainWindow.isVisible()) mainWindow.show();
-                    mainWindow.focus();
-                }
-            }
-        },
-        {
-            type: 'separator'
-        },
-        {
-            label: '检查更新',
-            click: () => {
-                updateChecker.manualCheckForUpdates().catch(error => {
-                    log.error('手动检查更新失败:', error);
-                });
-            }
-        },
-        {
-            type: 'separator'
-        },
-        {
-            label: '退出',
-            click: () => {
-                // 真正退出应用
-                app.isQuiting = true;
-                app.quit();
-            }
-        }
-    ]);
-    
-    // 设置托盘菜单
-    tray.setContextMenu(contextMenu);
-    
-    // 双击托盘图标恢复窗口
-    tray.on('double-click', () => {
-        if (mainWindow) {
-            if (mainWindow.isMinimized()) mainWindow.restore();
-            if (!mainWindow.isVisible()) mainWindow.show();
-            mainWindow.focus();
-        }
-    });
-}
-
 // 设置窗口事件
 function setupWindowEvents() {
     if (mainWindow) {
@@ -134,15 +72,8 @@ function setupWindowEvents() {
                 event.preventDefault();
                 mainWindow.hide();
                 
-                // 在 Windows 上显示托盘提示（只显示一次）
-                if (process.platform === 'win32' && !trayNotificationShown) {
-                    tray.displayBalloon({
-                        iconType: 'info',
-                        title: '飞牛影视',
-                        content: '应用已最小化到托盘，双击托盘图标或右键菜单可以恢复窗口'
-                    });
-                    trayNotificationShown = true; // 标记已显示过提示
-                }
+                // 显示托盘提示（仅在Windows上首次显示）
+                showTrayNotification();
             }
         });
     }
@@ -169,8 +100,5 @@ app.on('activate', () => {
 // 应用退出前清理托盘
 app.on('before-quit', () => {
     app.isQuiting = true;
-    if (tray) {
-        tray.destroy();
-        tray = null;
-    }
+    destroyTray();
 });
