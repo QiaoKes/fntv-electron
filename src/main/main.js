@@ -3,6 +3,7 @@ const path = require('path');
 const { registerIpcHandlers, updateChecker } = require('./eventHandlers');
 const { createMainWindow, setupWindowShowEvents } = require('./windowManager');
 const { setupFullScreenToggle } = require('./screenControl');
+const log = require('../modules/logger');
 
 // 禁用输入法自动切换
 app.commandLine.appendSwitch('--lang', 'en-US');
@@ -29,6 +30,13 @@ if (!gotTheLock) {
     });
 
     app.whenReady().then(() => {
+        // 初始化日志系统
+        log.info('=== 飞牛影视启动 ===');
+        log.info('应用版本:', app.getVersion());
+        log.info('Electron版本:', process.versions.electron);
+        log.info('Node.js版本:', process.versions.node);
+        log.info('日志文件位置:', log.getLogFile());
+        
         // 创建主窗口
         mainWindow = createMainWindow();
 
@@ -50,7 +58,7 @@ if (!gotTheLock) {
         // 延迟3秒后进行自动更新检查，避免影响应用启动速度
         setTimeout(() => {
             updateChecker.autoCheckForUpdates().catch(error => {
-                console.error('启动时自动检查更新失败:', error);
+                log.error('启动时自动检查更新失败:', error);
             });
         }, 3000);
     });
@@ -86,7 +94,7 @@ function createTray() {
             label: '检查更新',
             click: () => {
                 updateChecker.manualCheckForUpdates().catch(error => {
-                    console.error('手动检查更新失败:', error);
+                    log.error('手动检查更新失败:', error);
                 });
             }
         },

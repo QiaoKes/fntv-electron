@@ -23,6 +23,7 @@
 
 ## 更新记录
 
+* 2025.8.26 - v1.7.1 支持记录客户端日志到%appdata%/fntv/logs，增强可排障性，数据脱敏处理
 * 2025.8.24 - v1.7.0 支持自动检查更新，登录界面支持配置github代理
 * 2025.8.24 - v1.6.4 mpv配置管理抽为单独仓库，支持Anime4K着色器预设方案
 * 2025.8.23 - v1.6.3 优化mpv启动参数，固定启动时的初始窗口大小
@@ -143,8 +144,6 @@ third_party\fntv-mpv\portable_config\input.conf
 ```bash
 git clone https://github.com/QiaoKes/fntv-electron.git
 cd fntv-electron
-# 下载https://github.com/QiaoKes/fntv-electron/releases/tag/v0.0.0中的electron-v36.2.1-patch-win32-x64.zip
-#解压到third_party中的electron文件夹中
 ```
 
 2. 下载第三方依赖

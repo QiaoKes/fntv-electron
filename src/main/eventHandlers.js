@@ -6,6 +6,7 @@ const fn = require('../modules/fn_api/api');
 const { restoreCookies } = require('../modules/fn_config/cookie');
 const fnConfig = require('../modules/fn_config/config');
 const UpdateChecker = require('../modules/updater/updateChecker');
+const log = require('../modules/logger');
 
 async function refreshWindow() {
     const focusedWindow = BrowserWindow.getFocusedWindow()
@@ -47,11 +48,11 @@ let currentPlayer = null;
 async function playMovie(event, { id, token }) {
     // 检查是否已有播放器在播放
     if (currentPlayer && currentPlayer.isPlaying()) {
-        console.warn('已有播放器在播放，无法重复播放');
+        log.warn('已有播放器在播放，无法重复播放');
         return;
     }
 
-    console.log('Play movie event received id:', id, 'with token:', token);
+    log.info('Play movie event received id:', id, 'with token:', token);
 
     const config = fnConfig.readConfig();
     if (!config || !config.domain) {
@@ -62,23 +63,23 @@ async function playMovie(event, { id, token }) {
 
     const response = await fnapi.getPlayInfo(id)
         .catch(error => {
-            console.error('获取播放信息失败:', error);
+            log.error('获取播放信息失败:', error);
             return null;
         });
 
     if (!response || !response.success) {
-        console.error('获取播放信息失败:', response ? response.message : '未知错误');
+        log.error('获取播放信息失败:', response ? response.message : '未知错误');
         return;
     }
 
-    console.log('获取播放信息成功:', response.data);
+    log.info('获取播放信息成功:', response.data);
 
     const mediaGuid = response.data.media_guid;
     // 从季度或者TV页面跳过来id其实不是真正的item_guid，使用返回值的修正
     const itemGuid = response.data.guid;
 
     const subFiles = await fnapi.getSubtitle(itemGuid).then(fnapi.downloadSubtitle).catch(error => {
-        console.error('获取字幕文件失败:', error);
+        log.error('获取字幕文件失败:', error);
         return [];
     });
     const subArgs = subFiles.map(sub => `--sub-file=${sub}`).join(' ');
@@ -87,7 +88,7 @@ async function playMovie(event, { id, token }) {
     const playUrl = fnapi.getVideoUrl(mediaGuid);
     const last = response.data.ts;
     const total = response.data.item.duration;
-    console.log('Play URL:', playUrl, 'Last:', last, 'Total:', total);
+    log.info('Play URL:', playUrl, ' Last:', last, ' Total:', total);
     if (total <= 0) {
         percentage = 0;
     } else {
@@ -128,27 +129,27 @@ async function playMovie(event, { id, token }) {
         debug: true,
         onData: (progress) => {
             if (progress.percentage > 90) {
-                console.log('视频播放接近结束，更新状态...');
+                log.info('视频播放接近结束，更新状态...');
                 fnapi.setWatched(itemGuid);
                 return;
             }
 
-            console.log('当前播放进度:', progress);
+            log.debug('当前播放进度:', progress);
             playStatus.ts = progress.currentSeconds;
             playStatus.duration = progress.totalSeconds;
             fnapi.recordPlayState(playStatus);
         },
-        onError: (err) => console.error('MPV error:', err),
+        onError: (err) => log.error('MPV error:', err),
         onExit: (code, progress) => {
             if (code !== 0 && code !== null) {
-                console.error(`播放器异常退出 (code ${code})`);
+                log.error(`播放器异常退出 (code ${code})`);
                 refreshWindow();
                 return;
             }
-            console.log('MPV exited with code:', code);
-            console.log('最后播放位置:', progress);
+            log.info('MPV exited with code:', code);
+            log.info('最后播放位置:', progress);
             if (progress.percentage > 90) {
-                console.log('视频播放接近结束，更新状态...');
+                log.info('视频播放接近结束，更新状态...');
                 fnapi.setWatched(itemGuid).then(refreshWindow);
                 return;
             }
@@ -169,7 +170,7 @@ async function playMovie(event, { id, token }) {
 // 监听应用退出事件
 app.on('before-quit', () => {
     if (currentPlayer) {
-        console.log('应用退出前关闭播放器');
+        log.info('应用退出前关闭播放器');
         currentPlayer.stop();
         currentPlayer = null;
     }
@@ -189,7 +190,7 @@ function handleLogin() {
             const history = fnConfig.getHistory() || [];
             event.reply('config-data', { config, history });
         } catch (error) {
-            console.error('读取配置失败:', error);
+            log.error('读取配置失败:', error);
             event.reply('config-data', { config: {}, history: [] });
         }
     });
@@ -200,7 +201,7 @@ function handleLogin() {
             fnConfig.clearHistory();
             event.reply('history-cleared');
         } catch (error) {
-            console.error('清除历史记录失败:', error);
+            log.error('清除历史记录失败:', error);
         }
     });
 
@@ -212,15 +213,16 @@ function handleLogin() {
                 event.reply('history-item-deleted');
             }
         } catch (error) {
-            console.error('删除历史记录项失败:', error);
+            log.error('删除历史记录项失败:', error);
         }
     });
 
     // 监听来自渲染进程的跳转请求
     ipcMain.on('login', async (event, loginData) => {
         // 这里可以存储或验证token
-        console.log('Received loginData:', loginData);
+        log.info('Received loginData:', loginData);
         if (!loginData || !loginData.domain || !loginData.username || !loginData.password) {
+            log.error('登录失败: 缺少必要的登录信息, loginData:', loginData);
             event.reply('login-error', {
                 title: '登录失败',
                 message: '请提供完整的登录信息。'
@@ -240,7 +242,7 @@ function handleLogin() {
 
         const response = await fnapi.login(loginData.username, loginData.password)
             .catch(error => {
-                console.error('登录请求失败:', error);
+                log.error('登录请求失败:', error);
                 // 发送网络错误消息到渲染进程
                 event.reply('login-error', {
                     title: '连接失败',
@@ -250,6 +252,7 @@ function handleLogin() {
             });
 
         if (!response || !response.success) {
+            log.error('登录失败:', response ? response.message : '未知错误');
             // 发送错误消息到渲染进程
             event.reply('login-error', {
                 title: '登录失败',
@@ -258,8 +261,8 @@ function handleLogin() {
             return;
         }
         const token = response.data.token;
-        console.log("token:%s", token);
         if (!token) {
+            log.error('登录失败: 没有有效的登录信息，无法恢复 cookies');
             // 发送错误消息到渲染进程
             event.reply('login-error', {
                 title: '登录失败',
@@ -294,7 +297,7 @@ function handleLogin() {
         const mainWindow = getMainWindow();
         if (mainWindow) {
             // 恢复 cookie
-            console.log('恢复登录状态，跳转到主页面, domain:', domain);
+            log.info('恢复登录状态，跳转到主页面, domain:', domain);
             restoreCookies(domain, token).then(() => {
                 mainWindow.loadURL(`${domain}/v`);
             });
@@ -308,7 +311,7 @@ const updateChecker = new UpdateChecker();
 // 处理手动检查更新
 function handleCheckUpdate() {
     ipcMain.on('check-update', async (event) => {
-        console.log('收到手动检查更新请求');
+        log.info('收到手动检查更新请求');
         await updateChecker.manualCheckForUpdates();
     });
 }
@@ -316,7 +319,7 @@ function handleCheckUpdate() {
 // 处理自动检查更新
 function handleAutoCheckUpdate() {
     ipcMain.on('auto-check-update', async (event) => {
-        console.log('收到自动检查更新请求');
+        log.info('收到自动检查更新请求');
         await updateChecker.autoCheckForUpdates();
     });
 }
@@ -353,6 +356,35 @@ function handleDownloadProxy() {
     });
 }
 
+// 处理渲染进程日志消息
+function handleLogMessage() {
+    ipcMain.handle('log-message', (event, level, ...args) => {
+        try {
+            // 根据级别调用对应的日志方法
+            switch (level) {
+                case 'debug':
+                    log.debug('[Renderer]', ...args);
+                    break;
+                case 'info':
+                    log.info('[Renderer]', ...args);
+                    break;
+                case 'warn':
+                    log.warn('[Renderer]', ...args);
+                    break;
+                case 'error':
+                    log.error('[Renderer]', ...args);
+                    break;
+                default:
+                    log.info('[Renderer]', ...args);
+            }
+        } catch (error) {
+            // 如果日志记录失败，至少在控制台输出
+            log.error('日志记录失败:', error);
+            log.info('[Renderer]', level, ...args);
+        }
+    });
+}
+
 // 注册所有IPC处理器的聚合函数
 function registerIpcHandlers() {
     handleLogin();
@@ -364,6 +396,7 @@ function registerIpcHandlers() {
     handleAutoCheckUpdate();
     handleGetVersion();
     handleDownloadProxy();
+    handleLogMessage();  // 添加日志处理器
 }
 
 module.exports = {

@@ -1,6 +1,7 @@
 const axios = require('axios');
 const { dialog, shell } = require('electron');
 const { getDownloadProxyConfig } = require('../fn_config/config');
+const log = require('../logger');
 
 // 尝试获取app模块，在非Electron环境中可能失败
 let app;
@@ -20,6 +21,15 @@ try {
     semver = null;
 }
 
+/**
+ * 延时函数
+ * @param {number} ms - 延时毫秒数
+ * @returns {Promise<void>}
+ */
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 class UpdateChecker {
     constructor(owner = 'QiaoKes', repo = 'fntv-electron', currentVersion = null) {
         this.owner = owner;
@@ -27,6 +37,9 @@ class UpdateChecker {
         // 如果传入了版本号就使用传入的，否则尝试从app获取，最后使用默认值
         this.currentVersion = currentVersion || (app ? app.getVersion() : 'unknown');
         this.githubApiUrl = `https://api.github.com/repos/${owner}/${repo}/releases/latest`;
+        // 重试配置
+        this.maxRetries = 3;
+        this.retryDelay = 2000; // 2秒
     }
 
     /**
@@ -34,8 +47,17 @@ class UpdateChecker {
      * @returns {Promise<{hasUpdate: boolean, latestVersion?: string, downloadUrl?: string, releaseNotes?: string}>}
      */
     async checkForUpdates() {
+        return await this.checkForUpdatesWithRetry();
+    }
+
+    /**
+     * 带重试机制的检查更新
+     * @param {number} retryCount - 当前重试次数
+     * @returns {Promise<{hasUpdate: boolean, latestVersion?: string, downloadUrl?: string, releaseNotes?: string}>}
+     */
+    async checkForUpdatesWithRetry(retryCount = 0) {
         try {
-            console.log(`检查更新: 当前版本 ${this.currentVersion}`);
+            log.info(`检查更新: 当前版本 ${this.currentVersion}${retryCount > 0 ? ` (重试 ${retryCount}/${this.maxRetries})` : ''}`);
             
             const response = await axios.get(this.githubApiUrl, {
                 timeout: 10000,
@@ -48,7 +70,7 @@ class UpdateChecker {
             const latestVersion = release.tag_name.replace(/^v/, ''); // 移除 'v' 前缀
             const downloadUrl = this.getDownloadUrl(release.assets);
             
-            console.log(`最新版本: ${latestVersion}`);
+            log.info(`最新版本: ${latestVersion}`);
             
             // 使用 semver 比较版本，如果没有semver则使用简单比较
             let hasUpdate;
@@ -68,8 +90,17 @@ class UpdateChecker {
                 htmlUrl: release.html_url
             };
         } catch (error) {
-            console.error('检查更新失败:', error.message);
-            throw new Error(`检查更新失败: ${error.message}`);
+            log.error(`检查更新失败 (尝试 ${retryCount + 1}/${this.maxRetries + 1}):`, error.message);
+            
+            // 如果还有重试次数，则等待后重试
+            if (retryCount < this.maxRetries) {
+                log.info(`等待 ${this.retryDelay}ms 后重试...`);
+                await delay(this.retryDelay);
+                return await this.checkForUpdatesWithRetry(retryCount + 1);
+            }
+            
+            // 所有重试都失败了，抛出错误
+            throw new Error(`检查更新失败: ${error.message} (已重试 ${this.maxRetries} 次)`);
         }
     }
 
@@ -139,15 +170,15 @@ class UpdateChecker {
                 // 如果原始URL包含github.com，则使用代理
                 if (originalUrl.includes('github.com')) {
                     const proxiedUrl = `${proxyConfig.proxyUrl.replace(/\/$/, '')}/${originalUrl}`;
-                    console.log(`使用代理下载链接: ${proxiedUrl}`);
+                    log.info(`使用代理下载链接: ${proxiedUrl}`);
                     return proxiedUrl;
                 }
             }
         } catch (error) {
-            console.log('获取代理配置失败，使用原始下载链接:', error.message);
+            log.warn('获取代理配置失败，使用原始下载链接:', error.message);
         }
         
-        console.log(`使用原始下载链接: ${originalUrl}`);
+        log.info(`使用原始下载链接: ${originalUrl}`);
         return originalUrl;
     }
 
@@ -221,13 +252,13 @@ class UpdateChecker {
             const updateInfo = await this.checkForUpdates();
             
             if (updateInfo.hasUpdate) {
-                console.log('发现新版本，显示更新提示');
+                log.info('发现新版本，显示更新提示');
                 await this.showUpdateDialog(updateInfo);
             } else {
-                console.log('当前已是最新版本');
+                log.info('当前已是最新版本');
             }
         } catch (error) {
-            console.error('自动检查更新失败:', error.message);
+            log.error('自动检查更新失败:', error.message);
             // 自动检查失败时不显示错误提示，避免打扰用户
         }
     }

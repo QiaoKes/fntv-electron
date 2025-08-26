@@ -3,6 +3,7 @@ const os = require('os');
 const path = require('path');
 const fs = require('fs');
 const { title } = require('process');
+const log = require('../logger');
 
 class MpvPlayer {
     // 全局存储播放状态
@@ -98,7 +99,7 @@ class MpvPlayer {
 
         // 调试模式输出命令
         if (this.config.debug) {
-            console.log('MPV 命令:', `"${this.config.mpvPath}" ${args.join(' ')}`);
+            log.debug('MPV 命令:', `"${this.config.mpvPath}" ${args.join(' ')}`);
         }
 
         // 启动播放器进程
@@ -110,11 +111,6 @@ class MpvPlayer {
         // 处理标准输出
         this.playerProcess.stdout.on('data', (data) => {
             const output = data.toString().trim();
-
-            // 调试输出
-            // if (this.config.debug && output) {
-            //     console.log(`[MPV] ${output}`);
-            // }
 
             // 尝试解析进度数据
             const progressData = MpvPlayer.parseVideoData(output);
@@ -136,7 +132,7 @@ class MpvPlayer {
             const errorMessage = data.toString().trim();
             if (errorMessage) {
                 if (this.config.debug) {
-                    console.error(`[MPV Error] ${errorMessage}`);
+                    log.error(`[MPV Error] ${errorMessage}`);
                 }
                 this.config.onError(errorMessage);
             }
@@ -149,9 +145,9 @@ class MpvPlayer {
 
             if (this.config.debug) {
                 if (code !== 0 && code !== null) {
-                    console.error(`播放异常结束 (code ${code})`);
+                    log.error(`播放异常结束 (code ${code})`);
                 } else {
-                    console.log('播放器正常退出');
+                    log.info('播放器正常退出');
                 }
             }
 
@@ -162,12 +158,12 @@ class MpvPlayer {
         // 处理启动错误
         this.playerProcess.on('error', (err) => {
             if (err.code === 'ENOENT') {
-                console.error('错误: 找不到 mpv 播放器。请确保已安装 mpv。');
-                console.error('在 macOS/Linux 上: brew install mpv');
-                console.error('在 Windows 上: 从 https://mpv.io/installation/ 下载');
-                console.error('或使用 --mpvPath 参数指定 mpv 的完整路径');
+                log.error('错误: 找不到 mpv 播放器。请确保已安装 mpv。');
+                log.error('在 macOS/Linux 上: brew install mpv');
+                log.error('在 Windows 上: 从 https://mpv.io/installation/ 下载');
+                log.error('或使用 --mpvPath 参数指定 mpv 的完整路径');
             } else {
-                console.error(`播放失败: ${err.message}`);
+                log.error(`播放失败: ${err.message}`);
             }
 
             this.config.onError(err.message);
@@ -183,7 +179,7 @@ class MpvPlayer {
     stop() {
         if (this.playerProcess) {
             this.config.onExit(0, MpvPlayer.globalStatus); // 传递当前状态
-            console.log('停止播放');
+            log.info('停止播放');
             this.playerProcess.kill();
             this.playerProcess = null;
         }

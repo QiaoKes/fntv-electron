@@ -1,6 +1,7 @@
 // preload/plugins/playButton.js
 const { ipcRenderer } = require('electron');
 const { registerHook } = require('../core/hooks');
+const log = require('../logger');
 const { getCookie } = require('../core/utils');
 
 // 检查是否最后一级页面(单集&电影&其他)
@@ -59,7 +60,7 @@ function clonePlayBtnAndInject(callback, btnText) {
     const referenceButton = findReferenceButton();
     if (!referenceButton || referenceButton.hasAttribute('data-mpv-btn')) return;
 
-    console.log('Detected inject page, injecting play button...');
+    log.info('Detected inject page, injecting play button...');
     
     // 标记原始按钮
     referenceButton.setAttribute('data-mpv-btn', 'processed');
