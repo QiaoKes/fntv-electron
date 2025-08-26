@@ -68,7 +68,7 @@ class apiService {
                         log.info('获取到字幕文件:', subtitles);
                         return subtitles;
                     } else {
-                        log.warn('没有找到字幕文件');
+                        log.info('没有找到字幕文件');
                         return [];
                     }
                 } else {

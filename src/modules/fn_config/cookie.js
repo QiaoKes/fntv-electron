@@ -14,7 +14,7 @@ async function restoreCookies(domain, token) {
     }
 
     // 使用 token 设置 cookie
-    log.info('从配置中恢复 cookies，domain:', domain, 'token长度:', token.length);
+    log.info('从配置中恢复 cookies，domain:', domain, ' token:', token);
 
     const ses = session.fromPartition('persist:fntv');
     // 根据登录接口返回的 token 格式设置相应的 cookie

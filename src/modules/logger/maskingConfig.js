@@ -73,6 +73,23 @@ const maskingPatterns = {
         showEnd: 0
     },
 
+    // 域名 - 部分脱敏
+    domain: {
+        patterns: [
+            // 明确的键值对中的域名
+            /domain['":\s]*['"]*([^'",\s}]+)['"]*?/gi,
+            /host['":\s]*['"]*([^'",\s}]+)['"]*?/gi,
+            /url['":\s]*['"]*([^'",\s}]+)['"]*?/gi,
+            /server['":\s]*['"]*([^'",\s}]+)['"]*?/gi,
+            /endpoint['":\s]*['"]*([^'",\s}]+)['"]*?/gi,
+            // 匹配完整的HTTP/HTTPS URL
+            /(https?:\/\/[^\s'"<>]+)/gi,
+            // 只匹配明确的域名格式（包含常见TLD且在合适上下文中）
+            /\b([a-zA-Z0-9]([a-zA-Z0-9\-]{1,61}[a-zA-Z0-9])?\.)+(?:com|org|net|edu|gov|mil|int|cn|top|xyz|info|biz|name|pro|aero|coop|museum|[a-z]{2})\b/gi,
+        ],
+        maskType: 'domain' // 特殊的域名脱敏规则
+    },
+
     // 银行卡号 - 部分脱敏
     bankCard: {
         patterns: [
@@ -83,17 +100,6 @@ const maskingPatterns = {
         maskType: 'partial',
         showStart: 4,
         showEnd: 4
-    },
-
-    // 用户名 - 部分脱敏（在某些上下文中）
-    username: {
-        patterns: [
-            /username['":\s]*['"]*([^'",\s}]{4,})['"]*?/gi,
-            /user_name['":\s]*['"]*([^'",\s}]{4,})['"]*?/gi,
-        ],
-        maskType: 'partial',
-        showStart: 2,
-        showEnd: 2
     },
 
     // URL中的敏感参数
@@ -127,7 +133,8 @@ const maskingEnabled = true;
 const sensitiveKeywords = [
     'password', 'pwd', 'passwd', 'token', 'secret', 'key', 'auth',
     'phone', 'mobile', 'email', 'id_card', 'idcard', 'bank_card',
-    'username', 'user_name', 'address', 'location'
+    'address', 'location',
+    'domain', 'host', 'url', 'hostname', 'endpoint', 'server'
 ];
 
 module.exports = {

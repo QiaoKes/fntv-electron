@@ -88,7 +88,7 @@ async function playMovie(event, { id, token }) {
     const playUrl = fnapi.getVideoUrl(mediaGuid);
     const last = response.data.ts;
     const total = response.data.item.duration;
-    log.info('Play URL:', playUrl, 'Last:', last, 'Total:', total);
+    log.info('Play URL:', playUrl, ' Last:', last, ' Total:', total);
     if (total <= 0) {
         percentage = 0;
     } else {
@@ -222,6 +222,7 @@ function handleLogin() {
         // 这里可以存储或验证token
         log.info('Received loginData:', loginData);
         if (!loginData || !loginData.domain || !loginData.username || !loginData.password) {
+            log.error('登录失败: 缺少必要的登录信息, loginData:', loginData);
             event.reply('login-error', {
                 title: '登录失败',
                 message: '请提供完整的登录信息。'
@@ -251,6 +252,7 @@ function handleLogin() {
             });
 
         if (!response || !response.success) {
+            log.error('登录失败:', response ? response.message : '未知错误');
             // 发送错误消息到渲染进程
             event.reply('login-error', {
                 title: '登录失败',
@@ -259,8 +261,8 @@ function handleLogin() {
             return;
         }
         const token = response.data.token;
-        log.info("token:%s", token);
         if (!token) {
+            log.error('登录失败: 没有有效的登录信息，无法恢复 cookies');
             // 发送错误消息到渲染进程
             event.reply('login-error', {
                 title: '登录失败',

@@ -48,10 +48,136 @@ function maskValue(value, maskType = 'partial', showStart = 3, showEnd = 3) {
                 return localPart.substring(0, 2) + '*'.repeat(Math.min(localPart.length - 2, 6)) + '@' + domain;
             }
             return value;
+
+        case 'domain':
+            // 处理域名脱敏
+            return maskDomain(value);
             
         default:
             return value;
     }
+}
+
+/**
+ * 域名脱敏处理
+ * @param {string} domainUrl - 要脱敏的域名或URL
+ * @returns {string} 脱敏后的域名或URL
+ */
+function maskDomain(domainUrl) {
+    if (!domainUrl || typeof domainUrl !== 'string') {
+        return domainUrl;
+    }
+
+    try {
+        // 处理完整的URL
+        if (domainUrl.startsWith('http://') || domainUrl.startsWith('https://')) {
+            const url = new URL(domainUrl);
+            const protocol = url.protocol;
+            const hostname = url.hostname;
+            const port = url.port ? `:${url.port}` : '';
+            const pathname = url.pathname;
+            const search = url.search;
+            const hash = url.hash;
+            
+            // 脱敏hostname
+            const maskedHostname = maskHostname(hostname);
+            
+            return `${protocol}//${maskedHostname}${port}${pathname}${search}${hash}`;
+        } else {
+            // 处理域名:端口格式
+            const colonIndex = domainUrl.lastIndexOf(':');
+            if (colonIndex > 0 && /^\d+$/.test(domainUrl.substring(colonIndex + 1))) {
+                // 包含端口号
+                const hostname = domainUrl.substring(0, colonIndex);
+                const port = domainUrl.substring(colonIndex);
+                return maskHostname(hostname) + port;
+            } else {
+                // 纯域名
+                return maskHostname(domainUrl);
+            }
+        }
+    } catch (error) {
+        // 如果URL解析失败，尝试按域名:端口格式处理
+        const colonIndex = domainUrl.lastIndexOf(':');
+        if (colonIndex > 0 && /^\d+$/.test(domainUrl.substring(colonIndex + 1))) {
+            const hostname = domainUrl.substring(0, colonIndex);
+            const port = domainUrl.substring(colonIndex);
+            return maskHostname(hostname) + port;
+        } else {
+            return maskHostname(domainUrl);
+        }
+    }
+}
+
+/**
+ * 主机名脱敏处理
+ * @param {string} hostname - 主机名
+ * @returns {string} 脱敏后的主机名
+ */
+function maskHostname(hostname) {
+    if (!hostname || typeof hostname !== 'string') {
+        return hostname;
+    }
+
+    // IP地址特殊处理
+    const ipPattern = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+    const ipMatch = hostname.match(ipPattern);
+    if (ipMatch) {
+        const [, ip1, ip2, ip3, ip4] = ipMatch;
+        return `${ip1}.${ip2}.***.**`;
+    }
+
+    // 域名处理
+    const parts = hostname.split('.');
+    if (parts.length >= 2) {
+        // 保留顶级域名和二级域名，脱敏子域名
+        if (parts.length === 2) {
+            // 如果只有两部分，脱敏第一部分的中间部分
+            const domain = parts[0];
+            const tld = parts[1];
+            if (domain.length <= 4) {
+                return `*****.${tld}`;
+            } else {
+                const masked = domain.substring(0, 2) + '*'.repeat(Math.min(domain.length - 2, 5));
+                return `${masked}.${tld}`;
+            }
+        } else {
+            // 多级域名，保留后两级，脱敏前面的
+            const mainDomain = parts.slice(-2).join('.');
+            const subdomains = parts.slice(0, -2);
+            if (subdomains.length > 0) {
+                return `*****.${mainDomain}`;
+            }
+            return mainDomain;
+        }
+    }
+
+    // 单一字符串，部分脱敏
+    if (hostname.length <= 4) {
+        return '*'.repeat(hostname.length);
+    }
+    return hostname.substring(0, 2) + '*'.repeat(Math.min(hostname.length - 2, 5));
+}
+
+/**
+ * 检查是否为文件路径或文件名
+ * @param {string} text - 要检查的文本
+ * @returns {boolean} 是否为文件路径
+ */
+function isFilePath(text) {
+    if (!text || typeof text !== 'string') {
+        return false;
+    }
+    
+    // 检查常见的文件路径模式
+    const filePathPatterns = [
+        /[A-Za-z]:\\/, // Windows盘符路径
+        /\/[^\/\s]+\//, // Unix风格路径
+        /\.(js|exe|log|txt|json|xml|html|css|png|jpg|gif|pdf|doc|docx|zip|rar|dll|so)$/i, // 文件扩展名
+        /\w+\.(js|exe|log|txt|json|xml|html|css|png|jpg|gif|pdf|doc|docx|zip|rar|dll|so)\b/i, // 文件名
+    ];
+    
+    return filePathPatterns.some(pattern => pattern.test(text));
 }
 
 /**
@@ -73,6 +199,11 @@ function maskStringByPatterns(text) {
                 // 找到捕获组中的敏感数据
                 const sensitiveValue = args.find(arg => typeof arg === 'string' && arg.length > 0);
                 if (sensitiveValue) {
+                    // 如果匹配的值看起来像文件路径，跳过脱敏
+                    if (isFilePath(sensitiveValue) || isFilePath(match)) {
+                        return match; // 不脱敏，返回原值
+                    }
+                    
                     const maskedValue = maskValue(
                         sensitiveValue, 
                         config.maskType, 
