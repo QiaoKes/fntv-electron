@@ -1,5 +1,5 @@
 const path = require('path');
-const { getSessionInterceptorManager } = require('../core/interceptor');
+const interceptor = require('../core/interceptor');
 const { readConfig, saveConfig } = require('../../../modules/fn_config/config');
 const { getMainWindow } = require('../../common/mainwin');
 const { session } = require('electron');
@@ -57,7 +57,7 @@ function handleLoginRequest(details, callback) {
     // 加载自定义页面
     const mainWindow = getMainWindow();
     if (mainWindow) {
-        mainWindow.loadFile(path.join(__dirname, '../../../../public/login.html'));
+        mainWindow.loadFile(path.join(__dirname, '../../../public/login.html'));
     } else {
         log.error('主窗口未创建，无法跳转到登录页面');
     }
@@ -80,7 +80,7 @@ function handleLogoutRequest(details, callback) {
     // 加载自定义页面
     const mainWindow = getMainWindow();
     if (mainWindow) {
-        mainWindow.loadFile(path.join(__dirname, '../../../../public/login.html'));
+        mainWindow.loadFile(path.join(__dirname, '../../../public/login.html'));
     } else {
         log.error('主窗口未创建，无法跳转到登录页面');
     }
@@ -90,8 +90,8 @@ function handleLogoutRequest(details, callback) {
  * 初始化登录拦截插件
  */
 function init() {
-    const interceptorManager = getSessionInterceptorManager();
-    
+    const interceptorManager = interceptor.getInstance();
+
     // 注册登录请求拦截器
     interceptorManager.registerBeforeRequest(
         {

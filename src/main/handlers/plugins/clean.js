@@ -1,4 +1,4 @@
-const {getSessionInterceptorManager} = require('../core/interceptor');
+const interceptor = require('../core/interceptor');
 const log = require('../../../modules/logger');
 
 /**
@@ -31,7 +31,7 @@ function setupCacheManagement(ses) {
 
 function init() {
     // 初始化 session 和缓存管理
-    const interceptorManager = getSessionInterceptorManager();
+    const interceptorManager = interceptor.getInstance();
     const ses = interceptorManager.getSession();
     setupCacheManagement(ses);
 }

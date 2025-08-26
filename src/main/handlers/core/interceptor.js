@@ -1,13 +1,12 @@
 const { session } = require('electron');
 const log = require('../../../modules/logger');
-const MainWindow = require('../../common/mainwin');
 
 /**
  * Session 拦截管理器
  * 用于统一管理 webRequest 拦截器
  */
 class SessionInterceptorManager {
-    constructor() {
+    constructor(partition) {
         this.interceptors = {
             beforeRequest: [],
             beforeSendHeaders: [],
@@ -26,6 +25,17 @@ class SessionInterceptorManager {
      */
     init(partition) {
         this.session = session.fromPartition(partition);
+    }
+
+    /**
+     * 运行拦截器
+     */
+    run() {
+        if (!this.session) {
+            log.error('Session 未初始化，无法运行');
+            return;
+        }
+
         this._setupInterceptors();
         log.info('Session 拦截管理器已初始化');
     }
@@ -127,26 +137,16 @@ class SessionInterceptorManager {
 }
 
 // 创建单例实例
-const sessionInterceptorManager = new SessionInterceptorManager();
+let instance = new SessionInterceptorManager();
 
 /**
  * 获取 session 拦截管理器实例
  * @returns {SessionInterceptorManager}
  */
-function getSessionInterceptorManager() {
-    return sessionInterceptorManager;
-}
-
-/**
- * 初始化 session 拦截管理器
- */
-function initSessionInterceptor() {
-    const partition = MainWindow.getPartitionName();
-    sessionInterceptorManager.init(partition);
+function getInstance() {
+    return instance;
 }
 
 module.exports = {
-    getSessionInterceptorManager,
-    initSessionInterceptor,
-    SessionInterceptorManager
+    getInstance,
 };

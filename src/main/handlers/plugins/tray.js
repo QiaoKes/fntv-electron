@@ -1,7 +1,6 @@
 const { app, BrowserWindow } = require('electron');
 const { registerAppHook } = require('../core/appHook');
 const { destroyTray } = require('../../common/tray');
-const { createMainWindow, getMainWindow } = require('../../common/mainwin');
 
 // 注册 window-all-closed 事件
 function handleWindowAllClosed() {

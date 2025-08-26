@@ -82,6 +82,7 @@ async function handleLogin(event, loginData) {
             });
             return;
         }
+        log.info('登录成功 token:', token);
 
         // 保存登录信息
         const { saveConfig, addHistory } = require('../../../modules/fn_config/config');
@@ -106,7 +107,7 @@ async function handleLogin(event, loginData) {
         const mainWindow = getMainWindow();
         if (mainWindow) {
             log.info('恢复登录状态，跳转到主页面, domain:', server);
-            success = await restoreCookies(server, token);
+            success = await restoreCookies(server, token, true);
             if (success) {
                 mainWindow.loadURL(`${server}/v`);
             } else {

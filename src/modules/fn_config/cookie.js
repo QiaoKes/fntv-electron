@@ -3,7 +3,7 @@ const log = require('../logger');
 const fn = require('../fn_api/api');
 
 // 从配置恢复 cookies
-async function restoreCookies(domain, token) {
+async function restoreCookies(domain, token, isLogin = false) {
     if (!token) {
         log.info('没有已保存的登录信息，跳过恢复 cookies');
         return false;
@@ -14,12 +14,15 @@ async function restoreCookies(domain, token) {
         return false;
     }
 
-    // 验证token是否有效
-    const fnapi = new fn.apiService(domain, token);
-    const response = await fnapi.getUserInfo();
-    if (!response || !response.success) {
-        log.warn('无效的token:', token);
-        return false;
+    if (!isLogin) {
+        // 验证token是否有效
+        const fnapi = new fn.apiService(domain, token);
+        const response = await fnapi.getUserInfo();
+        if (!response || !response.success) {
+            log.warn('无效的token:', token);
+            return false;
+        }
+        log.info('Token 验证通过, username:', response.data.username || '无用户信息');
     }
 
     // 使用 token 设置 cookie

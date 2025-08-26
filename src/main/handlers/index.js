@@ -1,8 +1,7 @@
 const fs = require('fs');
 const path = require('path');
+const interceptor = require('./core/interceptor');
 const { initAppHooks } = require('./core/appHook');
-const { initSessionInterceptor } = require('./core/interceptor');
-const { getInstance: getUpdateChecker } = require('../../modules/updater/updateChecker');
 const log = require('../../modules/logger');
 
 /**
@@ -34,8 +33,6 @@ function loadPlugins() {
                 }
             }
         });
-        
-        log.info('所有处理器插件加载完成');
     } catch (error) {
         log.error('加载插件目录失败:', error);
     }
@@ -45,14 +42,15 @@ function loadPlugins() {
  * 注册所有插件
  */
 function registerAllPlugins() {
+    interceptor.getInstance().init('persist:fntv');
+    // 加载所有插件
+    loadPlugins();
+
     // 初始化 session 拦截器
-    initSessionInterceptor();
+    interceptor.getInstance().run();
     
     // 初始化应用钩子
     initAppHooks();
-    
-    // 加载所有插件
-    loadPlugins();
 }
 
 module.exports = {
