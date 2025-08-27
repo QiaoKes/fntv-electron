@@ -12,7 +12,7 @@ function tryGetItemGuidFromOriginalLogic(button) {
             const originalFetch = window.fetch;
             const originalXHROpen = XMLHttpRequest.prototype.open;
             const originalXHRSend = XMLHttpRequest.prototype.send;
-            
+
             let interceptedGuid = null;
             const timeout = setTimeout(() => {
                 // 恢复原有方法
@@ -21,9 +21,9 @@ function tryGetItemGuidFromOriginalLogic(button) {
                 XMLHttpRequest.prototype.send = originalXHRSend;
                 resolve(null);
             }, 2000);
-            
+
             // 拦截 fetch 请求
-            window.fetch = function(url, options) {
+            window.fetch = function (url, options) {
                 log.info('Intercepted fetch request:', url, options);
                 if (url.includes('/api/v1/play/info') && options && options.body) {
                     try {
@@ -46,14 +46,14 @@ function tryGetItemGuidFromOriginalLogic(button) {
                 }
                 return originalFetch.apply(this, arguments);
             };
-            
+
             // 拦截 XMLHttpRequest
-            XMLHttpRequest.prototype.open = function(method, url) {
+            XMLHttpRequest.prototype.open = function (method, url) {
                 this._url = url;
                 return originalXHROpen.apply(this, arguments);
             };
-            
-            XMLHttpRequest.prototype.send = function(data) {
+
+            XMLHttpRequest.prototype.send = function (data) {
                 if (this._url && this._url.includes('/api/v1/play/info') && data) {
                     try {
                         const parsedData = JSON.parse(data);
@@ -77,7 +77,7 @@ function tryGetItemGuidFromOriginalLogic(button) {
                 }
                 return originalXHRSend.apply(this, arguments);
             };
-            
+
             // 触发原有点击事件
             button.setAttribute('data-allow-original-play', 'true');
             setTimeout(() => {
@@ -87,7 +87,7 @@ function tryGetItemGuidFromOriginalLogic(button) {
                     cancelable: true
                 });
                 button.dispatchEvent(clickEvent);
-                
+
                 // 检查是否获取到了 guid
                 setTimeout(() => {
                     clearTimeout(timeout);
@@ -99,7 +99,7 @@ function tryGetItemGuidFromOriginalLogic(button) {
                     resolve(interceptedGuid);
                 }, 1000);
             }, 50);
-            
+
         } catch (error) {
             log.error('Error in tryGetItemGuidFromOriginalLogic:', error);
             resolve(null);
@@ -123,7 +123,7 @@ function getItemGuidFromDOM(button) {
             }
             parent = parent.parentElement;
         }
-        
+
         // 如果A标签中没有找到，检查当前URL
         const url = window.location.href;
         const urlMatch = url.match(/([a-f0-9]{32})/i);
@@ -131,27 +131,28 @@ function getItemGuidFromDOM(button) {
             log.info('Found guid from URL:', urlMatch[1]);
             return urlMatch[1];
         }
-        
+
         return null;
-        
+
     } catch (error) {
         log.error('Error extracting guid from DOM:', error);
         return null;
     }
 }
+
 // 发送播放信息到主进程
 function sendPlayEventToMain(button = null) {
     let id = '';
-    
+
     // 尝试从DOM中获取guid
     if (button) {
         id = getItemGuidFromDOM(button);
     }
-    
+
     if (!id) {
         return null; // 返回 null 表示需要使用拦截方法
     }
-    
+
     const token = getCookie('Trim-MC-token');
 
     if (id && token) {
@@ -328,12 +329,12 @@ function createPlayModal(originalButton) {
     originalPlayBtn.addEventListener('click', () => {
         modalOverlay.remove();
         log.info('用户选择了原有播放');
-        
+
         // 触发原有播放逻辑
         if (originalButton) {
             // 临时标记为允许原有播放
             originalButton.setAttribute('data-allow-original-play', 'true');
-            
+
             // 立即触发原有点击事件
             setTimeout(() => {
                 const clickEvent = new MouseEvent('click', {
@@ -342,7 +343,7 @@ function createPlayModal(originalButton) {
                     cancelable: true
                 });
                 originalButton.dispatchEvent(clickEvent);
-                
+
                 // 清除临时标记
                 setTimeout(() => {
                     originalButton.removeAttribute('data-allow-original-play');
@@ -354,15 +355,15 @@ function createPlayModal(originalButton) {
     mpvPlayBtn.addEventListener('click', async () => {
         modalOverlay.remove();
         log.info('用户选择了MPV播放');
-        
+
         // 先尝试简化的 DOM 方法
         const domResult = sendPlayEventToMain(originalButton);
-        
+
         if (!domResult) {
             // DOM 方法失败，使用拦截方法作为 fallback
             log.info('DOM method failed, trying original logic interception...');
             const itemGuid = await tryGetItemGuidFromOriginalLogic(originalButton);
-            
+
             if (itemGuid) {
                 log.info('Successfully obtained item_guid from original logic:', itemGuid);
                 const token = getCookie('Trim-MC-token');
@@ -415,11 +416,11 @@ function createPlayModal(originalButton) {
 // 拦截遮罩按钮点击
 function interceptMaskButton() {
     const playButtons = document.querySelectorAll('.play-mask__btn--play:not([data-mask-intercepted])');
-    
+
     playButtons.forEach(btn => {
         // 标记已处理
         btn.setAttribute('data-mask-intercepted', 'true');
-        
+
         // 添加点击事件拦截器
         const clickHandler = (e) => {
             // 检查是否允许原有播放
@@ -427,7 +428,7 @@ function interceptMaskButton() {
                 log.info('Allowing original play logic to execute');
                 return; // 不拦截，让原有逻辑执行
             }
-            
+
             e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation();
