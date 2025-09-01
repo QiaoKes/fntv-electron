@@ -1,9 +1,10 @@
 const { app, BrowserWindow } = require('electron');
-const { registerIpcHandlers, updateChecker } = require('./eventHandlers');
-const { createMainWindow, setupWindowShowEvents } = require('./windowManager');
-const { setupFullScreenToggle } = require('./screenControl');
-const { createTray, showTrayNotification, destroyTray } = require('./trayManager');
+const { registerAllPlugins } = require('./handlers');
+const updateChecker = require('../modules/updater/updateChecker');
+const winctrl = require('./common/winctrl');
+const { createTray, showTrayNotification, destroyTray } = require('./common/tray');
 const log = require('../modules/logger');
+const { getMainWindow } = require('./common/mainwin');
 
 // 禁用输入法自动切换
 app.commandLine.appendSwitch('--lang', 'en-US');
@@ -36,26 +37,32 @@ if (!gotTheLock) {
         log.info('日志文件位置:', log.getLogFile());
         
         // 创建主窗口
-        mainWindow = createMainWindow();
+        mainWindow = getMainWindow();
+
+        // 注册所有插件
+        registerAllPlugins();
 
         // 创建系统托盘
         createTray(mainWindow);
 
         // 设置窗口关闭事件
-        setupWindowEvents();
+        setupWindowEvents(mainWindow);
 
         // 设置全屏切换
-        setupFullScreenToggle(mainWindow);
+        winctrl.setupFullScreenToggle(mainWindow);
 
-        // 注册 IPC 事件处理程序
-        registerIpcHandlers();
+        // 禁用输入法自动切换
+        winctrl.setupInputMethodDisable(mainWindow);
 
         // 设置窗口显示事件
-        setupWindowShowEvents(mainWindow);
+        winctrl.setupWindowShowEvents(mainWindow);
+
+        // 恢复 Cookie
+        winctrl.setupCookieRestore(mainWindow);
 
         // 延迟3秒后进行自动更新检查，避免影响应用启动速度
         setTimeout(() => {
-            updateChecker.autoCheckForUpdates().catch(error => {
+            updateChecker.getInstance().autoCheckForUpdates().catch(error => {
                 log.error('启动时自动检查更新失败:', error);
             });
         }, 3000);
@@ -63,7 +70,7 @@ if (!gotTheLock) {
 }
 
 // 设置窗口事件
-function setupWindowEvents() {
+function setupWindowEvents(mainWindow) {
     if (mainWindow) {
         // 监听窗口关闭事件
         mainWindow.on('close', (event) => {
@@ -71,34 +78,10 @@ function setupWindowEvents() {
                 // 阻止窗口关闭，改为隐藏到托盘
                 event.preventDefault();
                 mainWindow.hide();
-                
+
                 // 显示托盘提示（仅在Windows上首次显示）
                 showTrayNotification();
             }
         });
     }
 }
-
-app.on('window-all-closed', () => {
-    // 在 macOS 上，应用通常会保持活跃状态，即使所有窗口都关闭了
-    if (process.platform !== 'darwin') {
-        // 如果不是真正退出，不要退出应用
-        if (!app.isQuiting) {
-            return;
-        }
-        app.quit();
-    }
-});
-
-app.on('activate', () => {
-    // 在 macOS 上，当点击 dock 图标并且没有其他窗口打开时，重新创建窗口
-    if (BrowserWindow.getAllWindows().length === 0) {
-        mainWindow = createMainWindow();
-    }
-});
-
-// 应用退出前清理托盘
-app.on('before-quit', () => {
-    app.isQuiting = true;
-    destroyTray();
-});

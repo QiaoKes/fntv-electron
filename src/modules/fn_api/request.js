@@ -93,7 +93,7 @@ async function request(baseUrl, url, method, token, data, timeout = DEFAULT_TIME
 
         // 处理业务错误
         if (res.code !== 0) {
-            log.error(`fn_api 请求失败 - `, res);
+            log.error(`fn_api 请求失败 url:${fullUrl}`, ' header:', headers, ' req:', data || 'null', ' resp:', res);
             return {
                 success: false,
                 message: res.msg

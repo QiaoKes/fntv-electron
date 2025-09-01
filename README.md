@@ -9,6 +9,7 @@
 <img src="resource/switch.png" width="90%">
 <img src="resource/simple.png" width="90%">
 <img src="resource/mpv.png" width="90%">
+<img src="resource/markbtn.png" width="90%">
 <img src="resource/danmu.png" width="90%">
 
 [演示视频](https://www.bilibili.com/video/BV12dYXzhE6U/)
@@ -23,6 +24,7 @@
 
 ## 更新记录
 
+* 2025.8.27 - v1.7.2 支持所有页面小按钮弹出二级弹窗，选择是否mpv播放
 * 2025.8.26 - v1.7.1 支持记录客户端日志到%appdata%/fntv/logs，增强可排障性，数据脱敏处理
 * 2025.8.24 - v1.7.0 支持自动检查更新，登录界面支持配置github代理
 * 2025.8.24 - v1.6.4 mpv配置管理抽为单独仓库，支持Anime4K着色器预设方案
