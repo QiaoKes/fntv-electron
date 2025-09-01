@@ -38,8 +38,8 @@ class UpdateChecker {
         this.currentVersion = currentVersion || (app ? app.getVersion() : 'unknown');
         this.githubApiUrl = `https://api.github.com/repos/${owner}/${repo}/releases/latest`;
         // 重试配置
-        this.maxRetries = 3;
-        this.retryDelay = 2000; // 2秒
+        this.maxRetries = 5;
+        this.baseRetryDelay = 2000; // 基础延迟2秒
     }
 
     /**
@@ -51,7 +51,7 @@ class UpdateChecker {
     }
 
     /**
-     * 带重试机制的检查更新
+     * 带梯度重试机制的检查更新
      * @param {number} retryCount - 当前重试次数
      * @returns {Promise<{hasUpdate: boolean, latestVersion?: string, downloadUrl?: string, releaseNotes?: string}>}
      */
@@ -94,8 +94,10 @@ class UpdateChecker {
             
             // 如果还有重试次数，则等待后重试
             if (retryCount < this.maxRetries) {
-                log.info(`等待 ${this.retryDelay}ms 后重试...`);
-                await delay(this.retryDelay);
+                // 梯度延迟
+                const retryDelay = this.baseRetryDelay * Math.pow(2, retryCount);
+                log.info(`等待 ${retryDelay}ms 后重试...`);
+                await delay(retryDelay);
                 return await this.checkForUpdatesWithRetry(retryCount + 1);
             }
             
@@ -281,4 +283,31 @@ class UpdateChecker {
     }
 }
 
-module.exports = UpdateChecker;
+// 单例实例
+let instance = null;
+
+/**
+ * 获取 UpdateChecker 单例实例
+ * @param {string} owner - GitHub 仓库所有者，默认 'QiaoKes'
+ * @param {string} repo - GitHub 仓库名称，默认 'fntv-electron'
+ * @param {string} currentVersion - 当前版本号，默认从 app.getVersion() 获取
+ * @returns {UpdateChecker} UpdateChecker 实例
+ */
+function getInstance(owner = 'QiaoKes', repo = 'fntv-electron', currentVersion = null) {
+    if (!instance) {
+        instance = new UpdateChecker(owner, repo, currentVersion);
+    }
+    return instance;
+}
+
+/**
+ * 重置单例实例（主要用于测试）
+ */
+function resetInstance() {
+    instance = null;
+}
+
+module.exports = {
+    getInstance,
+    resetInstance,
+};
