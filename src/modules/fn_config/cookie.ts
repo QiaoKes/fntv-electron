@@ -1,8 +1,6 @@
 import { session } from 'electron';
 import log from '../logger';
-
-// 由于fn_api模块还是JavaScript，我们需要使用require导入
-const fn = require('../fn_api/api');
+import { ApiService } from '../fn_api/api';
 
 /**
  * 从配置恢复 cookies
@@ -24,7 +22,7 @@ export async function restoreCookies(domain: string, token: string, isLogin: boo
 
     if (!isLogin) {
         // 验证token是否有效
-        const fnapi = new fn.apiService(domain, token);
+        const fnapi = new ApiService(domain, token);
         const response = await fnapi.getUserInfo();
         if (!response || !response.success) {
             log.warn('无效的token:', token);
