@@ -1,16 +1,36 @@
 {
     "name": "fntv",
-    "version": "1.7.2",
+    "version": "1.7.3",
     "description": "A fntv app built with Electron",
     "main": "dest/main/main.js",
     "scripts": {
-        "start": "electron .",
-        "build": "electron-builder"
+        "start": "npm run build && electron .",
+        "dev": "npm run build && electron .",
+        "build": "node build.mjs",
+        "build:ts": "tsc",
+        "watch": "tsc --watch",
+        "clean": "rimraf dest",
+        "postinstall": "npm run build"
     },
     "author": "tracing",
     "devDependencies": {
+        "@types/cacheable-request": "^6.0.3",
+        "@types/debug": "^4.1.12",
+        "@types/fs-extra": "^11.0.4",
+        "@types/http-cache-semantics": "^4.0.4",
+        "@types/keyv": "^3.1.4",
+        "@types/ms": "^2.1.0",
+        "@types/node": "^20.19.11",
+        "@types/plist": "^3.0.5",
+        "@types/responselike": "^1.0.3",
+        "@types/verror": "^1.10.11",
+        "@types/yauzl": "^2.10.3",
+        "esbuild": "^0.19.12",
+        "esbuild-copy-static-files": "^0.1.0",
         "electron": "file:./third_party/electron",
-        "electron-builder": "^26.0.12"
+        "electron-builder": "^26.0.12",
+        "rimraf": "^5.0.9",
+        "typescript": "^5.5.4"
     },
     "dependencies": {
         "axios": "^1.11.0",
@@ -40,7 +60,7 @@
             "createStartMenuShortcut": true
         },
         "files": [
-            "src",
+            "dest",
             "build"
         ],
         "extraFiles": [
