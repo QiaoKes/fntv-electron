@@ -9,7 +9,7 @@ export class PlayerFactory {
      * @param type 播放器类型
      * @param playerClass 播放器类构造函数
      */
-    static registerPlayer(type: string, playerClass: PlayerConstructor): void {
+    static registerPlayer(type: PlayerType, playerClass: PlayerConstructor): void {
         this.registry[type] = playerClass;
     }
 
@@ -19,7 +19,7 @@ export class PlayerFactory {
      * @param config 播放器配置
      * @returns 播放器实例
      */
-    static createPlayer(type: string, config: PlayerConfig): BasePlayer {
+    static createPlayer(type: PlayerType, config: PlayerConfig): BasePlayer {
         const PlayerClass = this.registry[type];
         if (!PlayerClass) {
             throw new Error(`Unsupported player type: ${type}`);
@@ -40,7 +40,7 @@ export class PlayerFactory {
      * @param type 播放器类型
      * @returns 是否已注册
      */
-    static isTypeRegistered(type: string): boolean {
+    static isTypeRegistered(type: PlayerType): boolean {
         return type in this.registry;
     }
 }
