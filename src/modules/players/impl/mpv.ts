@@ -1,5 +1,13 @@
 import { spawn, ChildProcess } from 'child_process';
-import { BasePlayer, PlayerConfig, PlaybackStatus, PlayerType } from '../types';
+import { 
+    BasePlayer, 
+    Config, 
+    PlayStatusData, 
+    PlayerType, 
+    EventType,
+    PlayErrorData,
+    PlayExitData
+} from '../types';
 import { PlayerFactory } from '../factory';
 import log from '../../logger';
 
@@ -7,7 +15,7 @@ export class MpvPlayer extends BasePlayer {
     private lastProgressTime: number = 0;
     private throttleInterval: number = 15000; // 15秒间隔（毫秒）
 
-    constructor(config: PlayerConfig) {
+    constructor(config: Config) {
         super(config);
     }
 
@@ -16,7 +24,7 @@ export class MpvPlayer extends BasePlayer {
      * @param str - MPV输出的字符串
      * @returns 解析后的时间对象
      */
-    static parseVideoData(str: string): PlaybackStatus | null {
+    static parseVideoData(str: string): PlayStatusData | null {
         const timeRegex = /(\d{2}:\d{2}:\d{2}) \/ (\d{2}:\d{2}:\d{2}) \((\d+)%\)/;
         const match = str.match(timeRegex);
 
@@ -80,8 +88,7 @@ export class MpvPlayer extends BasePlayer {
                 // 节流处理
                 const now = Date.now();
                 if (now - this.lastProgressTime >= this.throttleInterval) {
-                    // 触发进度回调
-                    this.config.onData(progressData);
+                    this.emitEvent(EventType.PROGRESS, progressData);
                     this.lastProgressTime = now;
                 }
             }
@@ -91,17 +98,22 @@ export class MpvPlayer extends BasePlayer {
         this.playerProcess.stderr?.on('data', (data: Buffer) => {
             const errorMessage = data.toString().trim();
             if (errorMessage) {
-                if (this.config.debug) {
-                    log.error(`[MPV Error] ${errorMessage}`);
-                }
-                this.config.onError(errorMessage);
+                const errorEvent: PlayErrorData = {
+                    message: errorMessage
+                };
+                this.emitEvent(EventType.ERROR, errorEvent);
             }
         });
 
         // 处理进程退出
         this.playerProcess.on('exit', (code: number) => {
-            // 退出时传递最后记录的进度状态
-            this.config.onExit(code, this.getStatus());
+            // 退出时发射退出事件
+            const event: PlayExitData = {
+                code: code,
+                status: this.getStatus()
+            };
+
+            this.emitEvent(EventType.EXIT, event);
 
             if (this.config.debug) {
                 if (code !== 0) {
@@ -127,7 +139,10 @@ export class MpvPlayer extends BasePlayer {
                 log.error(`播放失败: ${err.message}`);
             }
 
-            this.config.onError(err.message);
+            const event: PlayErrorData = {
+                message: err.message
+            };
+            this.emitEvent(EventType.ERROR, event);
             this.playerProcess = null;
         });
 
@@ -136,7 +151,11 @@ export class MpvPlayer extends BasePlayer {
 
     stop(): void {
         if (this.playerProcess) {
-            this.config.onExit(0, this.getStatus());
+            const event: PlayExitData = {
+                code: 0,
+                status: this.getStatus()
+            };
+            this.emitEvent(EventType.EXIT, event);
             log.info('停止播放');
             this.playerProcess.kill();
             this.playerProcess = null;

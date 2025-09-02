@@ -1,4 +1,4 @@
-import { BasePlayer, PlayerConfig, PlayerConstructor, PlayerRegistry, PlayerType } from './types';
+import { BasePlayer, Config, PlayerConstructor, PlayerRegistry, PlayerType } from './types';
 
 // 播放器工厂类
 export class PlayerFactory {
@@ -19,7 +19,7 @@ export class PlayerFactory {
      * @param config 播放器配置
      * @returns 播放器实例
      */
-    static createPlayer(type: PlayerType, config: PlayerConfig): BasePlayer {
+    static createPlayer(type: PlayerType, config: Config): BasePlayer {
         const PlayerClass = this.registry[type];
         if (!PlayerClass) {
             throw new Error(`Unsupported player type: ${type}`);

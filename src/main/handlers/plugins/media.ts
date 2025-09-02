@@ -1,5 +1,5 @@
 import { BrowserWindow, IpcMainEvent } from 'electron';
-import { PlayerFactory, PlayerType, PlaybackStatus, BasePlayer, PlayerConfig } from '../../../modules/players';
+import * as ply from '../../../modules/players';
 import * as fn from '../../../modules/fn_api/api';
 import * as fnConfig from '../../../modules/fn_config/config';
 import { registerHandler } from '../core/ipcHandler';
@@ -18,7 +18,7 @@ interface PlayRequest {
 }
 
 // 全局播放器实例引用
-let currentPlayer: BasePlayer | null = null;
+let currentPlayer: ply.BasePlayer | null = null;
 
 // 刷新窗口
 async function refreshWindow(): Promise<void> {
@@ -95,7 +95,7 @@ async function handlePlayMovie(event: IpcMainEvent, { id, token }: PlayRequest):
         playerPath = 'third_party\\fntv-mpv\\mpv.exe'
     }
 
-    let playConfig: PlayerConfig = {
+    let playConfig: ply.Config = {
         url: playUrl,
         playerPath: playerPath,
         title: title,
@@ -109,43 +109,57 @@ async function handlePlayMovie(event: IpcMainEvent, { id, token }: PlayRequest):
             subArgs
         ],
         debug: true,
-        onData: (progress: PlaybackStatus) => {
-            if (progress.percentage > 90) {
-                log.info('视频播放接近结束，更新状态...');
-                fnapi.setWatched(itemGuid);
-                return;
+        onEvent: (type: ply.EventType, data: ply.EventData) => {
+            switch (type) {
+                case ply.EventType.PROGRESS:
+                    const progressData: ply.PlayStatusData = data as ply.PlayStatusData;
+                    if (progressData.percentage > 90) {
+                        log.info('视频播放接近结束，更新状态...');
+                        fnapi.setWatched(itemGuid);
+                        return;
+                    }
+
+                    playStatus.ts = progressData.currentSeconds;
+                    playStatus.duration = progressData.totalSeconds;
+                    fnapi.recordPlayState(playStatus);
+                    break;
+
+                case ply.EventType.ERROR:
+                    const errorData: ply.PlayErrorData = data as ply.PlayErrorData;
+                    log.error('MPV error:', errorData.message);
+                    break;
+
+                case ply.EventType.EXIT:
+                    const event = data as ply.PlayExitData;
+                    if (event.code !== 0) {
+                        log.error(`播放器异常退出 (code ${event.code})`);
+                        refreshWindow();
+                        return;
+                    }
+
+                    log.info('MPV exited with code:', event.code);
+                    log.info('最后播放位置:', event.status);
+
+                    if (event.status.percentage > 90) {
+                        log.info('视频播放接近结束，更新状态...');
+                        fnapi.setWatched(itemGuid).then(refreshWindow);
+                        return;
+                    }
+
+                    playStatus.ts = event.status.currentSeconds;
+                    playStatus.duration = event.status.totalSeconds;
+                    fnapi.recordPlayState(playStatus).then(refreshWindow);
+                    break;
+
+                default:
+                    log.debug('收到播放器事件:', type);
+                    break;
             }
-
-            log.debug('当前播放进度:', progress);
-            playStatus.ts = progress.currentSeconds;
-            playStatus.duration = progress.totalSeconds;
-            fnapi.recordPlayState(playStatus);
-        },
-        onError: (err: string) => log.error('MPV error:', err),
-        onExit: (code: number, progress: PlaybackStatus) => {
-            if (code !== 0) {
-                log.error(`播放器异常退出 (code ${code})`);
-                refreshWindow();
-                return;
-            }
-
-            log.info('MPV exited with code:', code);
-            log.info('最后播放位置:', progress);
-
-            if (progress.percentage > 90) {
-                log.info('视频播放接近结束，更新状态...');
-                fnapi.setWatched(itemGuid).then(refreshWindow);
-                return;
-            }
-
-            playStatus.ts = progress.currentSeconds;
-            playStatus.duration = progress.totalSeconds;
-            fnapi.recordPlayState(playStatus).then(refreshWindow);
         }
     }
 
     // 创建播放器实例
-    const player = PlayerFactory.createPlayer(PlayerType.MPV, playConfig);
+    const player = ply.PlayerFactory.createPlayer(ply.PlayerType.MPV, playConfig);
 
     // 保存全局引用
     currentPlayer = player;
