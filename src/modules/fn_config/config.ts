@@ -1,8 +1,8 @@
-const fs = require('fs');
-const path = require('node:path');
-const crypto = require('crypto');
-const { app } = require('electron');
-const { USER_DATA_PATH } = require('../../public/constants');
+import * as fs from 'fs';
+import * as path from 'node:path';
+import * as crypto from 'crypto';
+import { app } from 'electron';
+import { USER_DATA_PATH } from '../../public/constants';
 
 const HISTORY_LIMIT = 5;
 const ENCRYPTION_KEY = 'U2XDcFsV6rdTE9wB5ZHvy6BW9hBTKJ1H'; // 32 chars for aes-256
@@ -10,7 +10,74 @@ const IV = Buffer.alloc(16, 0); // Initialization vector
 
 app.setPath('userData', USER_DATA_PATH);
 
-function getConfigPath() {
+/**
+ * 配置接口
+ */
+export interface Config {
+    account?: string;
+    domain?: string;
+    token?: string;
+    useHttps?: boolean;
+    history?: HistoryItem[];
+    downloadProxyEnabled?: boolean;
+    downloadProxy?: string;
+}
+
+/**
+ * 历史记录项接口
+ */
+export interface HistoryItem {
+    domain: string;
+    account: string;
+    password: string;
+    useHttps?: boolean;
+}
+
+/**
+ * 保存配置参数接口
+ */
+export interface SaveConfigParams {
+    account: string;
+    domain: string;
+    token: string;
+    useHttps?: boolean;
+}
+
+/**
+ * 添加历史记录参数接口
+ */
+export interface AddHistoryParams {
+    domain: string;
+    account: string;
+    password: string;
+    useHttps?: boolean;
+}
+
+/**
+ * 删除历史记录参数接口
+ */
+export interface DeleteHistoryParams {
+    domain: string;
+    account: string;
+}
+
+/**
+ * 下载代理配置接口
+ */
+export interface DownloadProxyConfig {
+    enabled: boolean;
+    proxyUrl: string;
+}
+
+/**
+ * 设置下载代理配置参数接口
+ */
+export interface SetDownloadProxyConfigParams {
+    enabled?: boolean;
+    proxyUrl?: string;
+}
+
+function getConfigPath(): string {
     const dir = app.getPath('userData');
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
@@ -19,7 +86,7 @@ function getConfigPath() {
 }
 
 // 加密密码
-function encrypt(text) {
+function encrypt(text: string): string {
     const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY), IV);
     let encrypted = cipher.update(text, 'utf8', 'hex');
     encrypted += cipher.final('hex');
@@ -27,7 +94,7 @@ function encrypt(text) {
 }
 
 // 解密密码
-function decrypt(encrypted) {
+function decrypt(encrypted: string): string {
     const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY), IV);
     let decrypted = decipher.update(encrypted, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
@@ -35,11 +102,11 @@ function decrypt(encrypted) {
 }
 
 // 读取配置
-function readConfig() {
+export function readConfig(): Config | null {
     const p = getConfigPath();
     if (fs.existsSync(p)) {
         try {
-            return JSON.parse(fs.readFileSync(p, 'utf-8'));
+            return JSON.parse(fs.readFileSync(p, 'utf-8')) as Config;
         } catch {
             return null;
         }
@@ -48,8 +115,8 @@ function readConfig() {
 }
 
 // 保存配置（账号、域名、token、HTTPS设置）
-function saveConfig({ account, domain, token, useHttps }) {
-    const config = readConfig() || {};
+export function saveConfig({ account, domain, token, useHttps }: SaveConfigParams): void {
+    const config: Config = readConfig() || {};
     config.account = account;
     config.domain = domain;
     config.token = token;
@@ -58,8 +125,8 @@ function saveConfig({ account, domain, token, useHttps }) {
 }
 
 // 添加历史记录（域名、账号、加密密码、HTTPS设置）
-function addHistory({ domain, account, password, useHttps }) {
-    const config = readConfig() || {};
+export function addHistory({ domain, account, password, useHttps }: AddHistoryParams): void {
+    const config: Config = readConfig() || {};
     config.history = config.history || [];
     // 移除重复项
     config.history = config.history.filter(
@@ -80,8 +147,8 @@ function addHistory({ domain, account, password, useHttps }) {
 }
 
 // 获取历史记录（解密密码）
-function getHistory() {
-    const config = readConfig() || {};
+export function getHistory(): HistoryItem[] {
+    const config: Config = readConfig() || {};
     if (!config.history) return [];
     return config.history.map(item => ({
         domain: item.domain,
@@ -92,15 +159,15 @@ function getHistory() {
 }
 
 // 清除历史记录
-function clearHistory() {
-    const config = readConfig() || {};
+export function clearHistory(): void {
+    const config: Config = readConfig() || {};
     config.history = [];
     fs.writeFileSync(getConfigPath(), JSON.stringify(config, null, 2));
 }
 
 // 删除单个历史记录
-function deleteHistoryItem({ domain, account }) {
-    const config = readConfig() || {};
+export function deleteHistoryItem({ domain, account }: DeleteHistoryParams): boolean {
+    const config: Config = readConfig() || {};
     if (!config.history) return false;
     
     const originalLength = config.history.length;
@@ -116,8 +183,8 @@ function deleteHistoryItem({ domain, account }) {
 }
 
 // 获取下载代理配置
-function getDownloadProxyConfig() {
-    const config = readConfig() || {};
+export function getDownloadProxyConfig(): DownloadProxyConfig {
+    const config: Config = readConfig() || {};
     return {
         enabled: config.downloadProxyEnabled !== false, // 默认开启
         proxyUrl: config.downloadProxy || 'https://ghfast.top'
@@ -125,23 +192,24 @@ function getDownloadProxyConfig() {
 }
 
 // 设置下载代理配置
-function setDownloadProxyConfig({ enabled = true, proxyUrl = 'https://ghfast.top' }) {
-    const config = readConfig() || {};
+export function setDownloadProxyConfig({ enabled = true, proxyUrl = 'https://ghfast.top' }: SetDownloadProxyConfigParams = {}): void {
+    const config: Config = readConfig() || {};
     config.downloadProxyEnabled = enabled;
     config.downloadProxy = proxyUrl;
     fs.writeFileSync(getConfigPath(), JSON.stringify(config, null, 2));
 }
 
 // 向后兼容的函数
-function getDownloadProxyUrl() {
+export function getDownloadProxyUrl(): string {
     return getDownloadProxyConfig().proxyUrl;
 }
 
-function setDownloadProxyUrl(proxyUrl) {
+export function setDownloadProxyUrl(proxyUrl: string): void {
     const current = getDownloadProxyConfig();
     setDownloadProxyConfig({ enabled: current.enabled, proxyUrl });
 }
 
+// CommonJS导出，确保与现有代码兼容
 module.exports = {
     saveConfig,
     readConfig,

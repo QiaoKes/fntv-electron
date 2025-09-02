@@ -31,12 +31,24 @@
         "sourceMap": true,
         // 打开增量构建，加快后续编译速度
         "incremental": true,
-        "tsBuildInfoFile": "dist/.tsbuildinfo",
+        "tsBuildInfoFile": "dest/.tsbuildinfo",
         // 跳过库文件类型检查以加快编译并避免第三方声明库引起的问题
         "skipLibCheck": true,
         // 是否生成声明文件（此项目不是发布 npm 包，默认关闭），如果需要对外类型请设为 true
         "declaration": false,
-        // 明确使用 Node 和 Electron 类型（便于识别 process、Buffer 等全局类型）
+        // 保持原有的模块路径别名配置，方便在源码中使用 `@/` 指向 `src/`
+        "baseUrl": ".",
+        "paths": {
+            "@/*": [
+                "src/*"
+            ]
+        },
+        // 指定类型根目录，优先使用本地的 Electron 类型定义
+        "typeRoots": [
+            "./third_party",
+            "./node_modules/@types"
+        ],
+        // 明确使用 Node 和本地 Electron 类型
         "types": [
             "node",
             "electron"
@@ -51,7 +63,6 @@
         "node_modules",
         "dest",
         "release",
-        "log",
-        "third_party"
+        "log"
     ]
 }
