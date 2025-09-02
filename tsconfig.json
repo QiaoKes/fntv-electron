@@ -1,14 +1,14 @@
 {
     "compilerOptions": {
-        "target": "ES2024",
+        "target": "ES2020",
         // 可用全局 API 的类型库：保留 ES 标准并添加 DOM，以覆盖 preload/renderer 中的 DOM 类型
         "lib": [
-            "ES2024",
+            "ES2020",
             "DOM"
         ],
         // 输出目录（编译产物）
         "outDir": "dest",
-        // 模块系统：使用ES2024替代CommonJS以支持ESModules
+        // 模块系统：使用ES2020替代CommonJS以支持ESModules
         "module": "CommonJS",
         // 是否允许编译 .js 文件（此项目使用 TypeScript 源码，设为 false）
         "allowJs": false,
