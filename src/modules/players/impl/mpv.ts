@@ -59,11 +59,11 @@ export class MpvPlayer extends BasePlayer {
 
         // 调试模式输出命令
         if (this.config.debug) {
-            log.debug('MPV 命令:', `"${this.config.mpvPath}" ${args.join(' ')}`);
+            log.debug('MPV 命令:', `"${this.config.playerPath}" ${args.join(' ')}`);
         }
 
         // 启动播放器进程
-        this.playerProcess = spawn(this.config.mpvPath, args, {
+        this.playerProcess = spawn(this.config.playerPath, args, {
             stdio: ['ignore', 'pipe', 'pipe'],
             detached: true
         });
@@ -99,12 +99,12 @@ export class MpvPlayer extends BasePlayer {
         });
 
         // 处理进程退出
-        this.playerProcess.on('exit', (code: number | null) => {
+        this.playerProcess.on('exit', (code: number) => {
             // 退出时传递最后记录的进度状态
             this.config.onExit(code, this.getStatus());
 
             if (this.config.debug) {
-                if (code !== 0 && code !== null) {
+                if (code !== 0) {
                     log.error(`播放异常结束 (code ${code})`);
                 } else {
                     log.info('播放器正常退出');
@@ -122,7 +122,7 @@ export class MpvPlayer extends BasePlayer {
                 log.error('错误: 找不到 mpv 播放器。请确保已安装 mpv。');
                 log.error('在 macOS/Linux 上: brew install mpv');
                 log.error('在 Windows 上: 从 https://mpv.io/installation/ 下载');
-                log.error('或使用 --mpvPath 参数指定 mpv 的完整路径');
+                log.error('或使用 --playerPath 参数指定 mpv 的完整路径');
             } else {
                 log.error(`播放失败: ${err.message}`);
             }

@@ -14,10 +14,10 @@ export interface PlayerConfig {
     headers?: Record<string, string>;
     debug?: boolean;
     extraArgs?: string[];
-    mpvPath?: string;
+    playerPath?: string;
     onData?: (data: PlaybackStatus) => void;
     onError?: (error: string) => void;
-    onExit?: (code: number | null, status: PlaybackStatus) => void;
+    onExit?: (code: number, status: PlaybackStatus) => void;
 }
 
 // 播放器类型枚举
@@ -44,7 +44,7 @@ export abstract class BasePlayer {
             headers: config.headers || {},
             debug: config.debug || false,
             extraArgs: config.extraArgs || [],
-            mpvPath: config.mpvPath || 'mpv',
+            playerPath: config.playerPath || 'mpv',
             onData: config.onData || (() => {}),
             onError: config.onError || (() => {}),
             onExit: config.onExit || (() => {})
