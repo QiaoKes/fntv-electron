@@ -5,7 +5,7 @@ import * as path from 'path';
 import * as os from 'os';
 import axios, { AxiosInstance } from 'axios';
 import { app } from 'electron';
-const log = require('../logger');
+import log from '../logger';
 
 // 类型定义
 export interface LoginData {

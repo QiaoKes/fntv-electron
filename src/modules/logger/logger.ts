@@ -6,7 +6,8 @@ import { maskLogArguments, maskError } from './masking';
 // 尝试获取app模块，在非Electron环境中可能失败
 let app: any;
 try {
-    app = require('electron').app;
+    const electron = require('electron');
+    app = electron.app;
 } catch (error) {
     // 在非Electron环境中使用备用方案
     app = null;

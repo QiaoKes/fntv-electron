@@ -1,7 +1,7 @@
 import axios, { AxiosResponse } from 'axios';
 import { dialog, shell, app } from 'electron';
 import { getDownloadProxyConfig } from '../fn_config/config';
-const log = require('../logger');
+import log from '../logger';
 
 // 尝试获取semver模块
 let semver: any;

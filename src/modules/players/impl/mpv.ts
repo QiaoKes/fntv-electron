@@ -1,7 +1,7 @@
 import { spawn, ChildProcess } from 'child_process';
 import { BasePlayer, PlayerConfig, PlaybackStatus, PlayerType } from '../types';
 import { PlayerFactory } from '../factory';
-import { log } from '../../logger';
+import log from '../../logger';
 
 export class MpvPlayer extends BasePlayer {
     private mpvPath: string;

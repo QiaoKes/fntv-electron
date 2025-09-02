@@ -84,7 +84,8 @@ export function getLogLevel(): LogLevel {
     // 尝试获取app模块来判断是否为打包环境
     let isPackaged = false;
     try {
-        const { app } = require('electron');
+        const electron = require('electron');
+        const { app } = electron;
         isPackaged = app ? app.isPackaged : false;
         
         // 如果成功获取到app对象，则使用isPackaged判断

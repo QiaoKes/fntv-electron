@@ -1,7 +1,7 @@
 import * as crypto from 'crypto';
 import axios, { AxiosResponse } from 'axios';
 import { setTimeout } from 'timers/promises';
-const log = require('../logger');
+import log from '../logger';
 
 // 全局配置
 const api_key = 'NDzZTVxnRKP8Z0jXg1VAMonaG8akvh';
