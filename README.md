@@ -5,12 +5,12 @@
 
 飞牛影视桌面客户端，基于Electron构建，提供更好的桌面体验和增强功能。
 
-<img src="resource/login.png" width="90%">
-<img src="resource/switch.png" width="90%">
-<img src="resource/simple.png" width="90%">
-<img src="resource/mpv.png" width="90%">
-<img src="resource/markbtn.png" width="90%">
-<img src="resource/danmu.png" width="90%">
+<img src="resource/docs/login.png" width="90%">
+<img src="resource/docs/switch.png" width="90%">
+<img src="resource/docs/simple.png" width="90%">
+<img src="resource/docs/mpv.png" width="90%">
+<img src="resource/docs/markbtn.png" width="90%">
+<img src="resource/docs/danmu.png" width="90%">
 
 [演示视频](https://www.bilibili.com/video/BV12dYXzhE6U/)
 

@@ -81,7 +81,7 @@ export function setupCookieRestore(mainWindow: BrowserWindow): void {
     const savedConfig = readConfig();
     if (!savedConfig || !savedConfig.token || !savedConfig.domain) {
         log.warn('没有找到已保存的配置，无法恢复 cookie');
-        mainWindow.loadFile(path.join(__dirname, '../../public/login.html'));
+        mainWindow.loadFile(path.join(__dirname, '../../../resource/login/index.html'));
         return;
     }
 
@@ -98,10 +98,10 @@ export function setupCookieRestore(mainWindow: BrowserWindow): void {
 
         // cookie 恢复失败，跳转到登录页面
         log.warn('Cookie 恢复失败，跳转到登录页面');
-        mainWindow.loadFile(path.join(__dirname, '../../public/login.html'));
+        mainWindow.loadFile(path.join(__dirname, '../../../resource/login/index.html'));
     }).catch((error) => {
         // 出现异常，也跳转到登录页面
         log.error('Cookie 恢复过程中出现异常:', error);
-        mainWindow.loadFile(path.join(__dirname, '../../public/login.html'));
+        mainWindow.loadFile(path.join(__dirname, '../../../resource/login/index.html'));
     });
 }

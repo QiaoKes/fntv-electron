@@ -59,7 +59,8 @@
         },
         "files": [
             "dest",
-            "build"
+            "build",
+            "resource"
         ],
         "extraFiles": [
             {

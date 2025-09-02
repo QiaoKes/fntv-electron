@@ -58,7 +58,7 @@ function handleLoginRequest(details: OnBeforeRequestListenerDetails, callback: (
     // 加载自定义页面
     const mainWindow = getMainWindow();
     if (mainWindow) {
-        mainWindow.loadFile(path.join(__dirname, '../../../public/login.html'));
+        mainWindow.loadFile(path.join(__dirname, '../../../../resource/login/index.html'));
     } else {
         log.error('主窗口未创建，无法跳转到登录页面');
     }
@@ -81,7 +81,7 @@ function handleLogoutRequest(details: OnBeforeRequestListenerDetails, callback: 
     // 加载自定义页面
     const mainWindow = getMainWindow();
     if (mainWindow) {
-        mainWindow.loadFile(path.join(__dirname, '../../../public/login.html'));
+        mainWindow.loadFile(path.join(__dirname, '../../../../resource/login/index.html'));
     } else {
         log.error('主窗口未创建，无法跳转到登录页面');
     }
