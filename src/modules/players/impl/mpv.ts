@@ -4,13 +4,11 @@ import { PlayerFactory } from '../factory';
 import log from '../../logger';
 
 export class MpvPlayer extends BasePlayer {
-    private mpvPath: string;
     private lastProgressTime: number = 0;
     private throttleInterval: number = 15000; // 15秒间隔（毫秒）
 
-    constructor(config: PlayerConfig & { mpvPath?: string }) {
+    constructor(config: PlayerConfig) {
         super(config);
-        this.mpvPath = config.mpvPath || 'mpv';
     }
 
     /**
@@ -61,11 +59,11 @@ export class MpvPlayer extends BasePlayer {
 
         // 调试模式输出命令
         if (this.config.debug) {
-            log.debug('MPV 命令:', `"${this.mpvPath}" ${args.join(' ')}`);
+            log.debug('MPV 命令:', `"${this.config.mpvPath}" ${args.join(' ')}`);
         }
 
         // 启动播放器进程
-        this.playerProcess = spawn(this.mpvPath, args, {
+        this.playerProcess = spawn(this.config.mpvPath, args, {
             stdio: ['ignore', 'pipe', 'pipe'],
             detached: true
         });

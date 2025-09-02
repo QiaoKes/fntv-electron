@@ -62,6 +62,8 @@ export interface PlayStateData {
     audio_guid: string;
     subtitle_guid: string;
     play_link: string;
+    ts?: number;
+    duration?: number;
 }
 
 export class ApiService {
@@ -70,7 +72,7 @@ export class ApiService {
     private token: string;
 
     /**
-     * 创建字幕服务实例
+     * 创建api服务实例
      * @param baseURL - API基础URL
      * @param token - 授权令牌
      */

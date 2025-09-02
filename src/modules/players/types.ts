@@ -14,6 +14,7 @@ export interface PlayerConfig {
     headers?: Record<string, string>;
     debug?: boolean;
     extraArgs?: string[];
+    mpvPath?: string;
     onData?: (data: PlaybackStatus) => void;
     onError?: (error: string) => void;
     onExit?: (code: number | null, status: PlaybackStatus) => void;
@@ -43,6 +44,7 @@ export abstract class BasePlayer {
             headers: config.headers || {},
             debug: config.debug || false,
             extraArgs: config.extraArgs || [],
+            mpvPath: config.mpvPath || 'mpv',
             onData: config.onData || (() => {}),
             onError: config.onError || (() => {}),
             onExit: config.onExit || (() => {})

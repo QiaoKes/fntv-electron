@@ -60,7 +60,7 @@
         "files": [
             "dest",
             "build",
-            "resource"
+            "resource/login"
         ],
         "extraFiles": [
             {

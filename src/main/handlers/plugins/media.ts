@@ -1,5 +1,5 @@
 import { BrowserWindow, IpcMainEvent } from 'electron';
-import { MpvPlayer } from '../../../modules/players/impl/mpv';
+import { PlayerFactory, PlayerType, PlaybackStatus, BasePlayer } from '../../../modules/players';
 import * as fn from '../../../modules/fn_api/api';
 import * as fnConfig from '../../../modules/fn_config/config';
 import { registerHandler } from '../core/ipcHandler';
@@ -16,25 +16,8 @@ interface PlayRequest {
     token: string;
 }
 
-interface PlayStatus {
-    item_guid: string;
-    media_guid: string;
-    video_guid: string;
-    audio_guid: string;
-    subtitle_guid: string;
-    play_link: string;
-    ts?: number;
-    duration?: number;
-}
-
-interface Progress {
-    percentage: number;
-    currentSeconds: number;
-    totalSeconds: number;
-}
-
 // 全局播放器实例引用
-let currentPlayer: MpvPlayer | null = null;
+let currentPlayer: BasePlayer | null = null;
 
 // 刷新窗口
 async function refreshWindow(): Promise<void> {
@@ -92,7 +75,7 @@ async function handlePlayMovie(event: IpcMainEvent, { id, token }: PlayRequest):
         const percentage = total <= 0 ? 0 : (last / total * 100);
         const startPosition = `${percentage}%`;
 
-        const playStatus: PlayStatus = {
+        const playStatus: fn.PlayStateData = {
             item_guid: itemGuid,
             media_guid: mediaGuid,
             video_guid: response.data.video_guid,
@@ -108,7 +91,7 @@ async function handlePlayMovie(event: IpcMainEvent, { id, token }: PlayRequest):
         }
 
         // 创建播放器实例
-        const player = new MpvPlayer({
+        const player = PlayerFactory.createPlayer(PlayerType.MPV, {
             url: playUrl,
             mpvPath: 'third_party\\fntv-mpv\\mpv.exe',
             title: title,
@@ -122,7 +105,7 @@ async function handlePlayMovie(event: IpcMainEvent, { id, token }: PlayRequest):
                 subArgs
             ],
             debug: true,
-            onData: (progress: Progress) => {
+            onData: (progress: PlaybackStatus) => {
                 if (progress.percentage > 90) {
                     log.info('视频播放接近结束，更新状态...');
                     fnapi.setWatched(itemGuid);
@@ -135,7 +118,7 @@ async function handlePlayMovie(event: IpcMainEvent, { id, token }: PlayRequest):
                 fnapi.recordPlayState(playStatus);
             },
             onError: (err: string) => log.error('MPV error:', err),
-            onExit: (code: number | null, progress: Progress) => {
+            onExit: (code: number | null, progress: PlaybackStatus) => {
                 if (code !== 0 && code !== null) {
                     log.error(`播放器异常退出 (code ${code})`);
                     refreshWindow();
