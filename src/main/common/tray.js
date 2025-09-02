@@ -1,6 +1,6 @@
 const { Tray, Menu, nativeImage } = require('electron');
 const path = require('path');
-const { getInstance: getUpdateChecker } = require('../../modules/updater/updateChecker');
+const { getInstance: getUpdateChecker } = require('../../modules/updater/updateChecker.ts');
 const log = require('../../modules/logger');
 
 let tray = null;

@@ -1,6 +1,6 @@
 const { app, BrowserWindow } = require('electron');
 const { registerAllPlugins } = require('./handlers');
-const updateChecker = require('../modules/updater/updateChecker');
+const updateChecker = require('../modules/updater/updateChecker.ts');
 const winctrl = require('./common/winctrl');
 const { createTray, showTrayNotification, destroyTray } = require('./common/tray');
 const log = require('../modules/logger');

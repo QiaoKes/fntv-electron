@@ -1,5 +1,5 @@
 const { app } = require('electron');
-const { getInstance: getUpdateChecker } = require('../../../modules/updater/updateChecker');
+const { getInstance: getUpdateChecker } = require('../../../modules/updater/updateChecker.ts');
 const { registerHandler } = require('../core/ipcHandler');
 const log = require('../../../modules/logger');
 
