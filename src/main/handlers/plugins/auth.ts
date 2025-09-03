@@ -72,7 +72,7 @@ async function handleLogin(event: IpcMainEvent, loginData: LoginData): Promise<v
 
     // 构建服务器地址
     const server = loginData.useHttps ? `https://${loginData.domain}` : `http://${loginData.domain}`;
-    const fnapi = new fn.apiService(server);
+    const fnapi = new fn.ApiService(server);
 
     try {
         const response = await fnapi.login(loginData.username, loginData.password);

@@ -16,15 +16,18 @@ import NodeMpv from 'node-mpv-2';
 export class MpvPlayer extends BasePlayer {
     private mpvInstance: NodeMpv | null = null;
     private progressInterval: NodeJS.Timeout | null = null;
+    // 节流调用
+    private lastProgressTime: number = 0;
+    private throttleInterval: number = 15000; // 15秒间隔（毫秒）
 
     constructor(config: Config) {
         super(config);
     }
 
     /**
-     * 启动MPV播放器
+     * 播放媒体列表
      */
-    play(info: PlayItem): boolean {
+    async playList(infos: PlayItem[], pos: number, args?: string[]): Promise<boolean> {
         try {
             // 构建 MPV 参数
             const mpvArgs: string[] = [];
@@ -40,10 +43,9 @@ export class MpvPlayer extends BasePlayer {
 
             // 添加其他参数
             mpvArgs.push(
-                '--force-media-title=' + info.title,
-                ...this.config.extraArgs
+                ...this.config.extraArgs,
+                ...args || []
             );
-
 
             let mpvOptions = {
                 debug: this.config.debug,
@@ -56,32 +58,20 @@ export class MpvPlayer extends BasePlayer {
             this.setupEventListeners();
 
             // 启动 MPV 并加载媒体
-            this.mpvInstance.start()
-                .then(() => {
-                    if (this.config.debug) {
-                        log.debug('MPV 实例启动成功');
-                    }
-                    return this.mpvInstance!.load(info.url, 'replace');
-                })
-                .then(() => {
-                    if (this.config.debug) {
-                        log.debug('MPV 成功加载媒体:', info.url);
-                    }
-                    return this.mpvInstance!.play();
-                })
-                .then(() => {
-                    // 开始进度监控
-                    this.startProgressMonitoring();
-                })
-                .catch((error: any) => {
-                    log.error('MPV 播放失败:', error);
-                    const errorEvent: PlayErrorData = {
-                        message: error.message || error.toString()
-                    };
-                    this.emitEvent(EventType.ERROR, errorEvent);
-                });
+            await this.mpvInstance.start()
 
-            // 返回一个模拟的 ChildProcess 对象（为了兼容接口）
+            // 将所有的infos按顺序加入播放列表，并且播放第pos个视频
+            await this.loadPlaylistItems(infos, pos);
+
+            if (this.config.debug) {
+                log.debug('MPV 实例启动成功');
+            }
+
+            await this.mpvInstance!.play();
+
+            // 开始进度监控
+            this.startProgressMonitoring();
+
             return true;
 
         } catch (error: any) {
@@ -90,38 +80,71 @@ export class MpvPlayer extends BasePlayer {
                 message: error.message || error.toString()
             };
             this.emitEvent(EventType.ERROR, errorEvent);
-            return true;
+            return false;
         }
-    }
-
-    playList(infos: PlayItem[]): boolean {
-        return false;
     }
 
     /**
-     * 获取当前播放状态
+     * 加载播放列表项
      */
-    getStatus(): PlayStatusData {
-        if (!this.mpvInstance || !this.mpvInstance.isRunning()) {
-            return {
-                mediaId: '',
-                currentSeconds: 0,
-                totalSeconds: 0,
-                percentage: 0
-            };
+    private async loadPlaylistItems(infos: PlayItem[], pos: number): Promise<void> {
+        if (!this.mpvInstance || infos.length === 0) {
+            throw new Error('MPV实例未启动或播放列表为空');
         }
 
-        // 尝试同步获取状态（如果 node-mpv-2 支持同步，否则用默认值）
-        // 由于 node-mpv-2 的方法是异步的，这里只能返回上一次的状态或默认值
-        // 可以考虑缓存最近一次的进度数据
-        // 这里简单返回 0，实际项目可优化为缓存最近一次的进度
+        try {
+            // 首先添加第一个媒体文件（replace模式）
+            if (infos.length > 0) {
+                const args = infos[0].subtitles.map(sub => `sub-file=${sub}`)
+                args.push(`force-media-title=${infos[0].title}`)
+                await this.mpvInstance.append(infos[0].playLink, 'replace', args);
+                if (this.config.debug) {
+                    log.debug(`已添加第一个媒体文件: ${infos[0].title} - ${infos[0].playLink}`);
+                }
+            }
 
-        return {
-            mediaId: '',
-            currentSeconds: 0,
-            totalSeconds: 0,
-            percentage: 0
-        };
+            // 添加其余媒体文件
+            for (let i = 1; i < infos.length; i++) {
+                const args = infos[i].subtitles.map(sub => `sub-file=${sub}`)
+                args.push(`force-media-title=${infos[i].title}`)
+                log.debug('opt', args)
+                await this.mpvInstance.append(infos[i].playLink, 'append', args);
+                if (this.config.debug) {
+                    log.debug(`已添加媒体文件 ${i + 1}: ${infos[i].title} - ${infos[i].playLink}`);
+                }
+            }
+
+            // 如果指定的位置不是第一个，跳转到指定位置
+            if (pos > 0 && pos < infos.length) {
+                await this.mpvInstance.jump(pos);
+                if (this.config.debug) {
+                    log.debug(`跳转到播放列表位置: ${pos} (${infos[pos].title})`);
+                }
+            }
+
+            // 更新全局状态
+            const currentItem = infos[Math.max(0, Math.min(pos, infos.length - 1))];
+            this.globalStatus = {
+                mediaGuid: currentItem.mediaGuid,
+                itemGuid: currentItem.itemGuid,
+                videoGuid: currentItem.videoGuid,
+                audioGuid: currentItem.audioGuid,
+                subtitleGuid: currentItem.subtitleGuid,
+                playLink: currentItem.playLink,
+                title: currentItem.title,
+                subtitles: currentItem.subtitles,
+                currentSeconds: this.globalStatus.currentSeconds,
+                totalSeconds: this.globalStatus.totalSeconds,
+                percentage: this.globalStatus.percentage,
+            };
+
+            if (this.config.debug) {
+                log.debug(`播放列表加载完成，当前播放: ${currentItem.title}`);
+            }
+        } catch (error: any) {
+            log.error('加载播放列表失败:', error);
+            throw error;
+        }
     }
 
     /**
@@ -132,7 +155,7 @@ export class MpvPlayer extends BasePlayer {
 
         // 监听播放结束事件
         this.mpvInstance.on('stopped', () => {
-            this.handleExit(0);
+            this.emitEvent(EventType.PROGRESS, this.getStatus());
         });
 
         // 监听错误事件
@@ -161,7 +184,7 @@ export class MpvPlayer extends BasePlayer {
     /**
      * 开始进度监控
      */
-    private startProgressMonitoring(): void {
+    private async startProgressMonitoring(): Promise<void> {
         if (this.progressInterval) {
             clearInterval(this.progressInterval);
         }
@@ -172,27 +195,37 @@ export class MpvPlayer extends BasePlayer {
                     return;
                 }
 
-                const [currentTime, duration, percentage] = await Promise.all([
+                const [currentTime, duration, percentage, title] = await Promise.all([
                     this.mpvInstance.getTimePosition().catch(() => 0),
                     this.mpvInstance.getDuration().catch(() => 0),
-                    this.mpvInstance.getPercentPosition().catch(() => 0)
+                    this.mpvInstance.getPercentPosition().catch(() => 0),
+                    this.mpvInstance.getTitle().catch(() => 0)
                 ]);
 
-                const progressData: PlayStatusData = {
-                    mediaId: '',
-                    currentSeconds: Math.floor(currentTime),
-                    totalSeconds: Math.floor(duration),
-                    percentage: Math.floor(percentage)
-                };
+                if (duration === 0) {
+                    log.warn('视频时长为 0，无法获取进度信息');
+                    return;
+                }
+
+                const progressData: PlayStatusData = this.getStatus();
+                progressData.currentSeconds = Math.floor(currentTime);
+                progressData.totalSeconds = Math.floor(duration);
+                progressData.percentage = Math.floor(percentage);
 
                 // 更新全局状态
-                this.emitEvent(EventType.PROGRESS, progressData);
+                this.updateGlobalStatus(progressData);
+                // 节流处理
+                const now = Date.now();
+                if (now - this.lastProgressTime >= this.throttleInterval) {
+                    this.emitEvent(EventType.PROGRESS, progressData);
+                    this.lastProgressTime = now;
+                }
             } catch (error) {
                 if (this.config.debug) {
                     log.debug('获取进度信息失败:', error);
                 }
             }
-        }, 10000); // 每10秒检查一次
+        }, 1000); // 每1秒检查一次
     }
 
     /**
@@ -253,68 +286,6 @@ export class MpvPlayer extends BasePlayer {
      */
     isPlaying(): boolean {
         return this.mpvInstance !== null && this.mpvInstance.isRunning();
-    }
-
-    /**
-     * 暂停播放
-     */
-    async pause(): Promise<void> {
-        if (this.mpvInstance && this.mpvInstance.isRunning()) {
-            try {
-                await this.mpvInstance.pause();
-                log.info('暂停播放');
-            } catch (error) {
-                log.error('暂停播放失败:', error);
-                throw error;
-            }
-        }
-    }
-
-    /**
-     * 恢复播放
-     */
-    async resume(): Promise<void> {
-        if (this.mpvInstance && this.mpvInstance.isRunning()) {
-            try {
-                await this.mpvInstance.play();
-                log.info('恢复播放');
-            } catch (error) {
-                log.error('恢复播放失败:', error);
-                throw error;
-            }
-        }
-    }
-
-    /**
-     * 跳转到指定时间
-     */
-    async seek(seconds: number): Promise<void> {
-        if (this.mpvInstance && this.mpvInstance.isRunning()) {
-            try {
-                await this.mpvInstance.goToPosition(seconds);
-                log.info(`跳转到 ${seconds} 秒`);
-            } catch (error) {
-                log.error('跳转失败:', error);
-                throw error;
-            }
-        }
-    }
-
-    /**
-     * 设置音量
-     */
-    async setVolume(volume: number): Promise<void> {
-        if (this.mpvInstance && this.mpvInstance.isRunning()) {
-            try {
-                // 确保音量在 0-100 范围内
-                const clampedVolume = Math.max(0, Math.min(100, volume));
-                await this.mpvInstance.volume(clampedVolume);
-                log.info(`设置音量为 ${clampedVolume}`);
-            } catch (error) {
-                log.error('设置音量失败:', error);
-                throw error;
-            }
-        }
     }
 }
 
