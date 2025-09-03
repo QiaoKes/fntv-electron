@@ -47,8 +47,19 @@ export interface UserInfo {
 }
 
 export interface PlayInfo {
-    // 根据实际API响应定义播放信息结构
-    [key: string]: any;
+    media_guid: string;
+    guid: string;
+    video_guid: string;
+    audio_guid: string;
+    subtitle_guid: string;
+    ts: number;
+    item: {
+        duration: number;
+        title: string;
+        tv_title?: string;
+        season_number?: number;
+        episode_number?: number;
+    };
 }
 
 export interface WatchedData {

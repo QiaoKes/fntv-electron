@@ -96,9 +96,7 @@ async function handlePlayMovie(event: IpcMainEvent, { id, token }: PlayRequest):
     }
 
     let playConfig: ply.Config = {
-        url: playUrl,
         playerPath: playerPath,
-        title: title,
         headers: {
             Authorization: token,
         },
@@ -164,8 +162,14 @@ async function handlePlayMovie(event: IpcMainEvent, { id, token }: PlayRequest):
     // 保存全局引用
     currentPlayer = player;
 
+    const info: ply.PlayItem = {
+        id: mediaGuid,
+        title: title,
+        url: playUrl,
+    };
+
     // 开始播放
-    player.play();
+    player.play(info);
 }
 
 // 应用退出前清理播放器
