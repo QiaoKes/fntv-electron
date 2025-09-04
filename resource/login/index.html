@@ -954,6 +954,13 @@
                 <label for="proxyUrlInput">代理地址:</label>
                 <input type="text" id="proxyUrlInput" placeholder="https://ghfast.top" />
             </div>
+            <div class="proxy-switch-row">
+                <span>隐藏原有播放按钮</span>
+                <label class="proxy-switch">
+                    <input type="checkbox" id="hideOriginalPlayButtonSwitch" checked>
+                    <span class="proxy-slider"></span>
+                </label>
+            </div>
             <div class="proxy-panel-footer">
                 <button class="proxy-save-btn" id="proxySaveBtn">保存</button>
             </div>
@@ -1013,6 +1020,7 @@
         const proxyEnabledSwitch = document.getElementById('proxyEnabledSwitch');
         const proxyUrlInput = document.getElementById('proxyUrlInput');
         const proxySaveBtn = document.getElementById('proxySaveBtn');
+        const hideOriginalPlayButtonSwitch = document.getElementById('hideOriginalPlayButtonSwitch');
         
         let historyData = [];
         let confirmCallback = null;
@@ -1502,6 +1510,8 @@
         function initProxySettings() {
             // 获取当前代理设置
             ipcRenderer.send('get-download-proxy');
+            // 获取当前播放按钮配置
+            ipcRenderer.send('get-play-button-config');
         }
 
         function toggleProxyPanel() {
@@ -1515,10 +1525,17 @@
         function saveProxySettings() {
             const enabled = proxyEnabledSwitch.checked;
             const proxyUrl = proxyUrlInput.value.trim();
+            const hideOriginalPlayButton = hideOriginalPlayButtonSwitch.checked;
             
+            // 保存代理设置
             ipcRenderer.send('set-download-proxy', { 
                 enabled: enabled,
                 proxyUrl: proxyUrl || 'https://ghfast.top'
+            });
+            
+            // 保存播放按钮配置
+            ipcRenderer.send('set-play-button-config', {
+                hideOriginalPlayButton: hideOriginalPlayButton
             });
             
             // 显示保存状态
@@ -1554,11 +1571,26 @@
             }
         });
 
+        // 监听播放按钮配置响应
+        ipcRenderer.on('play-button-config-info', (event, data) => {
+            if (data) {
+                hideOriginalPlayButtonSwitch.checked = data.hideOriginalPlayButton !== false; // 默认隐藏
+            }
+        });
+
         ipcRenderer.on('download-proxy-set', (event, data) => {
             if (data && data.success) {
                 window.log.info('代理设置保存成功');
             } else {
                 window.log.error('代理设置保存失败:', data.error);
+            }
+        });
+
+        ipcRenderer.on('play-button-config-set', (event, data) => {
+            if (data && data.success) {
+                window.log.info('播放按钮配置保存成功');
+            } else {
+                window.log.error('播放按钮配置保存失败:', data.error);
             }
         });
 

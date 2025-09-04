@@ -6,15 +6,93 @@ import logger from '../core/logger';
 import { getCookie } from '../core/utils';
 import type { PlayMovieData } from '../core/types';
 
+// 获取配置的辅助函数
+async function getPlayButtonConfig(): Promise<{ hideOriginalPlayButton: boolean }> {
+    return new Promise((resolve) => {
+        // 发送请求获取配置
+        ipcRenderer.send('get-play-button-config');
+        
+        // 监听回复
+        const handler = (event: any, data: any) => {
+            ipcRenderer.off('play-button-config-info', handler);
+            resolve(data || { hideOriginalPlayButton: true }); // 默认隐藏
+        };
+        
+        ipcRenderer.once('play-button-config-info', handler);
+        
+        // 2秒后超时，使用默认值
+        setTimeout(() => {
+            ipcRenderer.off('play-button-config-info', handler);
+            resolve({ hideOriginalPlayButton: true });
+        }, 2000);
+    });
+}
+
+// 从DOM获取id
+function getItemGuidFromDOM(button: HTMLElement): string | null {
+    try {
+        // 检查按钮父元素中的 A 标签 href
+        let parent: Element | null = button.parentElement;
+        while (parent && parent !== document.body) {
+            if (parent.tagName === 'A' && (parent as HTMLAnchorElement).href) {
+                // 匹配32位十六进制字符串
+                const guidMatch = (parent as HTMLAnchorElement).href.match(/([a-f0-9]{32})/i);
+                if (guidMatch && guidMatch[1]) {
+                    logger.info('Found guid from href:', guidMatch[1]);
+                    return guidMatch[1];
+                }
+            }
+            parent = parent.parentElement;
+        }
+
+        // 如果A标签中没有找到，检查当前URL
+        const url = window.location.href;
+        const urlMatch = url.match(/([a-f0-9]{32})/i);
+        if (urlMatch && urlMatch[1]) {
+            logger.info('Found guid from URL:', urlMatch[1]);
+            return urlMatch[1];
+        }
+
+        return null;
+
+    } catch (error) {
+        logger.error('Error extracting guid from DOM:', error);
+        return null;
+    }
+}
+
 // 发送播放信息到主进程
-function sendPlayEventToMain(): void {
-    const url = window.location.href;
-    const id = url.split('/').pop();
+function sendPlayEventToMain(button: HTMLElement | null = null): string | null {
+    let id = '';
+
+    // 尝试从DOM中获取guid
+    if (button) {
+        id = getItemGuidFromDOM(button) || '';
+    }
+
+    // 如果没有传入按钮或从DOM中获取失败，尝试从URL获取
+    if (!id) {
+        const url = window.location.href;
+        const urlId = url.split('/').pop();
+        if (urlId) {
+            id = urlId;
+        }
+    }
+
+    if (!id) {
+        logger.error('Failed to extract ID from DOM or URL');
+        return null;
+    }
+
     const token = getCookie('Trim-MC-token');
     
     if (id && token) {
         const playData: PlayMovieData = { id, token };
         ipcRenderer.send('play-movie', playData);
+        return id;
+    } else {
+        logger.error('Failed to extract ID or token. ID:', id, 'Token:', token);
+        return null;
     }
 }
 
@@ -45,7 +123,7 @@ function findReferenceButton(context: Document | Element = document): HTMLButton
     return null;
 }
 
-function clonePlayBtnAndInject(callback: () => void, btnText: string): void {
+function clonePlayBtnAndInject(callback: (button: HTMLElement) => void, btnText: string): void {
     const referenceButton = findReferenceButton();
     if (!referenceButton || referenceButton.hasAttribute('data-mpv-btn')) return;
 
@@ -65,8 +143,8 @@ function clonePlayBtnAndInject(callback: () => void, btnText: string): void {
     // 添加唯一标识
     newButton.setAttribute('data-custom-play', 'true');
     
-    // 添加点击事件
-    newButton.addEventListener('click', callback);
+    // 添加点击事件，传入原始按钮作为参数
+    newButton.addEventListener('click', () => callback(referenceButton));
     
     // 插入到参考按钮旁边
     const parentNode = referenceButton.parentNode;
@@ -75,12 +153,54 @@ function clonePlayBtnAndInject(callback: () => void, btnText: string): void {
     }
 }
 
-function injectCustomPlayBtn(): void {
-    clonePlayBtnAndInject(sendPlayEventToMain, 'MPV播放');
+// 拦截原有播放按钮，直接用MPV播放
+function interceptOriginalButton(): void {
+    const referenceButton = findReferenceButton();
+    if (!referenceButton || referenceButton.hasAttribute('data-mpv-intercepted')) return;
+
+    logger.info('Detected page, intercepting original play button...');
+    
+    // 标记已拦截
+    referenceButton.setAttribute('data-mpv-intercepted', 'true');
+    
+    // 添加点击事件拦截器
+    const clickHandler = (e: Event) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        
+        logger.info('Original play button intercepted, playing with MPV');
+        sendPlayEventToMain(referenceButton);
+        
+        return false;
+    };
+    
+    // 在捕获阶段添加事件监听器，确保优先拦截
+    referenceButton.addEventListener('click', clickHandler, true);
+}
+
+async function injectCustomPlayBtn(): Promise<void> {
+    // 获取配置
+    const config = await getPlayButtonConfig();
+    
+    if (config.hideOriginalPlayButton) {
+        // 如果隐藏原有播放按钮，直接拦截原按钮
+        interceptOriginalButton();
+    } else {
+        // 否则添加额外的MPV播放按钮
+        clonePlayBtnAndInject((button) => sendPlayEventToMain(button), 'MPV播放');
+    }
+}
+
+// 包装函数来处理异步调用
+function handlePlayButtonInjection(): void {
+    injectCustomPlayBtn().catch(error => {
+        logger.error('Error in injectCustomPlayBtn:', error);
+    });
 }
 
 // 注册hook
-registerHook(HookType.OnReady, injectCustomPlayBtn);
-registerHook(HookType.OnDomChange, injectCustomPlayBtn);
+registerHook(HookType.OnReady, handlePlayButtonInjection);
+registerHook(HookType.OnDomChange, handlePlayButtonInjection);
 
 export {};

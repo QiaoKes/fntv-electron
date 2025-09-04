@@ -6,6 +6,55 @@ import { getCookie } from '../core/utils';
 import type { PlayMovieData } from '../core/types';
 import { HookType } from '../core/hooks';
 
+// 获取配置的辅助函数
+async function getPlayButtonConfig(): Promise<{ hideOriginalPlayButton: boolean }> {
+    return new Promise((resolve) => {
+        // 发送请求获取配置
+        ipcRenderer.send('get-play-button-config');
+        
+        // 监听回复
+        const handler = (event: any, data: any) => {
+            ipcRenderer.off('play-button-config-info', handler);
+            resolve(data || { hideOriginalPlayButton: true }); // 默认隐藏
+        };
+        
+        ipcRenderer.once('play-button-config-info', handler);
+        
+        // 2秒后超时，使用默认值
+        setTimeout(() => {
+            ipcRenderer.off('play-button-config-info', handler);
+            resolve({ hideOriginalPlayButton: true });
+        }, 2000);
+    });
+}
+
+// 调用MPV播放器的公共方法
+async function playWithMpv(button: HTMLElement): Promise<void> {
+    // 先尝试简化的 DOM 方法
+    const domResult = sendPlayEventToMain(button);
+
+    if (!domResult) {
+        // DOM 方法失败，使用拦截方法作为 fallback
+        logger.info('DOM method failed, trying original logic interception...');
+        const itemGuid = await tryGetItemGuidFromOriginalLogic(button);
+
+        if (itemGuid) {
+            logger.info('Successfully obtained item_guid from original logic:', itemGuid);
+            const token = getCookie('Trim-MC-token');
+            if (token) {
+                const playData: PlayMovieData = { id: itemGuid, token };
+                ipcRenderer.send('play-movie', playData);
+            } else {
+                logger.error('No token found');
+            }
+        } else {
+            logger.error('All methods failed to get item_guid');
+        }
+    } else {
+        logger.info('Successfully used DOM method to get item_guid');
+    }
+}
+
 // 尝试通过执行原有逻辑获取 item_guid
 function tryGetItemGuidFromOriginalLogic(button: HTMLElement): Promise<string | null> {
     return new Promise((resolve) => {
@@ -366,29 +415,8 @@ function createPlayModal(originalButton: HTMLElement): void {
         modalOverlay.remove();
         logger.info('用户选择了MPV播放');
 
-        // 先尝试简化的 DOM 方法
-        const domResult = sendPlayEventToMain(originalButton);
-
-        if (!domResult) {
-            // DOM 方法失败，使用拦截方法作为 fallback
-            logger.info('DOM method failed, trying original logic interception...');
-            const itemGuid = await tryGetItemGuidFromOriginalLogic(originalButton);
-
-            if (itemGuid) {
-                logger.info('Successfully obtained item_guid from original logic:', itemGuid);
-                const token = getCookie('Trim-MC-token');
-                if (token) {
-                    const playData: PlayMovieData = { id: itemGuid, token };
-                    ipcRenderer.send('play-movie', playData);
-                } else {
-                    logger.error('No token found');
-                }
-            } else {
-                logger.error('All methods failed to get item_guid');
-            }
-        } else {
-            logger.info('Successfully used DOM method to get item_guid');
-        }
+        // 调用MPV播放器
+        await playWithMpv(originalButton);
     });
 
     cancelBtn.addEventListener('click', () => {
@@ -434,7 +462,7 @@ function interceptMaskButton(): void {
         btn.setAttribute('data-mask-intercepted', 'true');
 
         // 添加点击事件拦截器
-        const clickHandler = (e: Event) => {
+        const clickHandler = async (e: Event) => {
             // 检查是否允许原有播放
             if (btn.getAttribute('data-allow-original-play') === 'true') {
                 logger.info('Allowing original play logic to execute');
@@ -444,14 +472,28 @@ function interceptMaskButton(): void {
             e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation();
-            logger.info('Play button click intercepted, showing modal');
-            createPlayModal(btn);
+            
+            // 获取配置
+            const config = await getPlayButtonConfig();
+            
+            if (config.hideOriginalPlayButton) {
+                // 如果隐藏原有播放按钮，直接调用MPV播放器
+                logger.info('Play button click intercepted, directly playing with MPV');
+                
+                // 调用MPV播放器
+                await playWithMpv(btn);
+            } else {
+                // 显示选择弹窗
+                logger.info('Play button click intercepted, showing modal');
+                await createPlayModal(btn);
+            }
+            
             return false;
         };
 
         // 在捕获阶段添加事件监听器，确保优先拦截
+        // 只监听 click 事件，避免重复触发
         btn.addEventListener('click', clickHandler, true);
-        btn.addEventListener('mousedown', clickHandler, true);
     }
 }
 

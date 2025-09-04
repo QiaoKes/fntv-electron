@@ -12,6 +12,10 @@ interface ProxyConfig {
     proxyUrl: string;
 }
 
+interface PlayButtonConfig {
+    hideOriginalPlayButton: boolean;
+}
+
 // 获取当前代理设置
 function handleGetDownloadProxy(event: IpcMainEvent): void {
     const proxyConfig = fnConfig.getDownloadProxyConfig();
@@ -32,10 +36,29 @@ function handleSetDownloadProxy(event: IpcMainEvent, { enabled, proxyUrl }: Part
     }
 }
 
+// 获取播放按钮配置
+function handleGetPlayButtonConfig(event: IpcMainEvent): void {
+    const hideOriginalPlayButton = fnConfig.getHideOriginalPlayButton();
+    event.reply('play-button-config-info', { hideOriginalPlayButton });
+}
+
+// 设置播放按钮配置
+function handleSetPlayButtonConfig(event: IpcMainEvent, { hideOriginalPlayButton }: Partial<PlayButtonConfig>): void {
+    try {
+        fnConfig.setHideOriginalPlayButton(hideOriginalPlayButton !== false); // 默认为true
+        event.reply('play-button-config-set', { success: true });
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        event.reply('play-button-config-set', { success: false, error: errorMessage });
+    }
+}
+
 // 注册配置相关处理器
 function init(): void {
     registerHandler('get-download-proxy', handleGetDownloadProxy);
     registerHandler('set-download-proxy', handleSetDownloadProxy);
+    registerHandler('get-play-button-config', handleGetPlayButtonConfig);
+    registerHandler('set-play-button-config', handleSetPlayButtonConfig);
 }
 
 export {

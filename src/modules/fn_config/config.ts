@@ -21,6 +21,7 @@ export interface Config {
     history?: HistoryItem[];
     downloadProxyEnabled?: boolean;
     downloadProxy?: string;
+    hideOriginalPlayButton?: boolean;
 }
 
 /**
@@ -199,6 +200,19 @@ export function setDownloadProxyConfig({ enabled = true, proxyUrl = 'https://ghf
     fs.writeFileSync(getConfigPath(), JSON.stringify(config, null, 2));
 }
 
+// 获取是否隐藏原有播放按钮配置
+export function getHideOriginalPlayButton(): boolean {
+    const config: Config = readConfig() || {};
+    return config.hideOriginalPlayButton !== false; // 默认为隐藏（true）
+}
+
+// 设置是否隐藏原有播放按钮配置
+export function setHideOriginalPlayButton(hide: boolean): void {
+    const config: Config = readConfig() || {};
+    config.hideOriginalPlayButton = hide;
+    fs.writeFileSync(getConfigPath(), JSON.stringify(config, null, 2));
+}
+
 // 向后兼容的函数
 export function getDownloadProxyUrl(): string {
     return getDownloadProxyConfig().proxyUrl;
@@ -220,5 +234,7 @@ module.exports = {
     getDownloadProxyUrl,
     setDownloadProxyUrl,
     getDownloadProxyConfig,
-    setDownloadProxyConfig
+    setDownloadProxyConfig,
+    getHideOriginalPlayButton,
+    setHideOriginalPlayButton
 };

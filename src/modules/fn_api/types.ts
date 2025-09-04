@@ -21,6 +21,7 @@ export interface LoginData {
 export interface PlayInfoData {
     /** 视频项目的唯一标识符 */
     item_guid: string;
+    media_guid?: string; // 可选，媒体文件的唯一标识符,有可能有多个同名文件
 }
 
 /**
