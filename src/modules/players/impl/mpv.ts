@@ -14,7 +14,7 @@ import {
 } from '../types';
 import { PlayerFactory } from '../factory';
 import log from '../../logger';
-import NodeMpv from 'node-mpv-2';
+import NodeMpv, { TimePosition } from 'node-mpv-2';
 import { title } from 'process';
 
 export class MpvPlayer extends BasePlayer {
@@ -102,7 +102,7 @@ export class MpvPlayer extends BasePlayer {
             this.playlistItems = infos;
 
             // 生成 M3U8 播放列表文件
-            const playlistContent = this.generateM3U8Playlist(infos, pos);
+            const playlistContent = this.generateM3U8Playlist(infos);
             this.playlistFilePath = path.join(os.tmpdir(), `mpv_playlist_${Date.now()}.m3u8`);
 
             await fs.promises.writeFile(this.playlistFilePath, playlistContent, 'utf-8');
@@ -117,14 +117,13 @@ export class MpvPlayer extends BasePlayer {
 
             // 跳转到指定位置
             if (pos > 0) {
+                // 更新全局状态
+                this.updateCurrentItemStatus(pos);
                 await this.mpvInstance.jump(pos);
                 if (this.config.debug) {
                     log.debug(`跳转到播放列表位置: ${pos} (${infos[pos].title})`);
                 }
             }
-
-            // 更新全局状态
-            this.updateCurrentItemStatus(pos);
 
             if (this.config.debug) {
                 log.debug(`播放列表加载完成，当前播放: ${infos[pos].title}`);
@@ -153,7 +152,7 @@ export class MpvPlayer extends BasePlayer {
     /**
      * 生成 M3U8 播放列表内容
      */
-    private generateM3U8Playlist(infos: PlayItem[], startPos: number): string {
+    private generateM3U8Playlist(infos: PlayItem[]): string {
         let content = '#EXTM3U\n';
 
         for (let i = 0; i < infos.length; i++) {
@@ -161,19 +160,11 @@ export class MpvPlayer extends BasePlayer {
             const title = this.getTitle(item);
 
             // 使用实际时长，如果没有则使用 -1
-            const duration = -1;
-            const last = item.ts || 0;
-            const total = item.duration || 0;
+            const duration = item.duration || -1;
 
-            // 计算播放进度百分比
-            const percentage = total > 0 ? (last / total) * 100 : 0;
             // 添加扩展信息，包含播放进度
-            content += `#EXTINF:${duration},${title} (${percentage.toFixed(1)}%)\n`;
+            content += `#EXTINF:${duration},${title}\n`;
             content += `${item.playLink}\n`;
-
-            if (this.config.debug) {
-                log.debug(`为播放项 ${i} 填充进度信息: ts=${last}s, duration=${total}s, percentage=${percentage.toFixed(1)}%`);
-            }
         }
 
         return content;
@@ -185,6 +176,7 @@ export class MpvPlayer extends BasePlayer {
     private updateCurrentItemStatus(index: number): void {
         if (index >= 0 && index < this.playlistItems.length) {
             const currentItem = this.playlistItems[index];
+
             let st = this.getStatus();
             st.itemGuid = currentItem.itemGuid;
             st.ts = currentItem.ts;
@@ -202,7 +194,8 @@ export class MpvPlayer extends BasePlayer {
 
         // 监听播放结束事件
         this.mpvInstance.on('stopped', () => {
-            this.handleExit(0);
+            // this.handleExit(0);
+            log.info('MPV 播放结束');
         });
 
         // 监听错误事件
@@ -222,15 +215,112 @@ export class MpvPlayer extends BasePlayer {
 
         // 监听状态变化
         this.mpvInstance.on('status', (status: any) => {
-            if (this.config.debug) {
-                // log.debug('MPV 状态变化:', status);
+            // if (this.config.debug) {
+            // log.debug('MPV 状态变化:', status);
+            // }
+
+            // 监听播放路径位置
+            if (status.property === 'path' && typeof status.value === 'string') {
+                const itemGuid = String(status.value).split('/').pop();
+                if (!itemGuid) {
+                    log.warn('无法从文件名中解析出 itemGuid:', status.value);
+                    return;
+                }
+
+                const fnapi = this.getFnApi();
+                fnapi.getPlayInfo(itemGuid).then(resp => {
+                    if (!resp.success || !resp.data) {
+                        log.error('path changed: 获取播放信息失败:', resp ? resp.message : '未知错误');
+                        return;
+                    }
+
+                    // 只有当进度大于0时才执行跳转
+                    const ts = resp.data.ts;
+                    if (ts > 0) {
+                        // 使用重试机制进行跳转, 这里粗暴了点, 视频没加载没法跳，只能重试
+                        this.seekWithRetry(ts, 50000, 10);
+                    } else {
+                        if (this.config.debug) {
+                            log.debug('path changed: 跳过跳转，播放进度为0秒');
+                        }
+                    }
+                });
+
+                // 获取并下载字幕
+                fnapi.getSubtitle(itemGuid).then(fnapi.downloadSubtitle).then(subPaths => {
+                    // 加载字幕
+                    subPaths.forEach(subPath => {
+                        this.mpvInstance?.addSubtitles(subPath).catch(err => {
+                            if (this.config.debug) {
+                                log.debug('加载字幕失败:', err);
+                            }
+                        });
+                    });
+                });
             }
-
-            // 点击跳转seek的时候触发进度更新事件
-
-
         });
 
+        // 监听跳转事件
+        this.mpvInstance.on('seek', (t: TimePosition) => {
+            // Handle seek events
+            if (this.config.debug) {
+                log.debug('Seek event detected, new position:', t);
+            }
+
+            // 通知更新跳转
+            const st = this.getStatus();
+            st.ts = Math.floor(t.end);
+            this.emitEvent(EventType.PROGRESS, st);
+        });
+    }
+
+    /**
+     * 带重试机制的跳转函数
+     * @param position 跳转位置（秒）
+     * @param maxRetries 最大重试次数
+     * @param delayMs 每次重试的延迟时间（毫秒）
+     */
+    private async seekWithRetry(position: number, maxRetries: number = 3, delayMs: number = 500): Promise<void> {
+        let retryCount = 0;
+
+        const attemptSeek = async (): Promise<void> => {
+            return new Promise((resolve, reject) => {
+                setTimeout(async () => {
+                    if (!this.mpvInstance || !this.mpvInstance.isRunning()) {
+                        reject(new Error('MPV 实例不存在或未运行'));
+                        return;
+                    }
+
+                    try {
+                        await this.mpvInstance.goToPosition(position);
+                        if (this.config.debug) {
+                            log.info(`跳转成功: 位置 ${position}s ${retryCount > 0 ? `(重试 ${retryCount} 次后成功)` : ''}`);
+                        }
+                        resolve();
+                    } catch (error) {
+                        retryCount++;
+                        if (retryCount <= maxRetries) {
+                            // 重试，使用固定延迟时间
+                            setTimeout(() => {
+                                attemptSeek().then(resolve).catch(reject);
+                            }, delayMs);
+                        } else {
+                            log.info(`跳转失败，已达到最大重试次数 ${maxRetries} (位置: ${position}s):`, error);
+                            reject(error);
+                        }
+                    }
+                }, delayMs);
+            });
+        };
+
+        try {
+            await attemptSeek();
+        } catch (error) {
+            // 最终失败，记录错误但不抛出异常
+            if (this.config.debug) {
+                log.debug('path changed: 跳转到指定时间点最终失败:', error);
+            }
+        }
     }
 
 
@@ -362,7 +452,7 @@ export class MpvPlayer extends BasePlayer {
             // 手动触发退出事件
             this.handleExit(0);
         } else {
-            // 如果实例已经不存在，也要清理播放列表文件
+            // 如果实例已经不存在，也要清理播放列表文件和当前播放项 GUID
             this.cleanupPlaylistFile();
         }
     }

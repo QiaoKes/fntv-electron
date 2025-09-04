@@ -35,9 +35,20 @@ let currentPlayer: ply.BasePlayer | null = null;
 
 // 刷新窗口
 async function refreshWindow(): Promise<void> {
-    const focusedWindow = BrowserWindow.getFocusedWindow();
-    if (focusedWindow) {
-        focusedWindow.webContents.reload();
+    try {
+        const allWindows = BrowserWindow.getAllWindows();
+        
+        // 刷新所有窗口
+        for (const window of allWindows) {
+            if (!window.isDestroyed()) {
+                // 直接重新加载页面，忽略缓存
+                window.webContents.reloadIgnoringCache();
+                log.info(`窗口 ${window.id} 重新加载成功`);
+            }
+        }
+        
+    } catch (error) {
+        log.error('刷新窗口失败:', error);
     }
 }
 
@@ -52,12 +63,17 @@ function eventHandler(fnapi: fn.ApiService) {
         switch (type) {
             case ply.EventType.PROGRESS:
                 const progressData = data as ply.PlayStatusData;
+
+                if (progressData.itemGuid.length === 0) {
+                    log.info("process itemguid is empty")
+                    return;
+                }
+
                 if (progressData.percentage > 90) {
                     log.info('视频播放接近结束，更新状态...');
                     await fnapi.setWatched(progressData.itemGuid);
                     return;
                 }
-
                 // 优先从缓存查询播放信息
                 const resp = await proxyModule.getPlayInfoCacheByGuid(progressData.itemGuid);
                 if (resp.code !== 0 || !resp.data) {
@@ -84,8 +100,8 @@ function eventHandler(fnapi: fn.ApiService) {
             case ply.EventType.ERROR:
                 const errorData = data as ply.PlayErrorData;
                 log.error('MPV error:', errorData.message);
-                // 等待200ms
-                await new Promise(resolve => setTimeout(resolve, 200));
+                // 等待50ms
+                await new Promise(resolve => setTimeout(resolve, 50));
                 await refreshWindow();
                 break;
 
@@ -93,8 +109,12 @@ function eventHandler(fnapi: fn.ApiService) {
                 const event = data as ply.PlayExitData;
                 if (event.code !== 0) {
                     log.error(`播放器异常退出 (code ${event.code})`);
-                    await new Promise(resolve => setTimeout(resolve, 200));
+                    await new Promise(resolve => setTimeout(resolve, 50));
                     await refreshWindow();
+                    return;
+                }
+
+                if (event.status.itemGuid.length === 0) {
                     return;
                 }
 
@@ -128,8 +148,8 @@ function eventHandler(fnapi: fn.ApiService) {
                     await fnapi.recordPlayStatus(record);
                 }
 
-                // 等待200ms
-                await new Promise(resolve => setTimeout(resolve, 200));
+                // 等待50ms
+                await new Promise(resolve => setTimeout(resolve, 50));
                 await refreshWindow();
                 break;
 
