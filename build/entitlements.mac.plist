@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- 允许 JIT 编译（V8 JavaScript 引擎需要） -->
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+    
+    <!-- 允许无符号可执行内存（Electron 运行时需要） -->
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+    
+    <!-- 允许禁用库验证（Electron 需要） -->
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+    
+    <!-- 允许动态签名 -->
+    <key>com.apple.security.cs.allow-dyld-environment-variables</key>
+    <true/>
+    
+    <!-- 允许传出网络连接 -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+    
+    <!-- 允许传入网络连接 -->
+    <key>com.apple.security.network.server</key>
+    <true/>
+    
+    <!-- 允许文件读写访问 -->
+    <key>com.apple.security.files.user-selected.read-write</key>
+    <true/>
+    
+    <!-- 允许访问下载文件夹 -->
+    <key>com.apple.security.files.downloads.read-write</key>
+    <true/>
+    
+    <!-- 允许访问音频输入（音频播放需要） -->
+    <key>com.apple.security.device.audio-input</key>
+    <true/>
+    
+    <!-- 允许访问摄像头（如果媒体播放需要） -->
+    <key>com.apple.security.device.camera</key>
+    <true/>
+    
+    <!-- 允许 Apple Events 自动化（系统集成需要） -->
+    <key>com.apple.security.automation.apple-events</key>
+    <true/>
+    
+    <!-- 允许调试器附加（开发时有用，生产环境可设为 false） -->
+    <key>com.apple.security.cs.debugger</key>
+    <false/>
+</dict>
+</plist>

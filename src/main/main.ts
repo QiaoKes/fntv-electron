@@ -1,8 +1,9 @@
-import { app, BrowserWindow, dialog } from 'electron';
+import { app, BrowserWindow, dialog, Notification } from 'electron';
 import { registerAllPlugins } from './handlers';
 import { getInstance as getUpdateChecker } from '../modules/updater/updateChecker';
 import * as winctrl from './common/winctrl';
-import { createTray, showTrayNotification, destroyTray } from './common/tray';
+import { createTray, showTrayNotification, destroyTray, isTrayNotificationShown, setTrayNotificationShown } from './common/tray';
+import { getMacCloseAction, setMacCloseAction } from './common/preferences';
 import * as log from '../modules/logger';
 import { getMainWindow } from './common/mainwin';
 import * as proxyModule from '../modules/proxy';
@@ -113,16 +114,81 @@ if (!gotTheLock) {
 function setupWindowEvents(mainWindow: BrowserWindow): void {
     if (mainWindow) {
         // 监听窗口关闭事件
-        mainWindow.on('close', (event) => {
+        mainWindow.on('close', async (event) => {
             if (!(app as any).isQuiting) {
-                // 阻止窗口关闭，改为隐藏到托盘
-                event.preventDefault();
-                mainWindow.hide();
+                if (process.platform === 'darwin') {
+                    // macOS 上的特殊处理
+                    const action = getMacCloseAction();
+                    
+                    if (action === 'ask') {
+                        // 询问用户偏好
+                        event.preventDefault();
+                        
+                        const result = await dialog.showMessageBox(mainWindow, {
+                            type: 'question',
+                            title: '关闭窗口',
+                            message: '您希望如何处理窗口关闭？',
+                            detail: '在 macOS 上，您可以选择隐藏到状态栏或完全退出应用。',
+                            buttons: ['隐藏到状态栏', '退出应用', '取消'],
+                            defaultId: 0,
+                            cancelId: 2,
+                            checkboxLabel: '记住我的选择',
+                            checkboxChecked: false
+                        });
+                        
+                        if (result.response === 0) {
+                            // 隐藏到状态栏
+                            if (result.checkboxChecked) {
+                                setMacCloseAction('minimize');
+                            }
+                            mainWindow.hide();
+                            app.dock?.hide();
+                            showMacNotification();
+                        } else if (result.response === 1) {
+                            // 退出应用
+                            if (result.checkboxChecked) {
+                                setMacCloseAction('quit');
+                            }
+                            (app as any).isQuiting = true;
+                            app.quit();
+                        }
+                        // 取消则什么都不做
+                    } else if (action === 'minimize') {
+                        // 直接隐藏到托盘
+                        event.preventDefault();
+                        mainWindow.hide();
+                        app.dock?.hide();
+                        showMacNotification();
+                    } else if (action === 'quit') {
+                        // 直接退出
+                        (app as any).isQuiting = true;
+                        app.quit();
+                    }
+                } else {
+                    // Windows 和 Linux：阻止窗口关闭，改为隐藏到托盘
+                    event.preventDefault();
+                    mainWindow.hide();
 
-                // 显示托盘提示（仅在Windows上首次显示）
-                showTrayNotification();
+                    // 显示托盘提示（仅在Windows上首次显示）
+                    showTrayNotification();
+                }
             }
         });
+    }
+}
+
+// macOS 通知显示函数
+function showMacNotification(): void {
+    if (!isTrayNotificationShown()) {
+        if (Notification.isSupported()) {
+            const notification = new Notification({
+                title: '飞牛影视',
+                body: '应用已隐藏到状态栏，点击状态栏图标可以恢复窗口',
+                silent: false
+            });
+            notification.show();
+        }
+        setTrayNotificationShown();
     }
 }
 
@@ -148,5 +214,25 @@ app.on('window-all-closed', () => {
     // 在 macOS 上，除非明确退出，否则应用程序及其菜单栏通常会保持活动状态
     if (process.platform !== 'darwin') {
         app.quit();
+    }
+});
+
+app.on('activate', () => {
+    // 在 macOS 上，当点击 dock 图标且没有其他窗口打开时，
+    // 通常会重新创建一个窗口
+    if (process.platform === 'darwin') {
+        if (BrowserWindow.getAllWindows().length === 0) {
+            mainWindow = getMainWindow();
+            setupWindowEvents(mainWindow);
+        } else if (mainWindow) {
+            // 如果窗口存在但被隐藏，则显示它
+            if (!mainWindow.isVisible()) {
+                mainWindow.show();
+            }
+            mainWindow.focus();
+        }
+        
+        // 确保 dock 图标显示
+        app.dock?.show();
     }
 });

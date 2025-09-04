@@ -1,6 +1,7 @@
-import { Tray, Menu, nativeImage, BrowserWindow, app } from 'electron';
+import { Tray, Menu, nativeImage, BrowserWindow, app, dialog } from 'electron';
 import * as path from 'path';
 import { getInstance as getUpdateChecker } from '../../modules/updater/updateChecker';
+import { setMacCloseAction } from './preferences';
 import * as log from '../../modules/logger';
 
 let tray: Tray | null = null;
@@ -15,24 +16,58 @@ export function createTray(mainWindowInstance: BrowserWindow): void {
     // 保存窗口引用
     mainWindow = mainWindowInstance;
     
-    // 创建托盘图标
-    const iconPath = path.join(__dirname, '../../../build/icon.ico');
-    const icon = nativeImage.createFromPath(iconPath);
+    // 根据平台选择合适的图标
+    let iconPath: string;
+    let icon: Electron.NativeImage;
     
-    tray = new Tray(icon.resize({ width: 16, height: 16 }));
+    if (process.platform === 'darwin') {
+        // macOS 使用 PNG 格式的模板图标
+        iconPath = path.join(__dirname, '../../../build/icon.png');
+        icon = nativeImage.createFromPath(iconPath);
+        if (icon.isEmpty()) {
+            // 如果 PNG 不存在，尝试使用 ICO 文件
+            iconPath = path.join(__dirname, '../../../build/icon.ico');
+            icon = nativeImage.createFromPath(iconPath);
+        }
+        // macOS 托盘图标应该是模板图像
+        if (!icon.isEmpty()) {
+            icon.setTemplateImage(true);
+        }
+    } else {
+        // Windows 和 Linux 使用 ICO 格式
+        iconPath = path.join(__dirname, '../../../build/icon.ico');
+        icon = nativeImage.createFromPath(iconPath);
+        if (!icon.isEmpty()) {
+            icon = icon.resize({ width: 16, height: 16 });
+        }
+    }
+    
+    // 如果图标仍然为空，记录错误但继续创建托盘
+    if (icon.isEmpty()) {
+        log.warn('托盘图标加载失败，使用默认图标');
+        // 创建一个简单的默认图标
+        icon = nativeImage.createEmpty();
+    }
+    
+    tray = new Tray(icon);
     
     // 设置托盘提示文字
     tray.setToolTip('飞牛影视');
     
     // 创建托盘菜单
-    const contextMenu = Menu.buildFromTemplate([
+    const menuTemplate: Electron.MenuItemConstructorOptions[] = [
         {
-            label: '显示主窗口',
+            label: process.platform === 'darwin' ? '显示窗口' : '显示主窗口',
             click: () => {
                 if (mainWindow) {
                     if (mainWindow.isMinimized()) mainWindow.restore();
                     if (!mainWindow.isVisible()) mainWindow.show();
                     mainWindow.focus();
+                    
+                    // macOS 特有：确保应用在 dock 中显示
+                    if (process.platform === 'darwin') {
+                        app.dock?.show();
+                    }
                 }
             }
         },
@@ -46,31 +81,86 @@ export function createTray(mainWindowInstance: BrowserWindow): void {
                     log.error('手动检查更新失败:', error);
                 });
             }
-        },
+        }
+    ];
+    
+    // 在 macOS 上添加偏好设置选项
+    if (process.platform === 'darwin') {
+        menuTemplate.push(
+            {
+                type: 'separator'
+            },
+            {
+                label: '关闭行为设置',
+                click: async () => {
+                    if (mainWindow) {
+                        const result = await dialog.showMessageBox(mainWindow, {
+                            type: 'question',
+                            title: '关闭行为设置',
+                            message: '设置点击关闭按钮时的行为',
+                            detail: '您可以选择关闭窗口时的默认行为。',
+                            buttons: ['隐藏到状态栏', '退出应用', '每次询问', '取消'],
+                            defaultId: 2,
+                            cancelId: 3
+                        });
+                        
+                        switch (result.response) {
+                            case 0:
+                                setMacCloseAction('minimize');
+                                break;
+                            case 1:
+                                setMacCloseAction('quit');
+                                break;
+                            case 2:
+                                setMacCloseAction('ask');
+                                break;
+                        }
+                    }
+                }
+            }
+        );
+    }
+    
+    menuTemplate.push(
         {
             type: 'separator'
         },
         {
-            label: '退出',
+            label: process.platform === 'darwin' ? '退出飞牛影视' : '退出',
             click: () => {
                 // 真正退出应用
                 (app as any).isQuiting = true;
                 app.quit();
             }
         }
-    ]);
+    );
+    
+    const contextMenu = Menu.buildFromTemplate(menuTemplate);
     
     // 设置托盘菜单
     tray.setContextMenu(contextMenu);
     
-    // 双击托盘图标恢复窗口
-    tray.on('double-click', () => {
-        if (mainWindow) {
-            if (mainWindow.isMinimized()) mainWindow.restore();
-            if (!mainWindow.isVisible()) mainWindow.show();
-            mainWindow.focus();
-        }
-    });
+    // 根据平台设置不同的点击行为
+    if (process.platform === 'darwin') {
+        // macOS 上单击托盘图标恢复窗口
+        tray.on('click', () => {
+            if (mainWindow) {
+                if (mainWindow.isMinimized()) mainWindow.restore();
+                if (!mainWindow.isVisible()) mainWindow.show();
+                mainWindow.focus();
+                app.dock?.show();
+            }
+        });
+    } else {
+        // Windows 和 Linux 上双击托盘图标恢复窗口
+        tray.on('double-click', () => {
+            if (mainWindow) {
+                if (mainWindow.isMinimized()) mainWindow.restore();
+                if (!mainWindow.isVisible()) mainWindow.show();
+                mainWindow.focus();
+            }
+        });
+    }
 
     log.info('系统托盘创建成功');
 }
@@ -106,4 +196,19 @@ export function destroyTray(): void {
  */
 export function getTray(): Tray | null {
     return tray;
+}
+
+/**
+ * 检查托盘通知是否已显示过
+ * @returns {boolean} 是否已显示过
+ */
+export function isTrayNotificationShown(): boolean {
+    return trayNotificationShown;
+}
+
+/**
+ * 设置托盘通知已显示状态
+ */
+export function setTrayNotificationShown(): void {
+    trayNotificationShown = true;
 }

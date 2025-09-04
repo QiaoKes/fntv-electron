@@ -8,7 +8,19 @@
         "compile": "tsc",
         "watch": "tsc --watch",
         "clean": "rimraf dest",
-        "build": "tsc && electron-builder"
+        "build": "tsc && electron-builder",
+        "build:win": "tsc && electron-builder --win",
+        "build:mac": "tsc && electron-builder --mac",
+        "build:linux": "tsc && electron-builder --linux",
+        "build:all": "tsc && electron-builder --win --mac --linux",
+        "build:mac-arm64": "tsc && electron-builder --mac --arm64",
+        "build:mac-x64": "tsc && electron-builder --mac --x64",
+        "build:linux-arm64": "tsc && electron-builder --linux --arm64",
+        "build:linux-x64": "tsc && electron-builder --linux --x64",
+        "check-icons": "node scripts/check-icons.js",
+        "generate-iconset": "node scripts/generate-iconset.js",
+        "generate-icns": "bash scripts/generate-icns.sh",
+        "prebuild": "npm run check-icons"
     },
     "author": "tracing",
     "devDependencies": {
@@ -25,10 +37,11 @@
         "@types/verror": "^1.10.11",
         "@types/yauzl": "^2.10.3",
         "copyfiles": "^2.4.1",
-        "electron": "file:./third_party/electron",
+        "electron": "v38.0.0",
         "electron-builder": "^26.0.12",
         "npm-run-all": "^4.1.5",
         "rimraf": "^5.0.9",
+        "sharp": "^0.34.3",
         "typescript": "^5.5.4"
     },
     "dependencies": {
@@ -44,6 +57,8 @@
         "icon": "build/icon.ico",
         "productName": "飞牛影视",
         "artifactName": "FNMedia_${version}_${os}_${arch}.${ext}",
+        "appId": "com.qiaokes.fntv",
+        "compression": "normal",
         "win": {
             "target": [
                 {
@@ -52,7 +67,43 @@
                         "x64"
                     ]
                 }
-            ]
+            ],
+            "icon": "build/icon.ico"
+        },
+        "mac": {
+            "target": [
+                {
+                    "target": "dmg",
+                    "arch": [
+                        "x64",
+                        "arm64"
+                    ]
+                }
+            ],
+            "category": "public.app-category.entertainment",
+            "icon": "build/icon.icns",
+            "hardenedRuntime": true,
+            "gatekeeperAssess": false,
+            "entitlements": "build/entitlements.mac.plist",
+            "entitlementsInherit": "build/entitlements.mac.plist"
+        },
+        "linux": {
+            "target": [
+                {
+                    "target": "AppImage",
+                    "arch": [
+                        "x64",
+                        "arm64"
+                    ]
+                }
+            ],
+            "category": "AudioVideo",
+            "icon": "build/icon.png",
+            "desktop": {
+                "Name": "飞牛影视",
+                "Comment": "飞牛影视播放器",
+                "Categories": "AudioVideo;Video;Player;"
+            }
         },
         "nsis": {
             "allowToChangeInstallationDirectory": true,
