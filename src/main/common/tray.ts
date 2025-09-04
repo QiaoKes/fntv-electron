@@ -21,21 +21,23 @@ export function createTray(mainWindowInstance: BrowserWindow): void {
     let icon: Electron.NativeImage;
     
     if (process.platform === 'darwin') {
-        // macOS 使用专门优化的状态栏图标
-        iconPath = path.join(__dirname, '../../../build/icon-tray-macos.png');
+        // macOS 推荐用 template 图标
+        iconPath = path.join(__dirname, '../../../build/icon-tray-macosTemplate.png');
         icon = nativeImage.createFromPath(iconPath);
+
         if (icon.isEmpty()) {
-            // 如果专用图标不存在，尝试使用通用 PNG
+            // fallback: 用通用图标
             iconPath = path.join(__dirname, '../../../build/icon.png');
             icon = nativeImage.createFromPath(iconPath);
+
             if (!icon.isEmpty()) {
-                // 调整尺寸为适合状态栏的大小
-                icon = icon.resize({ width: 18, height: 18 });
+                // 尺寸适配状态栏（通常 16x16 即可，Retina 自动缩放）
+                icon = icon.resize({ width: 16, height: 16 });
             }
         }
-        // macOS 托盘图标应该是模板图像
+
         if (!icon.isEmpty()) {
-            icon.setTemplateImage(true);
+            icon.setTemplateImage(true); // 关键：启用 macOS 自动浅色/深色模式适配
         }
     } else {
         // Windows 和 Linux 使用 ICO 格式
