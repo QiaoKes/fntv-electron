@@ -16,12 +16,7 @@
         "build:mac-arm64": "tsc && electron-builder --mac --arm64",
         "build:mac-x64": "tsc && electron-builder --mac --x64",
         "build:linux-arm64": "tsc && electron-builder --linux --arm64",
-        "build:linux-x64": "tsc && electron-builder --linux --x64",
-        "check-icons": "node scripts/check-icons.js",
-        "generate-iconset": "node scripts/generate-iconset.js",
-        "generate-icns": "bash scripts/generate-icns.sh",
-        "create-macos-tray-icon": "node scripts/create-macos-tray-icon.js",
-        "prebuild": "npm run check-icons && npm run create-macos-tray-icon"
+        "build:linux-x64": "tsc && electron-builder --linux --x64"
     },
     "author": "tracing",
     "devDependencies": {

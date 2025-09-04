@@ -2,8 +2,8 @@ import { app, BrowserWindow, dialog, Notification } from 'electron';
 import { registerAllPlugins } from './handlers';
 import { getInstance as getUpdateChecker } from '../modules/updater/updateChecker';
 import * as winctrl from './common/winctrl';
-import { createTray, showTrayNotification, destroyTray, isTrayNotificationShown, setTrayNotificationShown } from './common/tray';
-import { getMacCloseAction, setMacCloseAction } from './common/preferences';
+import { createTray, showTrayNotification, destroyTray } from './common/tray';
+import { getMacCloseAction, setMacCloseAction, getTrayNotificationShown, setTrayNotificationShown } from './common/preferences';
 import * as log from '../modules/logger';
 import { getMainWindow } from './common/mainwin';
 import * as proxyModule from '../modules/proxy';
@@ -179,7 +179,7 @@ function setupWindowEvents(mainWindow: BrowserWindow): void {
 
 // macOS 通知显示函数
 function showMacNotification(): void {
-    if (!isTrayNotificationShown()) {
+    if (!getTrayNotificationShown()) {
         if (Notification.isSupported()) {
             const notification = new Notification({
                 title: '飞牛影视',
@@ -188,7 +188,7 @@ function showMacNotification(): void {
             });
             notification.show();
         }
-        setTrayNotificationShown();
+        setTrayNotificationShown(true);
     }
 }
 

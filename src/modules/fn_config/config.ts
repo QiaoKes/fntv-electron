@@ -22,6 +22,8 @@ export interface Config {
     downloadProxyEnabled?: boolean;
     downloadProxy?: string;
     hideOriginalPlayButton?: boolean;
+    macCloseAction?: 'minimize' | 'quit' | 'ask';
+    trayNotificationShown?: boolean;
 }
 
 /**
@@ -213,6 +215,32 @@ export function setHideOriginalPlayButton(hide: boolean): void {
     fs.writeFileSync(getConfigPath(), JSON.stringify(config, null, 2));
 }
 
+// 获取 macOS 关闭行为偏好
+export function getMacCloseAction(): 'minimize' | 'quit' | 'ask' {
+    const config: Config = readConfig() || {};
+    return config.macCloseAction || 'ask';
+}
+
+// 设置 macOS 关闭行为偏好
+export function setMacCloseAction(action: 'minimize' | 'quit' | 'ask'): void {
+    const config: Config = readConfig() || {};
+    config.macCloseAction = action;
+    fs.writeFileSync(getConfigPath(), JSON.stringify(config, null, 2));
+}
+
+// 获取托盘通知是否已显示过
+export function getTrayNotificationShown(): boolean {
+    const config: Config = readConfig() || {};
+    return config.trayNotificationShown || false;
+}
+
+// 设置托盘通知已显示状态
+export function setTrayNotificationShown(shown: boolean): void {
+    const config: Config = readConfig() || {};
+    config.trayNotificationShown = shown;
+    fs.writeFileSync(getConfigPath(), JSON.stringify(config, null, 2));
+}
+
 // 向后兼容的函数
 export function getDownloadProxyUrl(): string {
     return getDownloadProxyConfig().proxyUrl;
@@ -236,5 +264,9 @@ module.exports = {
     getDownloadProxyConfig,
     setDownloadProxyConfig,
     getHideOriginalPlayButton,
-    setHideOriginalPlayButton
+    setHideOriginalPlayButton,
+    getMacCloseAction,
+    setMacCloseAction,
+    getTrayNotificationShown,
+    setTrayNotificationShown
 };

@@ -1,11 +1,10 @@
-import { Tray, Menu, nativeImage, BrowserWindow, app } from 'electron';
+import { Tray, Menu, nativeImage, BrowserWindow, app, dialog } from 'electron';
 import * as path from 'path';
 import { getInstance as getUpdateChecker } from '../../modules/updater/updateChecker';
-import { setMacCloseAction } from './preferences';
+import { setMacCloseAction, getTrayNotificationShown, setTrayNotificationShown } from './preferences';
 import * as log from '../../modules/logger';
 
 let tray: Tray | null = null;
-let trayNotificationShown = false; // 托盘提示是否已显示过
 let mainWindow: BrowserWindow | null = null; // 主窗口引用
 
 /**
@@ -90,10 +89,41 @@ export function createTray(mainWindowInstance: BrowserWindow): void {
         }
     ];
     
-    // 在 macOS 上默认设置关闭行为为收到状态栏
+    // 在 macOS 上添加偏好设置选项
     if (process.platform === 'darwin') {
-        // 设置默认行为为收到状态栏
-        setMacCloseAction('minimize');
+        menuTemplate.push(
+            {
+                type: 'separator'
+            },
+            {
+                label: '关闭行为设置',
+                click: async () => {
+                    if (mainWindow) {
+                        const result = await dialog.showMessageBox(mainWindow, {
+                            type: 'question',
+                            title: '关闭行为设置',
+                            message: '设置点击关闭按钮时的行为',
+                            detail: '您可以选择关闭窗口时的默认行为。',
+                            buttons: ['隐藏到状态栏', '退出应用', '每次询问', '取消'],
+                            defaultId: 2,
+                            cancelId: 3
+                        });
+                        
+                        switch (result.response) {
+                            case 0:
+                                setMacCloseAction('minimize');
+                                break;
+                            case 1:
+                                setMacCloseAction('quit');
+                                break;
+                            case 2:
+                                setMacCloseAction('ask');
+                                break;
+                        }
+                    }
+                }
+            }
+        );
     }
     
     menuTemplate.push(
@@ -144,13 +174,13 @@ export function createTray(mainWindowInstance: BrowserWindow): void {
  * 显示托盘通知（仅在Windows上首次显示）
  */
 export function showTrayNotification(): void {
-    if (process.platform === 'win32' && !trayNotificationShown && tray) {
+    if (process.platform === 'win32' && !getTrayNotificationShown() && tray) {
         tray.displayBalloon({
             iconType: 'info',
             title: '飞牛影视',
             content: '应用已最小化到托盘，双击托盘图标或右键菜单可以恢复窗口'
         });
-        trayNotificationShown = true; // 标记已显示过提示
+        setTrayNotificationShown(true); // 标记已显示过提示
     }
 }
 
@@ -171,19 +201,4 @@ export function destroyTray(): void {
  */
 export function getTray(): Tray | null {
     return tray;
-}
-
-/**
- * 检查托盘通知是否已显示过
- * @returns {boolean} 是否已显示过
- */
-export function isTrayNotificationShown(): boolean {
-    return trayNotificationShown;
-}
-
-/**
- * 设置托盘通知已显示状态
- */
-export function setTrayNotificationShown(): void {
-    trayNotificationShown = true;
 }
