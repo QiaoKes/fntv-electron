@@ -10,22 +10,22 @@ export enum EventType {
 // 单个播放源信息(非当前播放只需要传itemGuid)
 export interface PlayItem {
     itemGuid: string;
-    mediaGuid?: string;
-    tvTitle?: string;
-    seasonNumber?: number;
-    episodeNumber?: number;
-    title?: string;
-    videoGuid?: string;
-    audioGuid?: string;
-    subtitleGuid?: string;
-    playLink?: string;
-    subtitles?: string[];
-    ts?: number;
-    duration?: number;
-    percentage?: number;
+    title: string;
+    tvTitle: string;
+    seasonNumber: number;
+    episodeNumber: number;
+    ts: number;
+    duration: number;
+    playLink: string;
 }
 
-export type PlayStatusData = fn.PlayStatusData & { percentage: number };
+// 播放状态数据
+export type PlayStatusData = {
+    itemGuid: string;
+    ts: number;
+    duration: number;
+    percentage: number;
+}
 
 // 播放器退出数据接口
 export type PlayExitData = {
@@ -64,12 +64,7 @@ export enum PlayerType {
 export abstract class BasePlayer {
     protected config: Required<Config>;
     protected globalStatus: PlayStatusData = {
-        item_guid: '',
-        media_guid: '',
-        video_guid: '',
-        audio_guid: '',
-        subtitle_guid: '',
-        play_link: '',
+        itemGuid: '',
         ts: 0,
         duration: 0,
         percentage: 0,

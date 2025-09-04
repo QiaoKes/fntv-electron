@@ -8,6 +8,7 @@ import * as log from '../../../modules/logger';
 import * as os from 'os';
 import { PlayStatusData } from '../../../modules/fn_api/types';
 import { escape } from 'querystring';
+import * as proxyModule from '../../../modules/proxy';
 
 /**
 * 媒体播放插件
@@ -21,10 +22,12 @@ interface PlayRequest {
 // 播放信息
 type MediaInfo = {
     itemGuid: string;
-    title?: string;
-    tvTitle?: string;
-    seasonNumber?: number;
-    episodeNumber?: number;
+    title: string;
+    tvTitle: string;
+    seasonNumber: number;
+    episodeNumber: number;
+    ts: number;
+    duration: number;
 }
 
 // 全局播放器实例引用
@@ -51,11 +54,31 @@ function eventHandler(fnapi: fn.ApiService) {
                 const progressData = data as ply.PlayStatusData;
                 if (progressData.percentage > 90) {
                     log.info('视频播放接近结束，更新状态...');
-                    await fnapi.setWatched(progressData.item_guid);
+                    await fnapi.setWatched(progressData.itemGuid);
                     return;
                 }
 
-                await fnapi.recordPlayStatus(progressData);
+                // 优先从缓存查询播放信息
+                const resp = await proxyModule.getPlayInfoCacheByGuid(progressData.itemGuid);
+                if (resp.code !== 0 || !resp.data) {
+                    log.error('获取播放信息失败:', resp ? resp.message : '未知错误');
+                    return;
+                }
+
+                const info = resp.data.playInfo;
+
+                const record: fn.PlayStatusData = {
+                    item_guid: progressData.itemGuid,
+                    media_guid: info.media_guid,
+                    video_guid: info.video_guid,
+                    audio_guid: info.audio_guid,
+                    subtitle_guid: info.subtitle_guid,
+                    play_link: new URL(fnapi.getVideoUrl(info.media_guid)).hostname,
+                    ts: progressData.ts,
+                    duration: progressData.duration,
+                };
+
+                await fnapi.recordPlayStatus(record);
                 break;
 
             case ply.EventType.ERROR:
@@ -80,9 +103,29 @@ function eventHandler(fnapi: fn.ApiService) {
 
                 if (event.status.percentage > 90) {
                     log.info('视频播放接近结束，更新状态...');
-                    await fnapi.setWatched(event.status.item_guid);
+                    await fnapi.setWatched(event.status.itemGuid);
                 } else {
-                    await fnapi.recordPlayStatus(event.status);
+                    // 优先从缓存查询播放信息
+                    const resp = await proxyModule.getPlayInfoCacheByGuid(event.status.itemGuid);
+                    if (resp.code !== 0 || !resp.data) {
+                        log.error('获取播放信息失败:', resp ? resp.message : '未知错误');
+                        return;
+                    }
+
+                    const info = resp.data.playInfo;
+
+                    const record: fn.PlayStatusData = {
+                        item_guid: event.status.itemGuid,
+                        media_guid: info.media_guid,
+                        video_guid: info.video_guid,
+                        audio_guid: info.audio_guid,
+                        subtitle_guid: info.subtitle_guid,
+                        play_link: new URL(fnapi.getVideoUrl(info.media_guid)).hostname,
+                        ts: event.status.ts,
+                        duration: event.status.duration,
+                    };
+
+                    await fnapi.recordPlayStatus(record);
                 }
 
                 // 等待200ms
@@ -136,40 +179,12 @@ async function handlePlayMovie(event: IpcMainEvent, { id, token }: PlayRequest):
         }
 
         for (const episode of episodeList.data) {
-            // 当前剧集特殊处理
-            if (episode.guid === itemGuid) {
-                const mediaItem = await processCurrentMedia(fnapi, response.data);
-                if (!mediaItem) {
-                    log.warn('处理当前剧集失败:', response.data);
-                    return;
-                }
-                log.info('添加当前剧集到播放列表:', mediaItem);
-                playList.push(mediaItem);
-                continue;
-            }
-
-            const info = {
-                itemGuid: episode.guid,
-                title: episode.title,
-                tvTitle: episode.tv_title,
-                seasonNumber: episode.season_number,
-                episodeNumber: episode.episode_number,
-            } as MediaInfo;
-
-            const mediaItem = await processSingleMedia(fnapi, info);
-            if (!mediaItem) {
-                log.warn('处理剧集失败:', episode);
-                continue;
-            }
+            const mediaItem = processEpisodeMedia(episode);
             playList.push(mediaItem);
             log.info('添加剧集到播放列表:', mediaItem);
         }
     } else {
-        const mediaItem = await processCurrentMedia(fnapi, response.data);
-        if (!mediaItem) {
-            log.warn('处理单集失败:', itemGuid);
-            return;
-        }
+        const mediaItem = processSingleMedia(response.data);
         playList.push(mediaItem);
         log.info('添加单集到播放列表:', mediaItem);
     }
@@ -212,48 +227,30 @@ async function handlePlayMovie(event: IpcMainEvent, { id, token }: PlayRequest):
 }
 
 // 处理当前播放的媒体信息
-async function processCurrentMedia(fnapi: fn.ApiService, info: fn.PlayInfo): Promise<ply.PlayItem> {
-    // 计算起始播放位置百分比
-    const last = info.ts;
-    const total = info.item.duration;
-    const percentage = total <= 0 ? 0 : (last / total * 100);
-
-    // 获取字幕文件
-    const subFiles = await fnapi.getSubtitle(info.item.guid)
-        .then(fnapi.downloadSubtitle)
-        .catch((error: Error) => {
-            log.error('获取字幕文件失败:', error);
-            return [];
-        });
-
-    let ret: ply.PlayItem = {
+function processEpisodeMedia(info: fn.PlayListItem): ply.PlayItem {
+    return {
         itemGuid: info.guid,
-        mediaGuid: info.media_guid,
-        tvTitle: info.item.tv_title,
-        seasonNumber: info.item.season_number,
-        episodeNumber: info.item.episode_number,
-        title: info.item.title,
-        videoGuid: info.video_guid,
-        audioGuid: info.audio_guid,
-        subtitleGuid: info.subtitle_guid,
-        playLink: fnapi.getVideoUrl(info.media_guid),
-        subtitles: subFiles,
-        ts: last,
-        duration: total,
-        percentage: percentage,
+        title: info.title,
+        tvTitle: info.tv_title,
+        seasonNumber: info.season_number,
+        episodeNumber: info.episode_number,
+        ts: info.ts,
+        duration: info.duration,
+        playLink: proxyModule.getProxyUrl(info.guid),
     };
-
-    return ret;
 }
 
 // 处理单个待播放媒体信息
-function processSingleMedia(fnapi: fn.ApiService, info: MediaInfo): ply.PlayItem {
+function processSingleMedia(info: fn.PlayInfo): ply.PlayItem {
     return {
-        itemGuid: info.itemGuid,
-        tvTitle: info.tvTitle,
-        seasonNumber: info.seasonNumber,
-        episodeNumber: info.episodeNumber,
-        title: info.title,
+        itemGuid: info.guid,
+        title: info.item.title,
+        tvTitle: info.item.tv_title,
+        seasonNumber: info.item.season_number,
+        episodeNumber: info.item.episode_number,
+        ts: info.ts,
+        duration: info.item.duration,
+        playLink: proxyModule.getProxyUrl(info.guid),
     };
 }
 
