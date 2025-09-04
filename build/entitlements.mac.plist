@@ -49,5 +49,41 @@
     <!-- 允许调试器附加（开发时有用，生产环境可设为 false） -->
     <key>com.apple.security.cs.debugger</key>
     <false/>
+    
+    <!-- 允许执行外部命令和脚本 -->
+    <key>com.apple.security.temporary-exception.sbpl</key>
+    <string>(allow process-exec (literal "/usr/bin/env"))</string>
+    
+    <!-- 允许启动子进程 -->
+    <key>com.apple.security.inherit</key>
+    <true/>
+    
+    <!-- 允许访问环境变量 -->
+    <key>com.apple.security.cs.allow-dyld-environment-variables</key>
+    <true/>
+    
+    <!-- 允许访问系统路径下的可执行文件 -->
+    <key>com.apple.security.temporary-exception.files.absolute-path.read-only</key>
+    <array>
+        <string>/usr/bin/</string>
+        <string>/usr/local/bin/</string>
+        <string>/opt/homebrew/bin/</string>
+        <string>/Applications/</string>
+    </array>
+    
+    <!-- 允许执行系统路径下的可执行文件 -->
+    <key>com.apple.security.temporary-exception.files.absolute-path.executable</key>
+    <array>
+        <string>/usr/bin/</string>
+        <string>/usr/local/bin/</string>
+        <string>/opt/homebrew/bin/</string>
+        <string>/usr/bin/mpv</string>
+        <string>/usr/local/bin/mpv</string>
+        <string>/opt/homebrew/bin/mpv</string>
+    </array>
+    
+    <!-- 允许创建子进程 -->
+    <key>com.apple.security.cs.allow-relative-path</key>
+    <true/>
 </dict>
 </plist>
