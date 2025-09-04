@@ -100,9 +100,11 @@
             "category": "AudioVideo",
             "icon": "build/icon.png",
             "desktop": {
-                "Name": "飞牛影视",
-                "Comment": "飞牛影视播放器",
-                "Categories": "AudioVideo;Video;Player;"
+                "entry": {
+                    "Name": "飞牛影视",
+                    "Comment": "飞牛影视播放器",
+                    "Categories": "AudioVideo;Video;Player;"
+                }
             }
         },
         "nsis": {

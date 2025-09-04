@@ -37,7 +37,6 @@ export async function stopProxyServer(): Promise<void> {
     try {
         await globalProxyServer.stop();
         globalProxyServer = null;
-        log.info('代理服务器已停止');
     } catch (error) {
         log.error('停止代理服务器失败:', error);
         throw error;
