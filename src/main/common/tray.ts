@@ -21,13 +21,17 @@ export function createTray(mainWindowInstance: BrowserWindow): void {
     let icon: Electron.NativeImage;
     
     if (process.platform === 'darwin') {
-        // macOS 使用 PNG 格式的模板图标
-        iconPath = path.join(__dirname, '../../../build/icon.png');
+        // macOS 使用专门优化的状态栏图标
+        iconPath = path.join(__dirname, '../../../build/icon-tray-macos.png');
         icon = nativeImage.createFromPath(iconPath);
         if (icon.isEmpty()) {
-            // 如果 PNG 不存在，尝试使用 ICO 文件
-            iconPath = path.join(__dirname, '../../../build/icon.ico');
+            // 如果专用图标不存在，尝试使用通用 PNG
+            iconPath = path.join(__dirname, '../../../build/icon.png');
             icon = nativeImage.createFromPath(iconPath);
+            if (!icon.isEmpty()) {
+                // 调整尺寸为适合状态栏的大小
+                icon = icon.resize({ width: 18, height: 18 });
+            }
         }
         // macOS 托盘图标应该是模板图像
         if (!icon.isEmpty()) {
