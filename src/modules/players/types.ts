@@ -1,4 +1,4 @@
-import { ApiService } from '../fn_api/api';
+import * as fn from '../fn_api/api';
 
 // 播放器事件类型枚举
 export enum EventType {
@@ -7,24 +7,25 @@ export enum EventType {
     EXIT = 'exit',
 }
 
-// 单个播放源信息
+// 单个播放源信息(非当前播放只需要传itemGuid)
 export interface PlayItem {
     itemGuid: string;
-    title: string;
-    mediaGuid: string;
-    videoGuid: string;
-    audioGuid: string;
-    subtitleGuid: string;
-    playLink: string;
-    subtitles: string[];
+    mediaGuid?: string;
+    tvTitle?: string;
+    seasonNumber?: number;
+    episodeNumber?: number;
+    title?: string;
+    videoGuid?: string;
+    audioGuid?: string;
+    subtitleGuid?: string;
+    playLink?: string;
+    subtitles?: string[];
+    ts?: number;
+    duration?: number;
+    percentage?: number;
 }
 
-// 播放状态接口
-export interface PlayStatusData extends PlayItem {
-    currentSeconds: number;
-    totalSeconds: number;
-    percentage: number;
-}
+export type PlayStatusData = fn.PlayStatusData & { percentage: number };
 
 // 播放器退出数据接口
 export type PlayExitData = {
@@ -49,6 +50,7 @@ export type Config = {
     debug?: boolean;
     extraArgs?: string[];
     playerPath?: string;
+    fnapi: fn.ApiService;
     onEvent: EventHandler;
 }
 
@@ -62,17 +64,15 @@ export enum PlayerType {
 export abstract class BasePlayer {
     protected config: Required<Config>;
     protected globalStatus: PlayStatusData = {
-        mediaGuid: '',
-        subtitles: [],
-        title: '',
-        itemGuid: '',
-        videoGuid: '',
-        audioGuid: '',
-        subtitleGuid: '',
-        playLink: '',
-        currentSeconds: 0,
-        totalSeconds: 0,
-        percentage: 0
+        item_guid: '',
+        media_guid: '',
+        video_guid: '',
+        audio_guid: '',
+        subtitle_guid: '',
+        play_link: '',
+        ts: 0,
+        duration: 0,
+        percentage: 0,
     };
 
     constructor(config: Config) {
@@ -82,7 +82,8 @@ export abstract class BasePlayer {
             debug: config.debug || false,
             extraArgs: config.extraArgs || [],
             playerPath: config.playerPath || '',
-            onEvent: config.onEvent
+            onEvent: config.onEvent,
+            fnapi: config.fnapi
         };
     }
 
@@ -108,6 +109,11 @@ export abstract class BasePlayer {
     // 更新全局播放状态
     protected updateGlobalStatus(status: PlayStatusData): void {
         this.globalStatus = status;
+    }
+
+    // 获取fnapi实例
+    protected getFnApi(): fn.ApiService {
+        return this.config.fnapi;
     }
 }
 

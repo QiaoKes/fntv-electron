@@ -183,7 +183,7 @@ export interface WatchedData {
 /**
  * 播放状态记录数据
  */
-export interface PlayStateData {
+export interface PlayStatusData {
     /** 视频项目的唯一标识符 */
     item_guid: string;
     /** 媒体文件的唯一标识符 */

@@ -263,7 +263,7 @@ export class ApiService {
      * @param statusData - 播放状态数据
      * @returns 返回记录结果的Promise
      */
-    recordPlayState(statusData: types.PlayStateData): Promise<fn.ApiResponse<any>> {
+    recordPlayStatus(statusData: types.PlayStatusData): Promise<fn.ApiResponse<any>> {
         return fn.request(this.baseURL, '/v/api/v1/play/record', HttpMethod.POST, this.token, statusData);
     }
 }
