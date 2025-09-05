@@ -10,7 +10,7 @@
         "clean": "rimraf dest",
         "build": "tsc && electron-builder",
         "build:win": "tsc && electron-builder --win",
-        "build:mac": "cross-env CSC_LINK=build/electron-dev-cert.p12 CSC_KEY_PASSWORD=fntv123456 tsc && electron-builder --mac",
+        "build:mac": "tsc && electron-builder --mac",
         "build:linux": "tsc && electron-builder --linux",
         "build:all": "tsc && electron-builder --win --mac --linux"
     },
@@ -88,7 +88,6 @@
             "gatekeeperAssess": false,
             "entitlements": "build/entitlements.mac.plist",
             "entitlementsInherit": "build/entitlements.mac.plist",
-            "identity": "electron-dev-cert",
             "type": "development",
             "extraFiles": [
                 {
