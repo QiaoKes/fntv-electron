@@ -20,19 +20,74 @@ interface PlayRequest {
     token: string;
 }
 
-// 播放信息
-type MediaInfo = {
-    itemGuid: string;
-    title: string;
-    tvTitle: string;
-    seasonNumber: number;
-    episodeNumber: number;
-    ts: number;
-    duration: number;
-}
-
 // 全局播放器实例引用
 let currentPlayer: ply.BasePlayer | null = null;
+
+// MPV播放器路径缓存
+let cachedPlayerPath: string | null = null;
+
+/**
+ * 获取MPV播放器路径（带缓存）
+ * @returns 播放器路径或undefined
+ */
+function getMpvPlayerPath(): string | undefined {
+    // 如果已经缓存了路径，直接返回
+    if (cachedPlayerPath) {
+        return cachedPlayerPath;
+    }
+
+    const platform = os.platform();
+    
+    if (platform === 'win32') {
+        // Windows 平台使用本地文件路径
+        cachedPlayerPath = 'third_party\\fntv-mpv\\mpv.exe';
+        return cachedPlayerPath;
+    } else if (platform === 'darwin') {
+        // macOS 常用安装路径
+        const macPaths = [
+            '/opt/homebrew/bin/mpv',  // Apple Silicon Mac (M1/M2)
+            '/usr/local/bin/mpv',     // Intel Mac 或手动安装
+            '/Applications/mpv.app/Contents/MacOS/mpv', // App bundle
+        ];
+        
+        for (const path of macPaths) {
+            if (fs.existsSync(path)) {
+                cachedPlayerPath = path;
+                log.info(`找到MPV播放器路径: ${path}`);
+                return cachedPlayerPath;
+            }
+        }
+        
+        // 未找到mpv播放器
+        dialog.showErrorBox('错误', 'macOS平台未找到mpv播放器，请使用Homebrew安装mpv后重试: brew install mpv');
+        log.error('macOS平台未找到mpv播放器，请使用Homebrew安装mpv后重试: brew install mpv');
+        return undefined;
+    } else if (platform === 'linux') {
+        // Linux 常用安装路径
+        const linuxPaths = [
+            '/usr/bin/mpv',           // 系统包管理器安装
+            '/usr/local/bin/mpv',     // 手动编译安装
+            '/snap/bin/mpv',          // Snap 包
+            '/usr/games/mpv',         // 某些发行版
+            '/opt/mpv/bin/mpv',       // 可选安装位置
+        ];
+        
+        for (const path of linuxPaths) {
+            if (fs.existsSync(path)) {
+                cachedPlayerPath = path;
+                log.info(`找到MPV播放器路径: ${path}`);
+                return cachedPlayerPath;
+            }
+        }
+        
+        // 未找到mpv播放器
+        dialog.showErrorBox('错误', 'Linux平台未找到mpv播放器，请安装mpv播放器后重试');
+        log.error('Linux平台未找到mpv播放器，请安装mpv播放器后重试');
+        return undefined;
+    }
+    
+    return undefined;
+}
 
 // 刷新窗口
 async function refreshWindow(): Promise<void> {
@@ -221,18 +276,11 @@ async function handlePlayMovie(event: IpcMainEvent, { id, token }: PlayRequest):
     // 寻找当前播放的媒体在数组中的位置
     const currentIndex = playList.findIndex(item => item.itemGuid === itemGuid);
 
-    let playerPath = undefined;
-    // Windows 平台使用本地文件路径
-    if (os.platform() === 'win32') {
-        playerPath = 'third_party\\fntv-mpv\\mpv.exe';
-    } else if (os.platform() === 'darwin') {
-        playerPath = '/opt/homebrew/bin/mpv';
-        if (!fs.existsSync(playerPath)) {
-            // 弹窗提示使用brew安装
-            dialog.showErrorBox('错误', 'macOS平台未找到mpv播放器，请使用Homebrew安装mpv后重试: brew install mpv');
-            log.error('macOS平台未找到mpv播放器，请使用Homebrew安装mpv后重试: brew install mpv');
-            return;
-        }
+    // 获取MPV播放器路径
+    const playerPath = getMpvPlayerPath();
+    if (!playerPath) {
+        log.error('无法找到MPV播放器路径');
+        return;
     }
 
     let playConfig: ply.Config = {
@@ -293,6 +341,9 @@ function handleBeforeQuit(): void {
         currentPlayer.stop();
         currentPlayer = null;
     }
+    
+    // 清理播放器路径缓存
+    cachedPlayerPath = null;
 }
 
 // 注册媒体播放处理器
