@@ -16,6 +16,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: windows-latest
@@ -159,7 +160,7 @@ jobs:
           echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
           echo "message=$(git log -1 --pretty=format:'%s')" >> $GITHUB_OUTPUT
           echo "author=$(git log -1 --pretty=format:'%an')" >> $GITHUB_OUTPUT
-          echo "date=$(date +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_OUTPUT
+          echo "date=$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M:%S CST')" >> $GITHUB_OUTPUT
 
       - name: Get package version
         id: package
@@ -177,14 +178,13 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ steps.package.outputs.version }}-${{ steps.commit.outputs.sha }}
-          name: 飞牛影视 v${{ steps.package.outputs.version }} (${{ steps.commit.outputs.sha }})
+          tag_name: v${{ steps.package.outputs.version }}
+          name: 飞牛影视 v${{ steps.package.outputs.version }}
           body: |
             ## 🎬 飞牛影视 v${{ steps.package.outputs.version }}
             
             ### 📦 构建信息
             - **提交哈希**: `${{ steps.commit.outputs.sha }}`
-            - **提交信息**: ${{ steps.commit.outputs.message }}
             - **提交作者**: ${{ steps.commit.outputs.author }}
             - **构建时间**: ${{ steps.commit.outputs.date }}
             - **源分支**: `release`
@@ -197,7 +197,7 @@ jobs:
             ### 📥 下载指南
             | 平台 | 文件类型 | 说明 |
             |------|----------|------|
-            | 🪟 Windows | `.exe` | 安装程序，双击运行 |
+            | 💻 Windows | `.exe` | 安装程序，双击运行 |
             | 🍎 macOS | `.dmg` | 磁盘镜像，拖拽到应用程序文件夹 |
             | 🐧 Linux | `.AppImage` | 便携应用，添加执行权限后直接运行 |
             
