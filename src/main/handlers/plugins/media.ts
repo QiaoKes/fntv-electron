@@ -36,6 +36,7 @@ let currentPlayer: ply.BasePlayer | null = null;
 
 // 刷新窗口
 async function refreshWindow(): Promise<void> {
+    log.info('刷新所有窗口');
     try {
         const allWindows = BrowserWindow.getAllWindows();
         
