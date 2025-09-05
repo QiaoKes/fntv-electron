@@ -215,9 +215,9 @@ export class MpvPlayer extends BasePlayer {
 
         // 监听状态变化
         this.mpvInstance.on('status', (status: any) => {
-            // if (this.config.debug) {
-            // log.debug('MPV 状态变化:', status);
-            // }
+            if (this.config.debug) {
+                log.debug('MPV 状态变化:', status);
+            }
 
             // 监听播放路径位置
             if (status.property === 'path' && typeof status.value === 'string') {

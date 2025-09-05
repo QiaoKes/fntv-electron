@@ -48,7 +48,7 @@
     
     <!-- 允许调试器附加（开发时有用，生产环境可设为 false） -->
     <key>com.apple.security.cs.debugger</key>
-    <false/>
+    <true/>
     
     <!-- 允许执行外部命令和脚本 -->
     <key>com.apple.security.temporary-exception.sbpl</key>

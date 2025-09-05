@@ -1,0 +1,224 @@
+name: Release Build
+
+on:
+  push:
+    branches:
+      - release
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+          - os: macos-latest
+            platform: macos
+          - os: ubuntu-latest
+            platform: linux
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Clean npm config
+        run: |
+          rm -f .npmrc
+        shell: bash
+        continue-on-error: true
+
+      - name: Install dependencies
+        run: npm install --no-optional --no-audit --no-fund
+        timeout-minutes: 10
+
+      - name: Install macOS specific dependencies
+        if: runner.os == 'macOS'
+        run: |
+          # 确保 dmg-license 正确安装
+          npm install dmg-license --save-dev
+          # 安装额外的 macOS 构建依赖
+          npm install --no-optional
+        timeout-minutes: 5
+
+      - name: Setup Python (for native modules)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Setup build environment (Windows)
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+        continue-on-error: true
+
+      - name: Download third-party dependencies
+        run: |
+          echo "🔄 Downloading latest fntv-mpv-config..."
+          
+          # 获取最新 release 的下载链接 (使用认证以避免速率限制)
+          LATEST_RELEASE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/QiaoKes/fntv-mpv-config/releases/latest)
+          echo "Latest release info: $LATEST_RELEASE"
+          DOWNLOAD_URL=$(echo "$LATEST_RELEASE" | sed -n 's/.*"browser_download_url": "\(https[^"]*\.zip\)".*/\1/p')
+
+          echo "最新下载链接: $DOWNLOAD_URL"
+
+          if [ -z "$DOWNLOAD_URL" ]; then
+            echo "❌ No zip file found, using fallback..."
+            # 直接退出
+            exit 1
+          else
+            echo "📦 Downloading from: $DOWNLOAD_URL"
+            
+            # 下载文件 (使用认证下载)
+            curl -L -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -o mpv-config.zip "$DOWNLOAD_URL"
+            mkdir -p third_party/fntv-mpv
+            
+            # 根据平台使用不同的解压命令
+            if [ "$RUNNER_OS" = "Windows" ]; then
+              # Windows 使用 PowerShell 解压
+              powershell -Command "Expand-Archive -Path mpv-config.zip -DestinationPath third_party/fntv-mpv -Force"
+              # Windows 删除文件
+              powershell -Command "Remove-Item -Path mpv-config.zip -Force -ErrorAction SilentlyContinue"
+            else
+              # macOS 和 Linux 使用 unzip
+              unzip -q mpv-config.zip -d third_party/fntv-mpv
+              # macOS 和 Linux 删除文件
+              rm -f mpv-config.zip
+            fi
+          fi
+          
+          echo "📁 Final structure:"
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            # Windows 使用 PowerShell 列出目录
+            powershell -Command "Get-ChildItem -Path third_party/fntv-mpv -Directory -Recurse | Select-Object -First 5 | ForEach-Object { Write-Host \$_.FullName }"
+          else
+            # macOS 和 Linux 使用 find
+            find third_party/fntv-mpv -type d | head -5
+          fi
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compile TypeScript
+        run: npm run compile
+        timeout-minutes: 5
+
+      - name: Build application
+        run: |
+          if [ "${{ matrix.platform }}" = "windows" ]; then
+            npm run build:win
+          elif [ "${{ matrix.platform }}" = "macos" ]; then
+            npm run build:mac
+          else
+            npm run build:linux
+          fi
+        shell: bash
+        timeout-minutes: 15
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}-build
+          path: release/
+          retention-days: 30
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: success()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Get commit info
+        id: commit
+        run: |
+          echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "message=$(git log -1 --pretty=format:'%s')" >> $GITHUB_OUTPUT
+          echo "author=$(git log -1 --pretty=format:'%an')" >> $GITHUB_OUTPUT
+          echo "date=$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M:%S CST')" >> $GITHUB_OUTPUT
+
+      - name: Get package version
+        id: package
+        run: |
+          echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List downloaded files
+        run: find artifacts -type f -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" | sort
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.package.outputs.version }}
+          name: 飞牛影视 v${{ steps.package.outputs.version }}
+          body: |
+            ## 🎬 飞牛影视 v${{ steps.package.outputs.version }}
+            
+            ### 📦 构建信息
+            - **提交哈希**: `${{ steps.commit.outputs.sha }}`
+            - **提交作者**: ${{ steps.commit.outputs.author }}
+            - **构建时间**: ${{ steps.commit.outputs.date }}
+            - **源分支**: `release`
+            
+            ### 💻 支持平台
+            - ✅ Windows (x64)
+            - ✅ macOS (Intel & Apple Silicon)
+            - ✅ Linux (x64 & ARM64)
+            
+            ### 📥 下载指南
+            | 平台 | 文件类型 | 说明 |
+            |------|----------|------|
+            | 💻 Windows | `.exe` | 安装程序，双击运行 |
+            | 🍎 macOS | `.dmg` | 磁盘镜像，拖拽到应用程序文件夹 |
+            | 🐧 Linux | `.AppImage` | 便携应用，添加执行权限后直接运行 |
+            
+            ### 🔄 更新内容
+            ```
+            ${{ steps.commit.outputs.message }}
+            ```
+            
+            ---
+            *自动构建于 GitHub Actions* 🤖
+          files: |
+            artifacts/windows-build/*.exe
+            artifacts/macos-build/*.dmg
+            artifacts/linux-build/*.AppImage
+          draft: false
+          prerelease: false
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

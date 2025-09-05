@@ -12,11 +12,7 @@
         "build:win": "tsc && electron-builder --win",
         "build:mac": "tsc && electron-builder --mac",
         "build:linux": "tsc && electron-builder --linux",
-        "build:all": "tsc && electron-builder --win --mac --linux",
-        "build:mac-arm64": "tsc && electron-builder --mac --arm64",
-        "build:mac-x64": "tsc && electron-builder --mac --x64",
-        "build:linux-arm64": "tsc && electron-builder --linux --arm64",
-        "build:linux-x64": "tsc && electron-builder --linux --x64"
+        "build:all": "tsc && electron-builder --win --mac --linux"
     },
     "author": "tracing",
     "devDependencies": {
@@ -33,6 +29,7 @@
         "@types/verror": "^1.10.11",
         "@types/yauzl": "^2.10.3",
         "copyfiles": "^2.4.1",
+        "cross-env": "^10.0.0",
         "electron": "v38.0.0",
         "electron-builder": "^26.0.12",
         "npm-run-all": "^4.1.5",
@@ -91,6 +88,7 @@
             "gatekeeperAssess": false,
             "entitlements": "build/entitlements.mac.plist",
             "entitlementsInherit": "build/entitlements.mac.plist",
+            "type": "development",
             "extraFiles": [
                 {
                     "from": "third_party/fntv-mpv/portable_config",
@@ -98,6 +96,26 @@
                     "filter": [
                         "**/*"
                     ]
+                }
+            ]
+        },
+        "dmg": {
+            "title": "飞牛影视 ${version}",
+            "icon": "build/icon.icns",
+            "window": {
+                "width": 540,
+                "height": 380
+            },
+            "contents": [
+                {
+                    "x": 130,
+                    "y": 220
+                },
+                {
+                    "x": 410,
+                    "y": 220,
+                    "type": "link",
+                    "path": "/Applications"
                 }
             ]
         },
