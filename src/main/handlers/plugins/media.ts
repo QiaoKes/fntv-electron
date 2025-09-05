@@ -147,7 +147,9 @@ function eventHandler(fnapi: fn.ApiService) {
                         duration: event.status.duration,
                     };
 
+                    log.debug('记录播放状态start');
                     await fnapi.recordPlayStatus(record);
+                    log.debug('记录播放状态end');
                 }
 
                 // 等待50ms
