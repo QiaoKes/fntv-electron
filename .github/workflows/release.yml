@@ -133,8 +133,6 @@ jobs:
         timeout-minutes: 15
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CSC_LINK: ${{ matrix.platform == 'macos' && format('{0}/build/electron-dev-cert.p12', github.workspace) || '' }}
-          CSC_KEY_PASSWORD: ${{ matrix.platform == 'macos' && 'fntv123456' || '' }}
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
