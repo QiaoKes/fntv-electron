@@ -74,6 +74,8 @@
 
 ```bash
 brew install mpv
+# 安装dmg后执行
+sudo xattr -rd com.apple.quarantine /Applications/飞牛影视.app
 ```
 
 - linux请先安装mpv播放器再使用
