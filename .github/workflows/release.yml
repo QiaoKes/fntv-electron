@@ -72,19 +72,22 @@ jobs:
         run: |
           echo "🔄 Downloading latest fntv-mpv-config..."
           
-          # 获取最新 release 的下载链接
-          LATEST_RELEASE=$(curl -s https://api.github.com/repos/QiaoKes/fntv-mpv-config/releases/latest)
-          DOWNLOAD_URL=$(echo $LATEST_RELEASE | grep -o '"browser_download_url": "[^"]*\.zip"' | grep -o 'https[^"]*')
-          
+          # 获取最新 release 的下载链接 (使用认证以避免速率限制)
+          LATEST_RELEASE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/QiaoKes/fntv-mpv-config/releases/latest)
+          echo "Latest release info: $LATEST_RELEASE"
+          DOWNLOAD_URL=$(echo "$LATEST_RELEASE" | sed -n 's/.*"browser_download_url": "\(https[^"]*\.zip\)".*/\1/p')
+
+          echo "最新下载链接: $DOWNLOAD_URL"
+
           if [ -z "$DOWNLOAD_URL" ]; then
             echo "❌ No zip file found, using fallback..."
             # 直接退出
-            exit 0
+            exit 1
           else
             echo "📦 Downloading from: $DOWNLOAD_URL"
             
-            # 下载文件
-            curl -L -o mpv-config.zip "$DOWNLOAD_URL"
+            # 下载文件 (使用认证下载)
+            curl -L -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -o mpv-config.zip "$DOWNLOAD_URL"
             mkdir -p third_party/fntv-mpv
             
             # 根据平台使用不同的解压命令
@@ -110,10 +113,42 @@ jobs:
             find third_party/fntv-mpv -type d | head -5
           fi
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Compile TypeScript
         run: npm run compile
         timeout-minutes: 5
+
+      - name: Import macOS certificate
+        if: runner.os == 'macOS'
+        run: |
+          # 导入证书并指定名称
+          security import build/electron-dev-cert.p12 -k ~/Library/Keychains/login.keychain-db -P "fntv123456" -T /usr/bin/codesign -A
+          
+          # 解锁 keychain
+          security unlock-keychain -p "$KEYCHAIN_PASS" ~/Library/Keychains/login.keychain-db
+
+          # 设置证书可用于代码签名
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASS" ~/Library/Keychains/login.keychain-db
+          
+          # 明确信任这个证书用于代码签名
+          security add-trusted-cert -d -r trustRoot -k ~/Library/Keychains/login.keychain-db build/electron-dev-cert.p12 || true
+          
+          # 验证证书导入
+          security find-identity -v -p codesigning
+
+      - name: Debug signing identities
+        if: runner.os == 'macOS'
+        run: |
+          echo "🔍 检查所有签名身份..."
+          security find-identity -v -p codesigning
+          echo ""
+          echo "🔍 查找 electron-dev-cert 证书..."
+          security find-identity -v -p codesigning | grep "electron-dev-cert" || echo "未找到 electron-dev-cert"
+          echo ""
+          echo "🔍 检查证书详情..."
+          security find-certificate -c "electron-dev-cert" -p ~/Library/Keychains/login.keychain-db | openssl x509 -text -noout | head -20 || echo "无法获取证书详情"
 
       - name: Build application
         run: |
@@ -128,7 +163,8 @@ jobs:
         timeout-minutes: 15
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CSC_IDENTITY_AUTO_DISCOVERY: false
+          CSC_LINK: ${{ matrix.platform == 'macos' && format('{0}/build/electron-dev-cert.p12', github.workspace) || '' }}
+          CSC_KEY_PASSWORD: ${{ matrix.platform == 'macos' && 'fntv123456' || '' }}
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
