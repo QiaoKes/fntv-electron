@@ -37,7 +37,7 @@ function getMpvPlayerPath(): string | undefined {
     }
 
     const platform = os.platform();
-    
+
     if (platform === 'win32') {
         // Windows 平台使用本地文件路径
         cachedPlayerPath = 'third_party\\fntv-mpv\\mpv.exe';
@@ -49,7 +49,7 @@ function getMpvPlayerPath(): string | undefined {
             '/usr/local/bin/mpv',     // Intel Mac 或手动安装
             '/Applications/mpv.app/Contents/MacOS/mpv', // App bundle
         ];
-        
+
         for (const path of macPaths) {
             if (fs.existsSync(path)) {
                 cachedPlayerPath = path;
@@ -57,7 +57,7 @@ function getMpvPlayerPath(): string | undefined {
                 return cachedPlayerPath;
             }
         }
-        
+
         // 未找到mpv播放器
         dialog.showErrorBox('错误', 'macOS平台未找到mpv播放器，请使用Homebrew安装mpv后重试: brew install mpv');
         log.error('macOS平台未找到mpv播放器，请使用Homebrew安装mpv后重试: brew install mpv');
@@ -71,7 +71,7 @@ function getMpvPlayerPath(): string | undefined {
             '/usr/games/mpv',         // 某些发行版
             '/opt/mpv/bin/mpv',       // 可选安装位置
         ];
-        
+
         for (const path of linuxPaths) {
             if (fs.existsSync(path)) {
                 cachedPlayerPath = path;
@@ -79,13 +79,13 @@ function getMpvPlayerPath(): string | undefined {
                 return cachedPlayerPath;
             }
         }
-        
+
         // 未找到mpv播放器
         dialog.showErrorBox('错误', 'Linux平台未找到mpv播放器，请安装mpv播放器后重试');
         log.error('Linux平台未找到mpv播放器，请安装mpv播放器后重试');
         return undefined;
     }
-    
+
     return undefined;
 }
 
@@ -94,7 +94,7 @@ async function refreshWindow(): Promise<void> {
     log.info('刷新所有窗口');
     try {
         const allWindows = BrowserWindow.getAllWindows();
-        
+
         // 刷新所有窗口
         for (const window of allWindows) {
             if (!window.isDestroyed()) {
@@ -103,7 +103,7 @@ async function refreshWindow(): Promise<void> {
                 log.info(`窗口 ${window.id} 重新加载成功`);
             }
         }
-        
+
     } catch (error) {
         log.error('刷新窗口失败:', error);
     }
@@ -126,11 +126,11 @@ function eventHandler(fnapi: fn.ApiService) {
                     return;
                 }
 
-                if (progressData.percentage > 90) {
-                    log.info('视频播放接近结束，更新状态...');
-                    await fnapi.setWatched(progressData.itemGuid);
-                    return;
-                }
+                // if (progressData.percentage > 90) {
+                //     log.info('视频播放接近结束，更新状态...');
+                //     await fnapi.setWatched(progressData.itemGuid);
+                //     return;
+                // }
                 // 优先从缓存查询播放信息
                 const resp = await proxyModule.getPlayInfoCacheByGuid(progressData.itemGuid);
                 if (resp.code !== 0 || !resp.data) {
@@ -178,11 +178,12 @@ function eventHandler(fnapi: fn.ApiService) {
                 log.info('MPV exited with code:', event.code);
                 log.info('最后播放位置:', event.status);
 
-                if (event.status.percentage > 90) {
-                    log.info('视频播放接近结束，更新状态...');
-                    await fnapi.setWatched(event.status.itemGuid);
-                } else {
-                    // 优先从缓存查询播放信息
+                // if (event.status.percentage > 90) {
+                //     log.info('视频播放接近结束，更新状态...');
+                //     await fnapi.setWatched(event.status.itemGuid);
+                // } else {
+                // 优先从缓存查询播放信息
+                {
                     const resp = await proxyModule.getPlayInfoCacheByGuid(event.status.itemGuid);
                     if (resp.code !== 0 || !resp.data) {
                         log.error('获取播放信息失败:', resp ? resp.message : '未知错误');
@@ -341,7 +342,7 @@ function handleBeforeQuit(): void {
         currentPlayer.stop();
         currentPlayer = null;
     }
-    
+
     // 清理播放器路径缓存
     cachedPlayerPath = null;
 }
