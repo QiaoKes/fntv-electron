@@ -101,6 +101,27 @@
                 }
             ]
         },
+        "dmg": {
+            "title": "飞牛影视 ${version}",
+            "iconSize": 100,
+            "contents": [
+                {
+                    "x": 380,
+                    "y": 280,
+                    "type": "link",
+                    "path": "/Applications"
+                },
+                {
+                    "x": 110,
+                    "y": 280,
+                    "type": "file"
+                }
+            ],
+            "window": {
+                "width": 540,
+                "height": 380
+            }
+        },
         "linux": {
             "target": [
                 {

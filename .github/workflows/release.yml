@@ -14,6 +14,7 @@ jobs:
   build:
     name: Build on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       matrix:
         include:
@@ -34,10 +35,25 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
+
+      - name: Clean npm config
+        run: |
+          rm -f .npmrc
+        shell: bash
+        continue-on-error: true
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-optional --no-audit --no-fund
+        timeout-minutes: 10
+
+      - name: Install macOS specific dependencies
+        if: runner.os == 'macOS'
+        run: |
+          # 确保 dmg-license 正确安装
+          npm install dmg-license --save-dev
+          # 安装额外的 macOS 构建依赖
+          npm install --no-optional
+        timeout-minutes: 5
 
       - name: Setup Python (for native modules)
         uses: actions/setup-python@v5
@@ -61,36 +77,42 @@ jobs:
           
           if [ -z "$DOWNLOAD_URL" ]; then
             echo "❌ No zip file found, using fallback..."
-            mkdir -p third_party/fntv-mpv/portable_config
-            echo "# MPV Default Config" > third_party/fntv-mpv/portable_config/mpv.conf
+            # 直接退出
+            exit 0
           else
             echo "📦 Downloading from: $DOWNLOAD_URL"
             
-            # 下载并直接解压到目标目录
+            # 下载文件
             curl -L -o mpv-config.zip "$DOWNLOAD_URL"
-            mkdir -p third_party
-            unzip -q mpv-config.zip -d third_party/
+            mkdir -p third_party/fntv-mpv
             
-            # 重命名 mpv-package-* 目录为 fntv-mpv
-            MPV_PACKAGE_DIR=$(find third_party -maxdepth 1 -name "mpv-package-*" -type d | head -1)
-            if [ -n "$MPV_PACKAGE_DIR" ]; then
-              mv "$MPV_PACKAGE_DIR" third_party/fntv-mpv
-              echo "✅ MPV config extracted to third_party/fntv-mpv"
+            # 根据平台使用不同的解压命令
+            if [ "$RUNNER_OS" = "Windows" ]; then
+              # Windows 使用 PowerShell 解压
+              powershell -Command "Expand-Archive -Path mpv-config.zip -DestinationPath third_party/fntv-mpv -Force"
+              # Windows 删除文件
+              powershell -Command "Remove-Item -Path mpv-config.zip -Force -ErrorAction SilentlyContinue"
             else
-              echo "❌ mpv-package directory not found, using fallback..."
-              mkdir -p third_party/fntv-mpv/portable_config
-              echo "# MPV Default Config" > third_party/fntv-mpv/portable_config/mpv.conf
+              # macOS 和 Linux 使用 unzip
+              unzip -q mpv-config.zip -d third_party/fntv-mpv
+              # macOS 和 Linux 删除文件
+              rm -f mpv-config.zip
             fi
-            
-            rm -f mpv-config.zip
           fi
           
           echo "📁 Final structure:"
-          find third_party/fntv-mpv -type d | head -5
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            # Windows 使用 PowerShell 列出目录
+            powershell -Command "Get-ChildItem -Path third_party/fntv-mpv -Directory -Recurse | Select-Object -First 5 | ForEach-Object { Write-Host \$_.FullName }"
+          else
+            # macOS 和 Linux 使用 find
+            find third_party/fntv-mpv -type d | head -5
+          fi
         shell: bash
 
       - name: Compile TypeScript
         run: npm run compile
+        timeout-minutes: 5
 
       - name: Build application
         run: |
@@ -102,6 +124,7 @@ jobs:
             npm run build:linux
           fi
         shell: bash
+        timeout-minutes: 15
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
