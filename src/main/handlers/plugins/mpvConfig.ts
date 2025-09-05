@@ -81,7 +81,7 @@ function checkAndCopyMpvConfig(): void {
                 logger.log(`Portable config directory not found: ${portableConfigDir}`);
             }
         } else {
-            logger.log(`Scripts directory already exists: ${scriptsDir}`);
+            logger.debug(`Scripts directory already exists: ${scriptsDir}`);
         }
     } catch (error) {
         logger.error('Error in checkAndCopyMpvConfig:', error);
@@ -117,7 +117,7 @@ function init(): void {
     if (process.platform === 'win32') {
         return;
     }
-    
+
     startConfigCheck();
     // 应用退出前停止检查
     app.on('before-quit', () => {

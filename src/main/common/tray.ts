@@ -21,7 +21,7 @@ export function createTray(mainWindowInstance: BrowserWindow): void {
     
     if (process.platform === 'darwin') {
         // macOS 推荐用 template 图标
-        iconPath = path.join(__dirname, '../../../build/iconTemplate.png');
+        iconPath = path.join(__dirname, '../../../build/iconTemplate2.png');
         icon = nativeImage.createFromPath(iconPath);
 
         if (icon.isEmpty()) {
