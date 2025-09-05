@@ -64,7 +64,16 @@
                     ]
                 }
             ],
-            "icon": "build/icon.ico"
+            "icon": "build/icon.ico",
+            "extraFiles": [
+                {
+                    "from": "third_party/fntv-mpv",
+                    "to": "third_party/fntv-mpv",
+                    "filter": [
+                        "**/*"
+                    ]
+                }
+            ]
         },
         "mac": {
             "target": [
@@ -81,7 +90,16 @@
             "hardenedRuntime": true,
             "gatekeeperAssess": false,
             "entitlements": "build/entitlements.mac.plist",
-            "entitlementsInherit": "build/entitlements.mac.plist"
+            "entitlementsInherit": "build/entitlements.mac.plist",
+            "extraFiles": [
+                {
+                    "from": "third_party/fntv-mpv/portable_config",
+                    "to": "third_party/fntv-mpv/portable_config",
+                    "filter": [
+                        "**/*"
+                    ]
+                }
+            ]
         },
         "linux": {
             "target": [
@@ -101,7 +119,16 @@
                     "Comment": "飞牛影视播放器",
                     "Categories": "AudioVideo;Video;Player;"
                 }
-            }
+            },
+            "extraFiles": [
+                {
+                    "from": "third_party/fntv-mpv/portable_config",
+                    "to": "third_party/fntv-mpv/portable_config",
+                    "filter": [
+                        "**/*"
+                    ]
+                }
+            ]
         },
         "nsis": {
             "allowToChangeInstallationDirectory": true,
@@ -113,15 +140,6 @@
             "dest",
             "build",
             "resource/login"
-        ],
-        "extraFiles": [
-            {
-                "from": "third_party/fntv-mpv",
-                "to": "third_party/fntv-mpv",
-                "filter": [
-                    "**/*"
-                ]
-            }
         ]
     }
 }

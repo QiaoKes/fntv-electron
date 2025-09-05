@@ -1,4 +1,4 @@
-import { BrowserWindow, IpcMainEvent } from 'electron';
+import { BrowserWindow, dialog, IpcMainEvent } from 'electron';
 import * as ply from '../../../modules/players';
 import * as fn from '../../../modules/fn_api/api';
 import * as fnConfig from '../../../modules/fn_config/config';
@@ -6,6 +6,7 @@ import { registerHandler } from '../core/ipcHandler';
 import { registerAppHook } from '../core/appHook';
 import * as log from '../../../modules/logger';
 import * as os from 'os';
+import * as fs from 'fs';
 import { PlayStatusData } from '../../../modules/fn_api/types';
 import { escape } from 'querystring';
 import * as proxyModule from '../../../modules/proxy';
@@ -221,6 +222,14 @@ async function handlePlayMovie(event: IpcMainEvent, { id, token }: PlayRequest):
     // Windows 平台使用本地文件路径
     if (os.platform() === 'win32') {
         playerPath = 'third_party\\fntv-mpv\\mpv.exe';
+    } else if (os.platform() === 'darwin') {
+        playerPath = '/opt/homebrew/bin/mpv';
+        if (!fs.existsSync(playerPath)) {
+            // 弹窗提示使用brew安装
+            dialog.showErrorBox('错误', 'macOS平台未找到mpv播放器，请使用Homebrew安装mpv后重试: brew install mpv');
+            log.error('macOS平台未找到mpv播放器，请使用Homebrew安装mpv后重试: brew install mpv');
+            return;
+        }
     }
 
     let playConfig: ply.Config = {
