@@ -5,12 +5,9 @@
 
 飞牛影视桌面客户端，基于Electron构建，提供更好的桌面体验和增强功能。
 
-<img src="resource/login.png" width="90%">
-<img src="resource/switch.png" width="90%">
-<img src="resource/simple.png" width="90%">
-<img src="resource/mpv.png" width="90%">
-<img src="resource/markbtn.png" width="90%">
-<img src="resource/danmu.png" width="90%">
+<img src="resource/docs/switch.png" width="90%">
+<img src="resource/docs/simple.png" width="90%">
+<img src="resource/docs/danmu.png" width="90%">
 
 [演示视频](https://www.bilibili.com/video/BV12dYXzhE6U/)
 
@@ -21,8 +18,24 @@
 - **硬解播放** - 支持H264 / HEVC / VP9 / AV1，具体支持查看下面感谢项目
 - **直链播放** - 支持调用内置MPV播放器直链播放视频(支持网盘挂载)，支持播放进度回传
 - **弹幕支持** - MPV播放器支持弹幕自动匹配加载，无法匹配时支持手动搜索
+- **跨平台支持** - 支持windows、macos和linux
+
+## 爱发电
+
+<a href="https://afdian.com/a/qiaoke" target="_blank">
+  <img src="resource/docs/support_aifadian.svg" alt="support_aifadian">
+</a>
+
+您的每一次 star ⭐ 和 赞助 🎁 都是我持续优化的动力。让我们一起维护这个用爱发电的项目！
 
 ## 更新记录
+
+* 2025.8.27 - v2.0.0 **重大更新**
+
+1. 支持跨平台winx64 ,mac arm/intel
+2. linux默认关闭原有播放逻辑，登录页面右下角添加开关，可以恢复原有播放逻辑
+3. 弹幕插件支持跨平台，mac,linux,windows可正常使用
+4. mpv播放器支持视频播放列表，能够正常进行进度回传
 
 * 2025.8.27 - v1.7.2 支持所有页面小按钮弹出二级弹窗，选择是否mpv播放
 * 2025.8.26 - v1.7.1 支持记录客户端日志到%appdata%/fntv/logs，增强可排障性，数据脱敏处理
@@ -40,96 +53,13 @@
 * 2025.8.16 - v1.0.0 浏览器解码集成H264 / HEVC / VP9 / AV1
 * 2025.8.15 - v1.0.0 飞牛客户端初版支持, 支持持久化登录信息
 
-## 常用问题Q&A
-
-### 1. 直接播放无法客户端硬解，还是在服务端解码？
-
-只有mpv播放能保证直链硬解，其余的虽然浏览器支持了硬解，但是飞牛网页端识别有问题，还是会走服务端转码，需要飞牛修复。
-
-### 2. mpv播放器功能有点少，怎么客制化，想添加补帧滤镜等？
-
-1. 自动方法
-   克隆fntv-mpv仓库，自己改一下相关配置：[fntv-mpv-config](https://github.com/QiaoKes/fntv-mpv-config)
-2. 手动方法
-   打开你安装目录的third_party，只修改third_party\fntv-mpv\portable_config下面的插件，其余的不要动。其中input.conf是快捷键。
-
-注意重新安装或者更新，会清空安装目录，注意备份你的mpv插件目录。
-
-### 3. 是否支持网盘挂载播放？
-
-支持，飞牛官方挂载的不支持302，需要官方支持。alist没有测试过，可以试一试。
-
-### 4. 能否支持potplayer？
-
-目前我这边没有使用potplayer的需求，如果需要的话可以自行修改源码适配一下。
-
-### 5. 是否支持飞牛connect登录？
-
-官方未开放相关API，无法支持。
-
-### 6. 域名账号密码正确但是无法登录？
-
-只支持正常dns解析的域名，和IP，其余的不支持。
-
-### 7. 弹幕相关问题？
-
-弹幕问题查看uosc_danmaku的文档，根据文档内容调整配置。
-
-### 8. 能否支持linux或者macos？
-
-我这边没有linux和mac设备，代码也没有做兼容处理，有需要的可以自行修改下。
-
-### 9. 遇到dandanplay.exe报毒？
-
-go的二进制压缩会被误报。可以查看这个issue，二进制由dandanplay提供 https://github.com/Tony15246/uosc_danmaku/issues/267
-
-### 10.登录完客户端后，如果服务器连接不上登录会超时卡透明屏，无法切换或修改服务器配置，卸载重装也不行
-
-去C:\\Users\\{你的计算机用户名}\\.fntv 下面把config.json删除了，因为连接成功后实际上加载的还是飞牛网页端，没响应当然会透明了。
-
-### 10.打开弹幕视频掉帧
-
-打开弹幕时，默认开启fps平滑滤镜，比较吃性能，不需要可以去安装目录下的third_party\fntv-mpv\portable_config\script-opts下uosc_danmaku.conf关闭相关配置
-
-### 11.双显卡，调用时发现使用核显
-
-以下两种方法任选其一：
-
-1) NVIDIA控制面板-管理3D设置-程序设置-添加飞牛影视-应用
-2) 设置-系统-屏幕-图形显示-添加飞牛影视-选择高性能
-
-## ⌨️ MPV播放器
-
-1. 快捷键
-
-```text
-部分快捷键兼容potpolyer
-查看安装目录下
-third_party\fntv-mpv\portable_config\input.conf
-```
-
-2. MPV配置由以下仓库单独管理:
-   [fntv-mpv-config](https://github.com/QiaoKes/fntv-mpv-config)
-3. 预设着色器方案
-   [mpv.conf](https://github.com/QiaoKes/fntv-mpv-config/blob/release/custom_config/mpv/mpv.conf)
-
-## 🙏 特别感谢
-
-本项目参考以下开源项目：
-
-- [enable-chromium-hevc-hardware-decoding](https://github.com/StaZhu/enable-chromium-hevc-hardware-decoding) - Chromium HEVC硬解码支持
-- [electron-media-patch](https://github.com/5rahim/electron-media-patch) - Electron硬解码补丁
-- [fnToPotplayer](https://github.com/gudqs7/fnToPotplayer) - 飞牛影视调用Potplayer
-- [fnos-tv](https://github.com/thshu/fnos-tv) - fnos-tv 支持弹幕的飞牛影视
-- [mpv弹幕插件](https://github.com/Tony15246/uosc_danmaku) - uosc_danmaku 基于uosc的弹幕插件
-
 ## 📦 安装方法
 
 ### 预编译版本
 
 前往 [Releases页面](https://github.com/QiaoKes/fntv-electron/releases) 下载最新版本：
 
-* Windows: `FNMedia_${version}_${os}_${arch}.exe`
+* 文件名: `FNMedia_${version}_${os}_${arch}.exe`
 
 1.字段含义：
 
@@ -137,7 +67,16 @@ third_party\fntv-mpv\portable_config\input.conf
 - os：操作系统
 - arch：系统架构
 
-2.直接安装即可使用
+2.安装步骤
+
+- windows直接安装即可使用
+- macos请使用brew安装mpv
+
+```bash
+brew install mpv
+```
+
+- linux请先安装mpv播放器再使用
 
 ### 从源码构建
 
@@ -179,6 +118,85 @@ npm start
 # 将electron-v36.2.1-patch-win32-x64.zip拷贝到文件夹内
 npm run build
 ```
+
+## 常用问题Q&A
+
+### 1. 直接播放无法客户端硬解，还是在服务端解码？
+
+只有mpv播放能保证直链硬解，其余的虽然浏览器支持了硬解，但是飞牛网页端识别有问题，还是会走服务端转码，需要飞牛修复。
+
+### 2. mpv播放器功能有点少，怎么客制化，想添加补帧滤镜等？
+
+1. 自动方法
+   克隆fntv-mpv仓库，自己改一下相关配置：[fntv-mpv-config](https://github.com/QiaoKes/fntv-mpv-config)
+2. 手动方法
+   打开你安装目录的third_party，只修改third_party\fntv-mpv\portable_config下面的插件，其余的不要动。其中input.conf是快捷键。
+
+注意重新安装或者更新，会清空安装目录，注意备份你的mpv插件目录。
+
+### 3. 是否支持网盘挂载播放？
+
+支持，飞牛官方挂载的不支持302，需要官方支持。alist没有测试过，可以试一试。
+
+### 4. 能否支持potplayer？
+
+目前我这边没有使用potplayer的需求，如果需要的话可以自行修改源码适配一下。
+
+### 5. 是否支持飞牛connect登录？
+
+官方未开放相关API，无法支持。
+
+### 6. 域名账号密码正确但是无法登录？
+
+只支持正常dns解析的域名，和IP，其余的不支持。
+
+### 7. 弹幕相关问题？
+
+弹幕问题查看uosc_danmaku的文档，根据文档内容调整配置。
+
+### 8. 遇到dandanplay.exe报毒？
+
+已去除二进制文件，请更新到最新版本，go的二进制压缩会被误报。可以查看这个issue，二进制由dandanplay提供 https://github.com/Tony15246/uosc_danmaku/issues/267
+
+### 9.登录完客户端后，如果服务器连接不上登录会超时卡透明屏，无法切换或修改服务器配置，卸载重装也不行
+
+去C:\\Users\\{你的计算机用户名}\\.fntv 下面把config.json删除了，因为连接成功后实际上加载的还是飞牛网页端，没响应当然会透明了。
+
+### 10.打开弹幕视频掉帧
+
+打开弹幕时，默认开启fps平滑滤镜，比较吃性能，不需要可以去安装目录下的third_party\fntv-mpv\portable_config\script-opts下uosc_danmaku.conf关闭相关配置
+
+### 11.双显卡，调用时发现使用核显
+
+以下两种方法任选其一：
+
+1) NVIDIA控制面板-管理3D设置-程序设置-添加飞牛影视-应用
+2) 设置-系统-屏幕-图形显示-添加飞牛影视-选择高性能
+
+## ⌨️ MPV播放器
+
+1. 快捷键
+
+```text
+部分快捷键兼容potpolyer
+查看安装目录下
+third_party\fntv-mpv\portable_config\input.conf
+```
+
+2. MPV配置由以下仓库单独管理:
+   [fntv-mpv-config](https://github.com/QiaoKes/fntv-mpv-config)
+3. 预设着色器方案
+   [mpv.conf](https://github.com/QiaoKes/fntv-mpv-config/blob/release/custom_config/mpv/mpv.conf)
+
+## 🙏 特别感谢
+
+本项目参考以下开源项目：
+
+- [enable-chromium-hevc-hardware-decoding](https://github.com/StaZhu/enable-chromium-hevc-hardware-decoding) - Chromium HEVC硬解码支持
+- [electron-media-patch](https://github.com/5rahim/electron-media-patch) - Electron硬解码补丁
+- [fnToPotplayer](https://github.com/gudqs7/fnToPotplayer) - 飞牛影视调用Potplayer
+- [fnos-tv](https://github.com/thshu/fnos-tv) - fnos-tv 支持弹幕的飞牛影视
+- [mpv弹幕插件](https://github.com/Tony15246/uosc_danmaku) - uosc_danmaku 基于uosc的弹幕插件
 
 ## 🛠️ 开发指南
 

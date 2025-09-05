@@ -1,0 +1,63 @@
+{
+    "compilerOptions": {
+        "target": "ES2022",
+        // 可用全局 API 的类型库：保留 ES 标准并添加 DOM，以覆盖 preload/renderer 中的 DOM 类型
+        "lib": [
+            "ES2022",
+            "DOM"
+        ],
+        // 输出目录（编译产物）
+        "outDir": "dest",
+        // 模块系统：使用ES2022替代CommonJS以支持ESModules
+        "module": "Node16",
+        // 是否允许编译 .js 文件（此项目使用 TypeScript 源码，设为 false）
+        "allowJs": false,
+        // 与 CommonJS/ESModule 兼容性相关选项，保留以避免默认导入/命名空间互操作问题
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        // 开启严格模式，包含 noImplicitAny, strictNullChecks 等，提升类型安全
+        "strict": true,
+        // 强制文件名大小写一致（在 Windows 下也有帮助，避免跨平台问题）
+        "forceConsistentCasingInFileNames": true,
+        // 模块解析策略：对于 Electron 项目、常用 Node 风格解析更稳妥
+        "moduleResolution": "node16",
+        // 允许导入 JSON 文件作为模块
+        "resolveJsonModule": true,
+        // 不启用 isolatedModules（只有在使用 babel/ts-jest 独立编译每个文件时才需要）
+        "isolatedModules": false,
+        // 当你想要 TypeScript 生成 JS 文件时设为 false；如果只做类型检查可设为 true
+        "noEmit": false,
+        // 生成 sourceMap 便于调试（建议保留在开发时）
+        "sourceMap": false,
+        // 打开增量构建，加快后续编译速度
+        "incremental": true,
+        "tsBuildInfoFile": "dest/.tsbuildinfo",
+        // 跳过库文件类型检查以加快编译并避免第三方声明库引起的问题
+        "skipLibCheck": true,
+        // 是否生成声明文件（此项目不是发布 npm 包，默认关闭），如果需要对外类型请设为 true
+        "declaration": false,
+        // 保持原有的模块路径别名配置，方便在源码中使用 `@/` 指向 `src/`
+        "baseUrl": ".",
+        "paths": {
+            "@/*": [
+                "src/*"
+            ]
+        },
+        // 指定类型根目录，优先使用本地的 Electron 类型定义
+        "typeRoots": [
+            "./node_modules/@types",
+        ]
+    },
+    // 要包含的源码路径
+    "include": [
+        "src/**/*"
+    ],
+    // 排除无用目录
+    "exclude": [
+        "node_modules",
+        "dest",
+        "release",
+        "log",
+        "third_party"
+    ]
+}

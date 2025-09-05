@@ -1,19 +1,49 @@
 {
     "name": "fntv",
-    "version": "1.7.2",
+    "version": "2.0.0",
     "description": "A fntv app built with Electron",
-    "main": "src/main/main.js",
+    "main": "dest/main/main.js",
     "scripts": {
-        "start": "electron .",
-        "build": "electron-builder"
+        "start": "tsc && electron .",
+        "compile": "tsc",
+        "watch": "tsc --watch",
+        "clean": "rimraf dest",
+        "build": "tsc && electron-builder",
+        "build:win": "tsc && electron-builder --win",
+        "build:mac": "tsc && electron-builder --mac",
+        "build:linux": "tsc && electron-builder --linux",
+        "build:all": "tsc && electron-builder --win --mac --linux",
+        "build:mac-arm64": "tsc && electron-builder --mac --arm64",
+        "build:mac-x64": "tsc && electron-builder --mac --x64",
+        "build:linux-arm64": "tsc && electron-builder --linux --arm64",
+        "build:linux-x64": "tsc && electron-builder --linux --x64"
     },
     "author": "tracing",
     "devDependencies": {
-        "electron": "file:./third_party/electron",
-        "electron-builder": "^26.0.12"
+        "@types/cacheable-request": "^6.0.3",
+        "@types/debug": "^4.1.12",
+        "@types/express": "^5.0.3",
+        "@types/fs-extra": "^11.0.4",
+        "@types/http-cache-semantics": "^4.0.4",
+        "@types/keyv": "^3.1.4",
+        "@types/ms": "^2.1.0",
+        "@types/node": "^20.19.11",
+        "@types/plist": "^3.0.5",
+        "@types/responselike": "^1.0.3",
+        "@types/verror": "^1.10.11",
+        "@types/yauzl": "^2.10.3",
+        "copyfiles": "^2.4.1",
+        "electron": "v38.0.0",
+        "electron-builder": "^26.0.12",
+        "npm-run-all": "^4.1.5",
+        "rimraf": "^5.0.9",
+        "sharp": "^0.34.3",
+        "typescript": "^5.5.4"
     },
     "dependencies": {
         "axios": "^1.11.0",
+        "express": "^5.1.0",
+        "node-mpv-2": "^2.0.0-beta.3",
         "semver": "^7.7.2"
     },
     "build": {
@@ -23,12 +53,79 @@
         "icon": "build/icon.ico",
         "productName": "飞牛影视",
         "artifactName": "FNMedia_${version}_${os}_${arch}.${ext}",
+        "appId": "com.qiaokes.fntv",
+        "compression": "normal",
         "win": {
             "target": [
                 {
                     "target": "nsis",
                     "arch": [
                         "x64"
+                    ]
+                }
+            ],
+            "icon": "build/icon.ico",
+            "extraFiles": [
+                {
+                    "from": "third_party/fntv-mpv",
+                    "to": "third_party/fntv-mpv",
+                    "filter": [
+                        "**/*"
+                    ]
+                }
+            ]
+        },
+        "mac": {
+            "target": [
+                {
+                    "target": "dmg",
+                    "arch": [
+                        "x64",
+                        "arm64"
+                    ]
+                }
+            ],
+            "category": "public.app-category.entertainment",
+            "icon": "build/icon.icns",
+            "hardenedRuntime": true,
+            "gatekeeperAssess": false,
+            "entitlements": "build/entitlements.mac.plist",
+            "entitlementsInherit": "build/entitlements.mac.plist",
+            "extraFiles": [
+                {
+                    "from": "third_party/fntv-mpv/portable_config",
+                    "to": "third_party/fntv-mpv/portable_config",
+                    "filter": [
+                        "**/*"
+                    ]
+                }
+            ]
+        },
+        "linux": {
+            "target": [
+                {
+                    "target": "AppImage",
+                    "arch": [
+                        "x64",
+                        "arm64"
+                    ]
+                }
+            ],
+            "category": "AudioVideo",
+            "icon": "build/icon.png",
+            "desktop": {
+                "entry": {
+                    "Name": "飞牛影视",
+                    "Comment": "飞牛影视播放器",
+                    "Categories": "AudioVideo;Video;Player;"
+                }
+            },
+            "extraFiles": [
+                {
+                    "from": "third_party/fntv-mpv/portable_config",
+                    "to": "third_party/fntv-mpv/portable_config",
+                    "filter": [
+                        "**/*"
                     ]
                 }
             ]
@@ -40,17 +137,9 @@
             "createStartMenuShortcut": true
         },
         "files": [
-            "src",
-            "build"
-        ],
-        "extraFiles": [
-            {
-                "from": "third_party/fntv-mpv",
-                "to": "third_party/fntv-mpv",
-                "filter": [
-                    "**/*"
-                ]
-            }
+            "dest",
+            "build",
+            "resource/login"
         ]
     }
 }
