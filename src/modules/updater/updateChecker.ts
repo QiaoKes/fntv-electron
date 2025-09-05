@@ -164,49 +164,108 @@ export class UpdateChecker {
             return null;
         }
 
-        // 根据平台选择合适的安装包
+        // 获取当前平台和架构信息
         const platform = process.platform;
-        let pattern: RegExp;
+        const arch = process.arch;
+        
+        log.info(`当前平台: ${platform}, 架构: ${arch}`);
+
+        // 根据实际构建配置选择合适的安装包
+        // 文件命名格式: FNMedia_${version}_${os}_${arch}.${ext}
+        let patterns: RegExp[] = [];
 
         switch (platform) {
             case 'win32':
-                pattern = /\.exe$/i;
+                // Windows: 仅支持 x64
+                if (arch === 'x64') {
+                    patterns = [
+                        /FNMedia_.*_win_x64\.exe$/i,
+                        /_win_x64\.exe$/i,
+                        /win.*x64.*\.exe$/i
+                    ];
+                } else {
+                    log.warn(`Windows 平台不支持架构: ${arch}, 仅支持 x64`);
+                    return null;
+                }
                 break;
+                
             case 'darwin':
-                pattern = /\.dmg$/i;
+                // macOS: 支持 x64 和 arm64
+                if (arch === 'arm64') {
+                    patterns = [
+                        /FNMedia_.*_mac_arm64\.dmg$/i,
+                        /_mac_arm64\.dmg$/i,
+                        /mac.*arm64.*\.dmg$/i
+                    ];
+                } else if (arch === 'x64') {
+                    patterns = [
+                        /FNMedia_.*_mac_x64\.dmg$/i,
+                        /_mac_x64\.dmg$/i,
+                        /mac.*x64.*\.dmg$/i
+                    ];
+                } else {
+                    log.warn(`macOS 平台不支持架构: ${arch}, 仅支持 x64 和 arm64`);
+                    return null;
+                }
                 break;
+                
             case 'linux':
-                pattern = /\.AppImage$/i;
+                // Linux: 支持 x64 和 arm64
+                if (arch === 'x64') {
+                    patterns = [
+                        /FNMedia_.*_linux_x64\.AppImage$/i,
+                        /_linux_x64\.AppImage$/i,
+                        /linux.*x64.*\.AppImage$/i
+                    ];
+                } else if (arch === 'arm64') {
+                    patterns = [
+                        /FNMedia_.*_linux_arm64\.AppImage$/i,
+                        /_linux_arm64\.AppImage$/i,
+                        /linux.*arm64.*\.AppImage$/i
+                    ];
+                } else {
+                    log.warn(`Linux 平台不支持架构: ${arch}, 仅支持 x64 和 arm64`);
+                    return null;
+                }
                 break;
+                
             default:
+                log.warn(`不支持的平台: ${platform}`);
                 return null;
         }
 
-        const asset = assets.find(asset => pattern.test(asset.name));
-        if (!asset) {
-            return null;
-        }
-        
-        // 获取原始下载链接
-        const originalUrl = asset.browser_download_url;
-        
-        // 尝试获取代理配置并应用到下载链接
-        try {
-            const proxyConfig = getDownloadProxyConfig();
-            if (proxyConfig.enabled && proxyConfig.proxyUrl && proxyConfig.proxyUrl.trim() !== '') {
-                // 如果原始URL包含github.com，则使用代理
-                if (originalUrl.includes('github.com')) {
-                    const proxiedUrl = `${proxyConfig.proxyUrl.replace(/\/$/, '')}/${originalUrl}`;
-                    log.info(`使用代理下载链接: ${proxiedUrl}`);
-                    return proxiedUrl;
+        // 按优先级查找匹配的资源
+        for (const pattern of patterns) {
+            const asset = assets.find(asset => pattern.test(asset.name));
+            if (asset) {
+                log.info(`找到匹配的安装包: ${asset.name}`);
+                
+                // 获取原始下载链接
+                const originalUrl = asset.browser_download_url;
+                
+                // 尝试获取代理配置并应用到下载链接
+                try {
+                    const proxyConfig = getDownloadProxyConfig();
+                    if (proxyConfig.enabled && proxyConfig.proxyUrl && proxyConfig.proxyUrl.trim() !== '') {
+                        // 如果原始URL包含github.com，则使用代理
+                        if (originalUrl.includes('github.com')) {
+                            const proxiedUrl = `${proxyConfig.proxyUrl.replace(/\/$/, '')}/${originalUrl}`;
+                            log.info(`使用代理下载链接: ${proxiedUrl}`);
+                            return proxiedUrl;
+                        }
+                    }
+                } catch (error: any) {
+                    log.warn('获取代理配置失败，使用原始下载链接:', error.message);
                 }
+                
+                log.info(`使用原始下载链接: ${originalUrl}`);
+                return originalUrl;
             }
-        } catch (error: any) {
-            log.warn('获取代理配置失败，使用原始下载链接:', error.message);
         }
-        
-        log.info(`使用原始下载链接: ${originalUrl}`);
-        return originalUrl;
+
+        log.warn(`未找到适合当前平台 ${platform} (${arch}) 的安装包`);
+        log.info('可用的安装包:', assets.map(asset => asset.name));
+        return null;
     }
 
     /**
