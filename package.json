@@ -100,9 +100,8 @@
             ]
         },
         "dmg": {
-            "title": "飞牛影视 ${version}",
+            "title": "FNMedia_${version}_${arch}",
             "icon": "build/icon.icns",
-            "volume": "FNMedia_${version}_${arch}",
             "window": {
                 "width": 540,
                 "height": 380
