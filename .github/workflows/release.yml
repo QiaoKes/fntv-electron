@@ -211,12 +211,11 @@ jobs:
           name: 飞牛影视 v${{ steps.package.outputs.version }}
           body: |
             ## 🎬 飞牛影视 v${{ steps.package.outputs.version }}
-            
-            ### 📦 构建信息
-            - **提交哈希**: `${{ steps.commit.outputs.sha }}`
-            - **提交作者**: ${{ steps.commit.outputs.author }}
-            - **构建时间**: ${{ steps.commit.outputs.date }}
-            - **源分支**: `release`
+
+            ### 🔄 更新内容
+            ```
+            ${{ steps.commit.outputs.message }}
+            ```
             
             ### 💻 支持平台
             - ✅ Windows (x64)
@@ -227,13 +226,8 @@ jobs:
             | 平台 | 文件类型 | 说明 |
             |------|----------|------|
             | 💻 Windows | `.exe` | 安装程序，双击运行 |
-            | 🍎 macOS | `.dmg` | 磁盘镜像，拖拽到应用程序文件夹 |
+            | 🍎 macOS | `.dmg` | 磁盘镜像，拖拽到应用程序文件夹，安装后执行: sudo find "/Applications/飞牛影视.app" -exec xattr -d com.apple.quarantine {} \; 2>/dev/null |
             | 🐧 Linux | `.AppImage` | 便携应用，添加执行权限后直接运行 |
-            
-            ### 🔄 更新内容
-            ```
-            ${{ steps.commit.outputs.message }}
-            ```
             
             ---
             *自动构建于 GitHub Actions* 🤖
