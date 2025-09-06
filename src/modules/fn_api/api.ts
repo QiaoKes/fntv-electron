@@ -4,9 +4,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import axios, { AxiosInstance } from 'axios';
+import https from 'https';
 import { app } from 'electron';
 import log from '../logger';
 import * as types from './types';
+import { isTrusted } from '../cert_trust';
 
 export class ApiService {
     private baseURL: string;
@@ -162,11 +164,15 @@ export class ApiService {
             await this.cleanupSubtitleDirectory();
         }
 
-        // 创建Axios实例
+        // 创建Axios实例，根据信任状态决定是否验证证书
+        const shouldIgnoreCert = isTrusted(this.baseURL);
         const api: AxiosInstance = axios.create({
             baseURL: this.baseURL,
             timeout: 10000,
             responseType: 'text',
+            httpsAgent: new https.Agent({
+                rejectUnauthorized: !shouldIgnoreCert // 根据信任状态决定是否验证证书
+            }),
         });
 
         // 准备下载任务

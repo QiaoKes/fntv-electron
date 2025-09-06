@@ -7,10 +7,20 @@ import { getMacCloseAction, setMacCloseAction, getTrayNotificationShown, setTray
 import * as log from '../modules/logger';
 import { getMainWindow } from './common/mainwin';
 import * as proxyModule from '../modules/proxy';
+import { isTrusted } from '../modules/cert_trust';
 
 // 禁用输入法自动切换
 app.commandLine.appendSwitch('--lang', 'en-US');
 app.commandLine.appendSwitch('--disable-features', 'VizDisplayCompositor');
+
+// 抑制SSL相关的底层错误日志
+app.commandLine.appendSwitch('--log-level', '3'); // 只显示致命错误
+app.commandLine.appendSwitch('--disable-logging');
+app.commandLine.appendSwitch('--silent');
+app.commandLine.appendSwitch('--no-sandbox'); // 有助于减少某些安全相关日志
+app.commandLine.appendSwitch('--disable-web-security'); // 禁用web安全检查（减少相关日志）
+app.commandLine.appendSwitch('--ignore-ssl-errors-spki-list'); // 忽略SSL SPKI列表错误
+app.commandLine.appendSwitch('--ignore-ssl-errors'); // 忽略SSL错误（减少相关日志）
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -69,6 +79,20 @@ if (!gotTheLock) {
             log.info('Electron版本:', process.versions.electron);
             log.info('Node.js版本:', process.versions.node);
             log.info('日志文件位置:', log.getLogFile());
+
+            // 动态处理证书验证错误
+            app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
+                // 检查URL是否在信任列表中
+                if (isTrusted(url)) {
+                    // log.debug(`URL ${url} 在信任列表中，忽略证书验证错误: ${error}`);
+                    event.preventDefault();
+                    callback(true); // 信任证书
+                } else {
+                    log.warn(`证书验证错误: ${url}, 错误: ${error}`);
+                    // 不在信任列表中，使用默认处理（不信任）
+                    callback(false);
+                }
+            });
 
             // 启动代理服务器
             await startProxyServer();
