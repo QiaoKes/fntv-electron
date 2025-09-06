@@ -141,6 +141,27 @@ jobs:
           name: ${{ matrix.platform }}-build
           path: release/
           retention-days: 30
+      # —— 构建后：兜底清理（避免影响后续/下次流水线）——
+      - name: Post-clean DMG volumes (FNMedia_* / 飞牛影视*)
+        if: always() && runner.os == 'macOS'
+        shell: bash
+        run: |
+            set -euo pipefail
+            matches="$(
+            hdiutil info | awk -F': ' '/mount-point/ {print $2}' | \
+            grep -E '^(\/Volumes\/FNMedia_|\/Volumes\/飞牛影视)' || true
+            )"
+            if [ -n "$matches" ]; then
+            echo "$matches" | while IFS= read -r V; do
+                [ -z "$V" ] && continue
+                echo "==> Force detaching leftover: $V"
+                lsof +D "$V" || true
+                hdiutil detach -force "$V" || true
+                diskutil unmount force "$V" || true
+            done
+            else
+            echo "No leftover volumes."
+            fi
 
   release:
     name: Create Release
