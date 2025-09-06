@@ -162,14 +162,9 @@ jobs:
       - name: Get commit info
         id: commit
         run: |
-          echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-          {
-            echo "message<<EOF"
-            git log -1 --pretty=format:'%B'
-            echo "EOF"
-          } >> $GITHUB_OUTPUT
-          echo "author=$(git log -1 --pretty=format:'%an')" >> $GITHUB_OUTPUT
-          echo "date=$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M:%S CST')" >> $GITHUB_OUTPUT
+          echo "message<<EOF" >> $GITHUB_OUTPUT
+          git log -1 --pretty=format:'%B' >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Get package version
         id: package
