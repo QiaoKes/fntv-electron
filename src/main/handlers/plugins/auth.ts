@@ -5,6 +5,7 @@ import { restoreCookies } from '../../../modules/fn_config/cookie';
 import * as fnConfig from '../../../modules/fn_config/config';
 import { registerHandler } from '../core/ipcHandler';
 import * as log from '../../../modules/logger';
+import { showCertificateTrustDialog, addTrustedHost } from '../../../modules/cert_trust';
 
 /**
  * 用户认证插件
@@ -78,10 +79,40 @@ async function handleLogin(event: IpcMainEvent, loginData: LoginData): Promise<v
         const response = await fnapi.login(loginData.username, loginData.password);
         
         if (!response || !response.success) {
-            log.error('登录失败:', response ? response.message : '未知错误');
+            // 检查是否为证书错误
+            if (response && response.certificateError) {
+                log.info('检测到证书验证错误，询问用户是否信任');
+                
+                // 显示证书信任对话框
+                const mainWindow = getMainWindow();
+                const shouldTrust = await showCertificateTrustDialog(
+                    server, 
+                    response.message || '未知证书错误', 
+                    mainWindow
+                );
+                
+                if (shouldTrust) {
+                    // 用户选择信任，添加到信任列表并重试登录
+                    addTrustedHost(server);
+                    log.info('用户信任证书，重试登录');
+                    
+                    // 递归调用重试登录
+                    return handleLogin(event, loginData);
+                } else {
+                    // 用户不信任，返回错误
+                    event.reply('login-error', {
+                        title: '登录取消',
+                        message: '用户取消信任证书，无法继续登录。'
+                    });
+                    return;
+                }
+            }
+            
+            const msg = response ? response.message : '未知错误';
+            log.error('登录失败:', msg);
             event.reply('login-error', {
                 title: '登录失败',
-                message: '请检查账号、密码或者域名是否正确。'
+                message: msg || '登录时发生未知错误，请稍后重试。'
             });
             return;
         }

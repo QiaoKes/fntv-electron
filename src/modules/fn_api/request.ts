@@ -1,7 +1,9 @@
 import * as crypto from 'crypto';
 import axios, { AxiosResponse } from 'axios';
 import { setTimeout } from 'timers/promises';
+import https from 'https';
 import log from '../logger';
+import { isTrusted, showCertificateTrustDialog, isCertificateError, addTrustedHost } from '../cert_trust';
 
 // 全局配置
 const api_key = 'NDzZTVxnRKP8Z0jXg1VAMonaG8akvh';
@@ -12,6 +14,7 @@ export interface ApiResponse<T = any> {
     success: boolean;
     data?: T;
     message?: string;
+    certificateError?: boolean; // 标识是否为证书错误
 }
 
 export interface FnApiResponseData<T = any> {
@@ -79,10 +82,16 @@ export async function request<T = any>(
         "Authx": authx,
     };
 
-    // 设置请求配置，包含超时时间
+    // 根据URL是否已被信任来决定是否验证证书
+    const shouldIgnoreCert = isTrusted(baseUrl);
+    
+    // 设置请求配置，包含超时时间和动态SSL证书验证
     const config = {
         headers,
-        timeout: timeout
+        timeout: timeout,
+        httpsAgent: new https.Agent({
+            rejectUnauthorized: !shouldIgnoreCert // 根据信任状态决定是否验证证书
+        })
     };
 
     try {
@@ -136,11 +145,26 @@ export async function request<T = any>(
         };
 
     } catch (error: any) {
-        // 处理网络错误
-        log.error(`fn_api 请求失败 - `, error.response?.data || error.message);
+        const errorMessage = error.response?.data || error.message || '未知错误';
+        
+        // 检查是否为证书验证错误且URL未被信任
+        if (isCertificateError(errorMessage) && !isTrusted(baseUrl)) {
+            log.warn(`检测到证书验证错误: ${errorMessage}, URL: ${fullUrl}`);
+            
+            // 返回特殊的证书错误响应，让上层处理
+            return {
+                success: false,
+                message: errorMessage,
+                // 添加一个特殊标识表示这是证书错误
+                certificateError: true
+            } as ApiResponse<T> & { certificateError?: boolean };
+        }
+        
+        // 处理其他网络错误
+        log.error(`axios 请求失败 - `, errorMessage);
         return {
             success: false,
-            message: error.response?.data || error.message
+            message: errorMessage
         };
     }
 }
