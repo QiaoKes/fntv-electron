@@ -183,9 +183,13 @@ jobs:
       - name: Get commit info
         id: commit
         run: |
-          echo "message<<EOF" >> $GITHUB_OUTPUT
-          git log -1 --pretty=format:'%B' >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+              echo "message<<EOF"
+              git log -1 --pretty=%B
+              echo
+              echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
 
       - name: Get package version
         id: package
