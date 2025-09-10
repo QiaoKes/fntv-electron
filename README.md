@@ -194,6 +194,9 @@ fntv-electron/
 
 本项目采用 [GPL3.0 许可证](LICENSE)
 
+Copyright (c) 2025 Tag mig hånden
+
 ---
 
 **温馨提示**：本项目为第三方客户端，与飞牛影视官方无关。使用前请确保遵守相关服务条款。
+
