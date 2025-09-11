@@ -115,13 +115,44 @@ export class ProxyServer {
                 this.setCachedPlayInfo(itemGuid, playInfo);
             }
 
+            try {
+                // 获取播放质量和流列表
+                log.debug(`获取播放质量: ${playInfo.media_guid} 和流列表: ${itemGuid}`);
+                
+                const [qualityResp, streamResp] = await Promise.all([
+                    fnapi.getPlayQuality(playInfo.media_guid),
+                    fnapi.getStreamList(itemGuid)
+                ]);
+
+                // 检查播放质量结果
+                if (qualityResp.success && qualityResp.data) {
+                    log.debug(`播放质量信息:`, qualityResp.data);
+                } else {
+                    log.warn('获取播放质量失败:', qualityResp.message);
+                    return res.status(500).send('Error occurred while fetching play quality');
+                }
+
+                // 检查流列表结果
+                if (streamResp.success && streamResp.data) {
+                    log.debug(`流列表信息:`, {
+                        files: streamResp.data.files?.length || 0,
+                        videoStreams: streamResp.data.video_streams?.length || 0,
+                        audioStreams: streamResp.data.audio_streams?.length || 0,
+                        subtitleStreams: streamResp.data.subtitle_streams?.length || 0
+                    });
+                } else {
+                    log.warn('获取流列表失败:', streamResp.message);
+                    return res.status(500).send('Error occurred while fetching stream list');
+                }
+            } catch (error) {
+                log.error('调用额外接口时发生错误:', error);
+                // 失败返回
+                return res.status(500).send('Error occurred while fetching additional info');
+            }
+
             const targetUrl = fnapi.getVideoUrl(playInfo.media_guid);
             log.info(`代理请求重定向: ${itemGuid} -> ${targetUrl}`);
 
-            // 直接重定向到目标URL，保持所有查询参数
-            // res.set('Cache-Control', 'no-cache');
-            // 这里设置不行，先用原来的逻辑
-            // res.set('Authorization', config.token);
             res.redirect(302, targetUrl);
         });
 
@@ -290,5 +321,63 @@ export class ProxyServer {
      */
     public getHost(): string {
         return this.host;
+    }
+
+    /**
+     * 通过itemGuid查询播放信息（直接调用，不通过HTTP）
+     * @param itemGuid - 媒体项GUID
+     */
+    public async getPlayInfoCacheByGuid(itemGuid: string): Promise<any> {
+        if (!itemGuid) {
+            throw new Error('Missing item GUID parameter');
+        }
+
+        try {
+            // 先检查缓存
+            let playInfo = this.getCachedPlayInfo(itemGuid);
+            let fromCache = true;
+
+            if (!playInfo) {
+                // 从全局配置读取url和token
+                const config = fnConfig.readConfig();
+                if (!config || !config.domain || !config.token) {
+                    throw new Error('Server configuration is not available');
+                }
+
+                const fnapi = new ApiService(config.domain, config.token);
+                // 缓存未命中，调用API
+                log.debug(`播放信息缓存未命中，请求API: ${itemGuid}`);
+                const resp = await fnapi.getPlayInfo(itemGuid);
+
+                if (!resp.success || !resp.data) {
+                    log.error('获取播放信息失败:', resp ? resp.message : '未知错误');
+                    throw new Error(resp ? resp.message : 'Failed to get play info');
+                }
+
+                playInfo = resp.data;
+                fromCache = false;
+
+                // 将结果存入缓存
+                this.setCachedPlayInfo(itemGuid, playInfo);
+            }
+
+            return {
+                code: ResponseCode.SUCCESS,
+                message: 'success',
+                data: {
+                    playInfo: playInfo,
+                    fromCache: fromCache,
+                    timestamp: Date.now()
+                }
+            };
+
+        } catch (error) {
+            log.error('查询播放信息时发生错误:', error);
+            return {
+                code: ResponseCode.ERROR,
+                message: (error as Error).message || 'Internal server error',
+                data: null
+            };
+        }
     }
 }

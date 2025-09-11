@@ -36,7 +36,7 @@ export function getMd5(text: string): string {
 }
 
 // 生成随机数字字符串
-export function generateRandomDigits(length: number = 6): string {
+export function generateRandomDigits(length: number = 12): string {
     return Array.from({ length }, () => Math.floor(Math.random() * 10)).join('');
 }
 
@@ -118,7 +118,7 @@ export async function request<T = any>(
 
         // 处理签名错误的重试逻辑
         if (res.code === 5000 && res.msg === 'invalid sign') {
-            if (tryTimes > 2) {
+            if (tryTimes > 4) {
                 return {
                     success: false,
                     message: `尝试次数过多 try_times = ${tryTimes}`
@@ -126,7 +126,7 @@ export async function request<T = any>(
             }
 
             log.warn(`fn_api 请求时签名错误，重试中 tryTimes = ${tryTimes}, url: ${fullUrl}`);
-            await setTimeout(300); // 等待300ms
+            await setTimeout(100); // 等待100ms
             return request(baseUrl, url, method, token, data, timeout, tryTimes + 1);
         }
 

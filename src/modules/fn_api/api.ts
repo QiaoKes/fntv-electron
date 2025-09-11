@@ -94,12 +94,34 @@ export class ApiService {
     /**
      * 获取视频播放信息
      * @param itemGuid - 视频项目的唯一标识符
+     * @param options - 可选参数，包括媒体、音频、字幕、视频流的GUID
      * @returns 返回播放信息的Promise
      */
     getPlayInfo(itemGuid: string): Promise<fn.ApiResponse<types.PlayInfo>> {
-        return fn.request(this.baseURL, '/v/api/v1/play/info', HttpMethod.POST, this.token, {
+        const data: types.PlayInfoData = {
             item_guid: itemGuid,
-        } as types.PlayInfoData);
+        };
+        return fn.request(this.baseURL, '/v/api/v1/play/info', HttpMethod.POST, this.token, data);
+    }
+
+    /**
+     * 获取播放质量列表
+     * @param mediaGuid - 媒体文件的唯一标识符
+     * @returns 返回播放质量列表的Promise
+     */
+    getPlayQuality(mediaGuid: string): Promise<fn.ApiResponse<types.PlayQualityResponse>> {
+        return fn.request(this.baseURL, '/v/api/v1/play/quality', HttpMethod.POST, this.token, {
+            media_guid: mediaGuid,
+        });
+    }
+
+    /**
+     * 获取流列表（包括视频、音频、字幕流）
+     * @param itemGuid - 视频项目的唯一标识符
+     * @returns 返回流列表的Promise
+     */
+    getStreamList(itemGuid: string): Promise<fn.ApiResponse<types.StreamListResponse>> {
+        return fn.request(this.baseURL, `/v/api/v1/stream/list/${itemGuid}`, HttpMethod.GET, this.token);
     }
 
     /**
@@ -117,17 +139,11 @@ export class ApiService {
      */
     async getSubtitle(itemGuid: string): Promise<types.Subtitle[]> {
         try {
-            const response = await fn.request<types.SubtitleResponse>(
-                this.baseURL, 
-                '/v/api/v1/stream/list/' + itemGuid, 
-                HttpMethod.GET, 
-                this.token, 
-                null
-            );
+            const response = await this.getStreamList(itemGuid);
 
             if (response.success && response.data) {
                 const streams = response.data.subtitle_streams || [];
-                const subtitles: types.Subtitle[] = streams.map(stream => ({
+                const subtitles: types.Subtitle[] = streams.filter(stream => stream.is_external).map(stream => ({
                     id: stream.guid,
                     format: stream.format,
                     name: stream.title

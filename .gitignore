@@ -4,7 +4,8 @@ third_party/*
 package-lock.json
 !.gitkip
 *.zip
-log/*
+log
 *.log
-docs/*
-dest/*
+docs
+dest
+paly_Full.txt
