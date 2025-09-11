@@ -36,8 +36,8 @@ export function getMd5(text: string): string {
 }
 
 // 生成随机数字字符串
-export function generateRandomDigits(length: number = 12): string {
-    return Array.from({ length }, () => Math.floor(Math.random() * 10)).join('');
+export function generateRandomDigits(start: number = 100000, end: number = 1000000): string {
+    return Math.floor(Math.random() * (end - start) + start).toString();
 }
 
 // 生成授权签名
@@ -74,6 +74,11 @@ export async function request<T = any>(
     tryTimes: number = 0
 ): Promise<ApiResponse<T>> {
     const fullUrl = baseUrl + url;
+    if (method === HttpMethod.POST || method === HttpMethod.PUT) {
+        data = data || {};
+        data["nonce"] = generateRandomDigits(); // POST/PUT请求添加随机数防重放
+    }
+
     const authx = genFnAuthx(url, data);
 
     const headers = {

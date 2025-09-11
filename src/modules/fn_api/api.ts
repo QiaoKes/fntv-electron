@@ -28,6 +28,13 @@ export class ApiService {
         this.downloadSubtitle = this.downloadSubtitle.bind(this);
     }
 
+    /** 获取当前API基础URL
+     * @returns 返回基础URL字符串
+     */
+    getBaseURL(): string {
+        return this.baseURL;
+    }
+
     /**
      * 清理字幕临时目录（当超过100MB时）
      */
@@ -74,7 +81,7 @@ export class ApiService {
             app_name: "trimemedia-web",
             username: username,
             password: password,
-        } as types.LoginData, 2000);
+        } as types.LoginData);
     }
 
     /**
