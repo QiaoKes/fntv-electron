@@ -227,17 +227,6 @@ export class MpvPlayer extends BasePlayer {
                     return;
                 }
 
-                // 设置 MPV 播放器标题
-                // const currentItem = this.playlistItems.find(item => item.itemGuid === itemGuid);
-                // if (currentItem) {
-                //     const title = this.getTitle(currentItem);
-                //     this.mpvInstance?.setProperty('media-title', title).catch(err => {
-                //         if (this.config.debug) {
-                //             log.debug('设置标题失败:', err);
-                //         }
-                //     });
-                // }
-
                 const fnapi = this.getFnApi();
                 fnapi.getPlayInfo(itemGuid).then(resp => {
                     if (!resp.success || !resp.data) {
