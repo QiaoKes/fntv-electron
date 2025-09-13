@@ -124,12 +124,12 @@ function dynamicProxy(req: Request, res: Response, resolution: RouteResolution) 
     }
 
     // 记录组合后的headers（调试用）
-    log.debug(`组合headers:`, {
-        target,
-        pickPassthroughHeaders: pickPassthroughHeaders(req),
-        extraHeaders,
-        finalHeaders: headers
-    })
+    // log.debug(`组合headers:`, {
+    //     target,
+    //     pickPassthroughHeaders: pickPassthroughHeaders(req),
+    //     extraHeaders,
+    //     finalHeaders: headers
+    // })
 
     const mw = createProxyMiddleware({
         target,
@@ -157,12 +157,12 @@ function dynamicProxy(req: Request, res: Response, resolution: RouteResolution) 
                 // }
 
                 // 记录请求headers（调试用）
-                log.debug(`代理请求头设置:`, {
-                    target,
-                    originalRequestHeaders: request.headers,
-                    mergedHeaders: headers,
-                    finalProxyHeaders: proxyReq.getHeaders()
-                })
+                // log.debug(`代理请求头设置:`, {
+                //     target,
+                //     originalRequestHeaders: request.headers,
+                //     mergedHeaders: headers,
+                //     finalProxyHeaders: proxyReq.getHeaders()
+                // })
 
                 // 可以在这里添加更多自定义逻辑
                 // 比如修改特定的header值
@@ -170,12 +170,12 @@ function dynamicProxy(req: Request, res: Response, resolution: RouteResolution) 
 
             proxyRes(proxyRes, req, res) {
                 // 记录响应headers（调试用）
-                log.debug(`代理响应头:`, {
-                    statusCode: proxyRes.statusCode,
-                    statusMessage: proxyRes.statusMessage,
-                    responseHeaders: proxyRes.headers,
-                    url: req.url
-                })
+                // log.debug(`代理响应头:`, {
+                //     statusCode: proxyRes.statusCode,
+                //     statusMessage: proxyRes.statusMessage,
+                //     responseHeaders: proxyRes.headers,
+                //     url: req.url
+                // })
 
                 proxyRes.headers['access-control-allow-origin'] ||= '*'
                 proxyRes.headers['access-control-allow-headers'] ||= 'Authorization, Range, Content-Type'
@@ -310,20 +310,6 @@ export class ProxyServer {
         })
     }
 
-    /** 缓存命中 */
-    private getCachedPlayInfo(itemGuid: string): any | null {
-        const cached = this.playInfoCache.get(itemGuid)
-        if (!cached) return null
-        log.debug(`播放信息缓存命中: ${itemGuid}`)
-        return cached.data
-    }
-
-    /** 设置缓存 */
-    private setCachedPlayInfo(itemGuid: string, data: any): void {
-        this.playInfoCache.set(itemGuid, { data, timestamp: Date.now() })
-        log.debug(`播放信息已缓存: ${itemGuid}`)
-    }
-
     /** 业务路由 */
     private registerDefaultRoutes(): void {
         /**
@@ -344,21 +330,16 @@ export class ProxyServer {
             const fnapi = new ApiService(config.domain, config.token)
 
             // 播放信息（带缓存）
-            let playInfo = this.getCachedPlayInfo(itemGuid)
-            if (!playInfo) {
-                log.debug(`播放信息缓存未命中，请求API: ${itemGuid}`)
-                const resp = await fnapi.getPlayInfo(itemGuid)
-                if (!resp.success || !resp.data) {
-                    log.error('获取播放信息失败:', resp ? resp.message : '未知错误')
-                    return res.status(500).send('Failed to get play info')
-                }
-                playInfo = resp.data
-                this.setCachedPlayInfo(itemGuid, playInfo)
+            let resp = await fnapi.getPlayInfoCached(itemGuid)
+            if (!resp || !resp.data) {
+                log.error('获取播放信息失败:', resp ? resp.message : '未知错误')
+                return res.status(500).send('Failed to get play info')
             }
 
+            const playInfo = resp.data
             // 获取流信息
             const mediaGuid = playInfo.media_guid
-            const streamResp = await fnapi.getStream(mediaGuid, stringToUUID(config.account))
+            const streamResp = await fnapi.getStreamCached(mediaGuid, stringToUUID(config.account))
             if (!streamResp.success || !streamResp.data) {
                 log.error('获取视频流失败:', streamResp ? streamResp.message : '未知错误')
                 return res.status(500).send('Failed to get stream')
@@ -396,44 +377,6 @@ export class ProxyServer {
                 rewritePath: () => u.pathname + (u.search || ''), // 把目标的完整路径+查询写回
                 certTrust: isTrusted(u.host),               // 是否信任证书
             } as RouteResolution)
-        })
-
-        // PlayInfo 查询：保持原 API
-        this.app.get('/api/playinfo/:itemGuid', async (req: Request, res: Response) => {
-            const { itemGuid } = req.params
-            if (!itemGuid) {
-                return res.status(400).json({ code: ResponseCode.ERROR, message: 'Missing item GUID parameter', data: null })
-            }
-
-            try {
-                let playInfo = this.getCachedPlayInfo(itemGuid)
-                let fromCache = true
-                if (!playInfo) {
-                    const config = fnConfig.readConfig()
-                    if (!config || !config.domain || !config.token) {
-                        return res.status(500).json({ code: ResponseCode.ERROR, message: 'Server configuration is not available', data: null })
-                    }
-                    const fnapi = new ApiService(config.domain, config.token)
-                    log.debug(`播放信息缓存未命中，请求API: ${itemGuid}`)
-                    const resp = await fnapi.getPlayInfo(itemGuid)
-                    if (!resp.success || !resp.data) {
-                        log.error('获取播放信息失败:', resp ? resp.message : '未知错误')
-                        return res.status(500).json({ code: ResponseCode.ERROR, message: resp ? resp.message : 'Failed to get play info', data: null })
-                    }
-                    playInfo = resp.data
-                    fromCache = false
-                    this.setCachedPlayInfo(itemGuid, playInfo)
-                }
-
-                res.json({
-                    code: ResponseCode.SUCCESS,
-                    message: 'success',
-                    data: { playInfo, fromCache, timestamp: Date.now() },
-                })
-            } catch (error) {
-                log.error('查询播放信息时发生错误:', error)
-                res.status(500).json({ code: ResponseCode.ERROR, message: 'Internal server error', data: null })
-            }
         })
 
         // 健康检查
@@ -504,32 +447,5 @@ export class ProxyServer {
     }
     public getHost(): string {
         return this.host
-    }
-
-    /** 直接读取/回填缓存（保留你的原逻辑） */
-    public async getPlayInfoCacheByGuid(itemGuid: string) {
-        if (!itemGuid) throw new Error('Missing item GUID parameter')
-        try {
-            let playInfo = this.getCachedPlayInfo(itemGuid)
-            let fromCache = true
-            if (!playInfo) {
-                const config = fnConfig.readConfig()
-                if (!config || !config.domain || !config.token) throw new Error('Server configuration is not available')
-                const fnapi = new ApiService(config.domain, config.token)
-                log.debug(`播放信息缓存未命中，请求API: ${itemGuid}`)
-                const resp = await fnapi.getPlayInfo(itemGuid)
-                if (!resp.success || !resp.data) {
-                    log.error('获取播放信息失败:', resp ? resp.message : '未知错误')
-                    throw new Error(resp ? resp.message : 'Failed to get play info')
-                }
-                playInfo = resp.data
-                fromCache = false
-                this.setCachedPlayInfo(itemGuid, playInfo)
-            }
-            return { code: ResponseCode.SUCCESS, message: 'success', data: { playInfo, fromCache, timestamp: Date.now() } }
-        } catch (error) {
-            log.error('查询播放信息时发生错误:', error)
-            return { code: ResponseCode.ERROR, message: (error as Error).message || 'Internal server error', data: null }
-        }
     }
 }

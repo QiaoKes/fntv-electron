@@ -67,51 +67,6 @@ export function getProxyUrl(itemGuid: string): string {
     return `http://${host}:${port}/playproxy/${itemGuid}`;
 }
 
-/**
- * 通过itemGuid查询播放信息
- * @param itemGuid - 媒体项GUID
- * @returns Promise<PlayInfoResponse> 播放信息响应
- * 
- * @example
- * ```typescript
- * const result = await getPlayInfoByGuid('item-123');
- * if (result.code === 0) {
- *     console.log('播放信息:', result.data.playInfo);
- *     console.log('来自缓存:', result.data.fromCache);
- * } else {
- *     console.error('查询失败:', result.message);
- * }
- * ```
- */
-export async function getPlayInfoCacheByGuid(itemGuid: string): Promise<PlayInfoResponse> {
-    if (!globalProxyServer || !globalProxyServer.getIsRunning()) {
-        throw new Error('代理服务器未运行');
-    }
-
-    const port = globalProxyServer.getPort();
-    const host = globalProxyServer.getHost();
-    const url = `http://${host}:${port}/api/playinfo/${itemGuid}`;
-
-    try {
-        log.debug(`请求播放信息: ${url}`);
-        
-        // 使用fetch或其他HTTP客户端发送请求
-        const response = await fetch(url);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const result: PlayInfoResponse = await response.json();
-        log.debug(`播放信息查询结果:`, result);
-        
-        return result;
-    } catch (error) {
-        log.error(`查询播放信息失败 (${itemGuid}):`, error);
-        throw error;
-    }
-}
-
 // 导出ProxyServer类和常量
 export { ProxyServer, ResponseCode } from './server';
 

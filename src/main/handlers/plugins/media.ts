@@ -132,13 +132,13 @@ function eventHandler(fnapi: fn.ApiService) {
                 //     return;
                 // }
                 // 优先从缓存查询播放信息
-                const resp = await proxyModule.getPlayInfoCacheByGuid(progressData.itemGuid);
-                if (resp.code !== 0 || !resp.data) {
+                const resp = await fnapi.getPlayInfoCached(progressData.itemGuid);
+                if (!resp.success || !resp.data) {
                     log.error('获取播放信息失败:', resp ? resp.message : '未知错误');
                     return;
                 }
 
-                const info = resp.data.playInfo;
+                const info = resp.data;
 
                 const record: fn.PlayStatusData = {
                     item_guid: progressData.itemGuid,
@@ -184,13 +184,13 @@ function eventHandler(fnapi: fn.ApiService) {
                 // } else {
                 // 优先从缓存查询播放信息
                 {
-                    const resp = await proxyModule.getPlayInfoCacheByGuid(event.status.itemGuid);
-                    if (resp.code !== 0 || !resp.data) {
+                    const resp = await fnapi.getPlayInfoCached(event.status.itemGuid);
+                    if (!resp.success || !resp.data) {
                         log.error('获取播放信息失败:', resp ? resp.message : '未知错误');
                         return;
                     }
 
-                    const info = resp.data.playInfo;
+                    const info = resp.data;
 
                     const record: fn.PlayStatusData = {
                         item_guid: event.status.itemGuid,
