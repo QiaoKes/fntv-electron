@@ -399,6 +399,8 @@ export interface AudioStream {
     create_time: number;
     /** 更新时间 */
     update_time: number;
+    /** 是否为假流 */
+    is_fake: boolean;
 }
 
 /**
@@ -535,4 +537,154 @@ export interface StreamListResponse {
     audio_streams: AudioStream[];
     /** 字幕流列表 */
     subtitle_streams: SubtitleStreamExtended[];
+}
+
+/**
+ * 流请求数据
+ */
+export interface StreamRequestData {
+    /** 请求头部 */
+    header: {
+        /** 用户代理 */
+        "User-Agent": string[];
+    };
+    /** 级别 */
+    level: number;
+    /** 媒体文件的唯一标识符 */
+    media_guid: string;
+    /** IP地址 */
+    ip: string;
+}
+
+/**
+ * 质量信息
+ */
+export interface Quality {
+    /** 比特率 */
+    bitrate: number;
+    /** 分辨率 */
+    resolution: string;
+    /** 是否渐进式 */
+    progressive: boolean;
+    /** 是否M3U8 */
+    is_m3u8: boolean;
+}
+
+/**
+ * 云存储信息
+ */
+export interface CloudStorageInfo {
+    /** DAV用户名 */
+    dav_username: string;
+    /** 是否有效 */
+    valid: boolean;
+    /** 是否禁用 */
+    disabled: boolean;
+    /** 云存储类型 */
+    cloud_storage_type: number;
+    /** 云存储昵称 */
+    cloud_nick_name: string;
+    /** 文件系统大小 */
+    fssize: number;
+    /** 文件系统剩余大小 */
+    frsize: number;
+    /** 已用大小 */
+    fusize: number;
+    /** 是否VIP */
+    is_vip: boolean;
+    /** 夸克VIP类型 */
+    quark_vip_type: string;
+    /** 夸克PC支付链接 */
+    quark_pc_pay_link: string;
+    /** 夸克WAP支付链接 */
+    quark_wap_pay_link: string;
+}
+
+/**
+ * 直接链接质量
+ */
+export interface DirectLinkQuality {
+    /** 比特率 */
+    bitrate: number;
+    /** 分辨率 */
+    resolution: string;
+    /** 是否渐进式 */
+    progressive: boolean;
+    /** 链接URL */
+    url: string;
+    /** 是否M3U8 */
+    is_m3u8: boolean;
+    /** 过期时间 */
+    expired_at: number;
+}
+
+/**
+ * 直接链接音频流
+ */
+export interface DirectLinkAudioStream {
+    /** 媒体文件的唯一标识符 */
+    media_guid: string;
+    /** 标题 */
+    title: string;
+    /** 流的唯一标识符 */
+    guid: string;
+    /** 音频类型 */
+    audio_type: string;
+    /** 编解码器名称 */
+    codec_name: string;
+    /** 编解码器类型 */
+    codec_type: string;
+    /** 语言 */
+    language: string;
+    /** 声道数 */
+    channels: number;
+    /** 配置文件 */
+    profile: string;
+    /** 采样率 */
+    sample_rate: string;
+    /** 是否默认 */
+    is_default: boolean;
+    /** 声道布局 */
+    channel_layout: string;
+    /** 时长 */
+    duration: number;
+    /** 索引 */
+    index: number;
+    /** 每原始样本比特数 */
+    bits_per_raw_sample: string;
+    /** 比特率 */
+    bps: number;
+    /** 创建时间 */
+    create_time: number;
+    /** 更新时间 */
+    update_time: number;
+    /** 是否假流 */
+    is_fake: boolean;
+}
+
+/**
+ * 流响应数据
+ */
+export interface StreamResponse {
+    /** 文件流信息 */
+    file_stream: FileInfo;
+    /** 视频流信息 */
+    video_stream: VideoStream;
+    /** 音频流列表 */
+    audio_streams: AudioStream[];
+    /** 字幕流列表 */
+    subtitle_streams: SubtitleStreamExtended[];
+    /** 质量列表 */
+    qualities: Quality[];
+    /** 云存储信息 */
+    cloud_storage_info: CloudStorageInfo | null;
+    /** 请求头部信息 */
+    header: {
+        /** Cookie列表 */
+        Cookie: string[];
+    };
+    /** 直接链接质量列表 */
+    direct_link_qualities: DirectLinkQuality[];
+    /** 直接链接音频流列表 */
+    direct_link_audio_streams: DirectLinkAudioStream[];
 }

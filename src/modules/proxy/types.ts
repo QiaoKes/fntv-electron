@@ -1,55 +1,46 @@
-import type { PlayInfo } from '../fn_api/types';
+// types.ts
+import type { PlayInfo } from '../fn_api/types'
 
-/**
- * 代理服务器配置接口
- */
+/** 代理服务器配置 */
 export interface ProxyConfig {
     /** 监听端口 */
-    port: number;
+    port: number
     /** 是否启用代理 */
-    enabled: boolean;
+    enabled: boolean
+    /** （可选）本服务启用 HTTPS 的 key/cert 路径，自签名可用 */
+    httpsKeyPath?: string
+    httpsCertPath?: string
 }
 
-/**
- * 代理请求参数接口
- */
-export interface ProxyRequestParams {
-    /** 媒体项GUID */
-    itemGuid: string;
-    /** 授权令牌 */
-    token: string;
-    /** 可选的查询参数 */
-    [key: string]: string | number | undefined;
+/** 自定义路由解析结果 */
+export interface RouteResolution {
+    /** 目标上游，如 https://upstream.example.com */
+    target: string
+    /** （可选）对目标请求的额外头部（会与客户端头合并） */
+    headers?: Record<string, string>
+    /** （可选）对路径进行改写，例如去掉 /proxy 前缀 */
+    rewritePath?: (path: string) => string
+    certTrust?: boolean // 是否信任自签名证书
 }
 
-/**
- * API响应基础接口
- */
+/** 自定义路由解析函数签名（按请求决定上游与额外头） */
+export type RouteResolver = (req: import('express').Request) => Promise<RouteResolution | null> | RouteResolution | null
+
+/** 通用 API 响应 */
 export interface ApiResponse<T = any> {
-    /** 响应代码：0-成功，10000-错误 */
-    code: number;
-    /** 响应消息 */
-    message: string;
-    /** 响应数据 */
-    data: T | null;
+    code: number
+    message: string
+    data: T | null
 }
 
-/**
- * 播放信息数据接口
- */
+/** 播放信息数据 */
 export interface PlayInfoData {
-    /** 播放信息 - 来自fnapi的PlayInfo结构 */
-    playInfo: PlayInfo;
-    /** 是否来自缓存 */
-    fromCache: boolean;
-    /** 时间戳 */
-    timestamp: number;
+    playInfo: PlayInfo
+    fromCache: boolean
+    timestamp: number
 }
 
-/**
- * 播放信息API响应接口
- */
+/** 播放信息 API 响应 */
 export interface PlayInfoResponse extends ApiResponse<PlayInfoData> {
-    /** 成功时的数据结构 */
-    data: PlayInfoData | null;
+    data: PlayInfoData | null
 }

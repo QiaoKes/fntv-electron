@@ -295,6 +295,30 @@ export class ApiService {
     recordPlayStatus(statusData: types.PlayStatusData): Promise<fn.ApiResponse<any>> {
         return fn.request(this.baseURL, '/v/api/v1/play/record', HttpMethod.POST, this.token, statusData);
     }
+
+    /**
+     * 获取流信息（包括视频、音频、字幕流和质量信息）
+     * @param mediaGuid - 媒体文件的唯一标识符
+     * @param ip - IP地址
+     * @param nonce - 随机数
+     * @returns 返回流信息的Promise
+     */
+    getStream(mediaGuid: string, ip: string): Promise<fn.ApiResponse<types.StreamResponse>> {
+        const data: types.StreamRequestData = {
+            header: {
+                "User-Agent": ["trim_player"]
+            },
+            level: 1,
+            media_guid: mediaGuid,
+            ip: ip,
+        };
+
+        const extraHeaders = {
+            "cookie": "mode=relay"
+        };
+
+        return fn.request(this.baseURL, '/v/api/v1/stream', HttpMethod.POST, this.token, data, extraHeaders);
+    }
 }
 
 // 重新导出类型定义，保持向后兼容

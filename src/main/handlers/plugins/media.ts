@@ -287,11 +287,12 @@ async function handlePlayMovie(event: IpcMainEvent, { id, token }: PlayRequest):
     let playConfig: ply.Config = {
         fnapi: fnapi,
         playerPath: playerPath,
-        headers: {
-            Authorization: token,
-        },
+        // headers: {
+        //     Authorization: token,
+        // },
         extraArgs: [
             '--force-window=immediate',
+            // "--user-agent=Lavf/59.27.100",
         ],
         debug: true,
         onEvent: eventHandler(fnapi)

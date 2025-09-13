@@ -69,9 +69,10 @@ export async function request<T = any>(
     url: string, 
     method: HttpMethod, 
     token: string, 
-    data?: any, 
+    data?: any,
+    extraHeaders?: Record<string, string>,
     timeout: number = DEFAULT_TIMEOUT, 
-    tryTimes: number = 0
+    tryTimes: number = 5,
 ): Promise<ApiResponse<T>> {
     const fullUrl = baseUrl + url;
     if (method === HttpMethod.POST || method === HttpMethod.PUT) {
@@ -85,6 +86,7 @@ export async function request<T = any>(
         "Content-Type": "application/json",
         "Authorization": token,
         "Authx": authx,
+        ...extraHeaders
     };
 
     // 根据URL是否已被信任来决定是否验证证书
@@ -95,81 +97,99 @@ export async function request<T = any>(
         headers,
         timeout: timeout,
         httpsAgent: new https.Agent({
-            rejectUnauthorized: !shouldIgnoreCert // 根据信任状态决定是否验证证书
+            rejectUnauthorized: !shouldIgnoreCert, // 根据信任状态决定是否验证证书
+            keepAlive: true, // 启用keep-alive
+            timeout: timeout, // 设置连接超时
+            maxSockets: 10, // 限制最大并发连接数
         })
     };
 
-    try {
-        let response: AxiosResponse<FnApiResponseData<T>>;
+    // 使用循环实现重试逻辑
+    for (let attempt = 0; attempt <= tryTimes; attempt++) {
+        try {
+            let response: AxiosResponse<FnApiResponseData<T>>;
 
-        switch (method) {
-            case HttpMethod.GET:
-                response = await axios.get(fullUrl, config);
-                break;
-            case HttpMethod.POST:
-                response = await axios.post(fullUrl, data, config);
-                break;
-            case HttpMethod.PUT:
-                response = await axios.put(fullUrl, data, config);
-                break;
-            case HttpMethod.DELETE:
-                response = await axios.delete(fullUrl, config);
-                break;
-            default:
-                throw new Error(`Unsupported method: ${method}`);
-        }
+            switch (method) {
+                case HttpMethod.GET:
+                    response = await axios.get(fullUrl, config);
+                    break;
+                case HttpMethod.POST:
+                    response = await axios.post(fullUrl, data, config);
+                    break;
+                case HttpMethod.PUT:
+                    response = await axios.put(fullUrl, data, config);
+                    break;
+                case HttpMethod.DELETE:
+                    response = await axios.delete(fullUrl, config);
+                    break;
+                default:
+                    throw new Error(`Unsupported method: ${method}`);
+            }
 
-        const res = response.data;
+            const res = response.data;
 
-        // 处理签名错误的重试逻辑
-        if (res.code === 5000 && res.msg === 'invalid sign') {
-            if (tryTimes > 4) {
+            // 处理签名错误的重试逻辑
+            if (res.code === 5000 && res.msg === 'invalid sign') {
+                if (attempt >= tryTimes) {
+                    return {
+                        success: false,
+                        message: `尝试次数过多 try_times = ${attempt + 1}`
+                    };
+                }
+
+                log.warn(`fn_api 请求时签名错误，重试中 attempt = ${attempt + 1}, url: ${fullUrl}`);
+                await setTimeout(100); // 等待100ms
+                continue; // 继续下一次循环
+            }
+
+            // 处理业务错误
+            if (res.code !== 0) {
+                log.error(`fn_api 请求失败 url:${fullUrl}`, ' header:', headers, ' req:', data || 'null', ' resp:', res);
                 return {
                     success: false,
-                    message: `尝试次数过多 try_times = ${tryTimes}`
+                    message: res.msg
                 };
             }
 
-            log.warn(`fn_api 请求时签名错误，重试中 tryTimes = ${tryTimes}, url: ${fullUrl}`);
-            await setTimeout(100); // 等待100ms
-            return request(baseUrl, url, method, token, data, timeout, tryTimes + 1);
-        }
-
-        // 处理业务错误
-        if (res.code !== 0) {
-            log.error(`fn_api 请求失败 url:${fullUrl}`, ' header:', headers, ' req:', data || 'null', ' resp:', res);
             return {
-                success: false,
-                message: res.msg
+                success: true,
+                data: res.data
             };
-        }
 
-        return {
-            success: true,
-            data: res.data
-        };
-
-    } catch (error: any) {
-        const errorMessage = error.response?.data || error.message || '未知错误';
-        
-        // 检查是否为证书验证错误且URL未被信任
-        if (isCertificateError(errorMessage) && !isTrusted(baseUrl)) {
-            log.warn(`检测到证书验证错误: ${errorMessage}, URL: ${fullUrl}`);
+        } catch (error: any) {
+            const errorMessage = error.response?.data || error.message || '未知错误';
             
-            // 返回特殊的证书错误响应，让上层处理
-            return {
-                success: false,
-                message: errorMessage,
-                // 添加一个特殊标识表示这是证书错误
-                certificateError: true
-            } as ApiResponse<T> & { certificateError?: boolean };
+            // 检查是否为证书验证错误且URL未被信任
+            if (isCertificateError(errorMessage) && !isTrusted(baseUrl)) {
+                log.warn(`检测到证书验证错误: ${errorMessage}, URL: ${fullUrl}`);
+                
+                // 返回特殊的证书错误响应，让上层处理
+                return {
+                    success: false,
+                    message: errorMessage,
+                    // 添加一个特殊标识表示这是证书错误
+                    certificateError: true
+                } as ApiResponse<T> & { certificateError?: boolean };
+            }
+            
+            // 如果是最后一次尝试，返回错误
+            if (attempt >= tryTimes) {
+                log.error(`axios 请求失败 - `, errorMessage);
+                return {
+                    success: false,
+                    message: errorMessage
+                };
+            }
+
+            // 等待后重试
+            log.warn(`请求失败，重试中 attempt = ${attempt + 1}, error: ${errorMessage}`);
+            await setTimeout(100);
         }
-        
-        // 处理其他网络错误
-        log.error(`axios 请求失败 - `, errorMessage);
-        return {
-            success: false,
-            message: errorMessage
-        };
     }
+
+    // 这行代码理论上不会执行到，但为了类型安全加上
+    return {
+        success: false,
+        message: '重试逻辑异常'
+    };
 }
