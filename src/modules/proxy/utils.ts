@@ -1,10 +1,16 @@
 // 顶部 import（新增）
 import * as http from 'http'
+import * as https from 'https'
+import { IncomingMessage } from 'http'
 import type { Socket } from 'net'
 import { isTrusted } from '../cert_trust'
 const { v5: uuidv5 } = require('uuid')
-import { Transform, pipeline } from 'stream'
+import { Transform, pipeline, Readable, PassThrough } from 'stream'
 import express, { Express, Request, Response, NextFunction } from 'express'
+import { createProxyMiddleware } from 'http-proxy-middleware'
+import { RouteResolution, RouteResolver } from './types'
+import * as log from '../logger'
+import MultiStream from 'multistream'
 
 // 固定命名空间：可用官方的 DNS，也可换成你自己团队固定的 UUID
 const NAMESPACE = uuidv5.DNS // DNS namespace
@@ -32,76 +38,122 @@ export function passthroughHeaders(req: Request): Record<string, string> {
     return out
 }
 
-export const DEFAULT_PART_SIZE = 10 * 1024 * 1024 // 10 MiB
 
-// ===== 新增：工具函数 =====
-type ByteRange = { start: number, end?: number } // [start, end] 闭区间；end 可缺失
+/** 默认路由解析器（支持 /proxy 与 query target、headers*）*/
+export const defaultRouteResolver: RouteResolver = (req) => {
+    // 仅 /proxy 开头才由此解析；其它路径交给业务路由（如 /playproxy/:itemGuid）
+    if (!req.path.startsWith('/proxy')) return null
 
-// 解析 Range 头，返回字节范围
-export function parseRangeHeader(rangeHeader?: string | string[]): ByteRange | null {
-    if (!rangeHeader) return null
-    const raw = Array.isArray(rangeHeader) ? rangeHeader[0] : rangeHeader
-    const m = /^bytes=(\d+)-(\d+)?$/i.exec((raw || '').trim())
-    if (!m) return null
-    const start = Number(m[1])
-    const end = m[2] != null ? Number(m[2]) : undefined
-    if (!Number.isFinite(start) || start < 0) return null
-    if (end != null && (!Number.isFinite(end) || end < start)) return null
-    return { start, end }
-}
-
-// 将请求的字节范围对齐到上游分片边界
-export function alignRangeForUpstream(reqR: ByteRange, partSize: number): { alignedStart: number; alignedEnd: number } {
-    const S = partSize || DEFAULT_PART_SIZE
-    const aStart = Math.floor(reqR.start / S) * S
-    const aEnd = reqR.end != null ? (Math.ceil((reqR.end + 1) / S) * S - 1) : (aStart + S - 1)
-    return { alignedStart: aStart, alignedEnd: aEnd }
-}
-
-// 解析 Content-Range 头，获取总长度
-export function parseContentRangeTotal(cr?: string): number | null {
-    // e.g. "bytes 0-10485759/881156649"
-    if (!cr) return null
-    const m = /^bytes\s+\d+-\d+\/(\d+)$/.exec(cr)
-    return m ? Number(m[1]) : null
-}
-
-// 丢弃前 skip 字节、最多透传 need 字节
-export class ByteSliceTransform extends Transform {
-    private skip: number
-    private need: number | null
-    private dropped = 0
-    private sent = 0
-    constructor(skip: number, need: number | null) {
-        super()
-        this.skip = Math.max(0, skip | 0)
-        this.need = need != null ? Math.max(0, need | 0) : null
+    const rawTarget = (req.query.target as string) || ''
+    if (!rawTarget) {
+        return null
     }
-    _transform(chunk: Buffer, _enc: BufferEncoding, cb: Function) {
-        let buf = chunk
-        // 丢弃前 skip
-        if (this.dropped < this.skip) {
-            const remainSkip = this.skip - this.dropped
-            if (buf.length <= remainSkip) {
-                this.dropped += buf.length
-                return cb() // 全丢
-            } else {
-                buf = buf.subarray(remainSkip)
-                this.dropped += remainSkip
-            }
-        }
-        // 限制 need
-        if (this.need != null) {
-            const remainNeed = this.need - this.sent
-            if (remainNeed <= 0) return cb()
-            if (buf.length > remainNeed) {
-                this.push(buf.subarray(0, remainNeed))
-                this.sent += remainNeed
-                return cb()
-            }
-            this.sent += buf.length
-        }
-        this.push(buf)
-        cb()
+
+    // 支持 base64url 或 直接 URL
+    let target = rawTarget
+    try {
+        target = Buffer.from(rawTarget, 'base64url').toString('utf8')
+    } catch { }
+
+    const headers = passthroughHeaders(req)
+    // 缺省从路径去掉 /proxy 前缀
+    const rewritePath = (p: string) => p.replace(/^\/proxy/, '') || '/'
+
+    return { target, headers, rewritePath }
+}
+
+/** 核心：按请求实时创建 proxy 中间件（可自定义目标与头） */
+export function dynamicProxy(req: Request, res: Response, resolution: RouteResolution) {
+    const target = resolution.target
+    const extraHeaders = resolution.headers || {}
+    const rewritePath = resolution.rewritePath
+
+    // 组合需要透传/追加的头
+    const headers = {
+        ...passthroughHeaders(req),
+        ...extraHeaders,
     }
+
+    const mw = createProxyMiddleware({
+        target,
+        changeOrigin: true,
+        secure: resolution.certTrust ? !resolution.certTrust : false, // 允许代理到自签名上游
+        ws: true,
+        selfHandleResponse: false,
+        xfwd: false,
+
+        // 用 pathRewrite 做路径改写（v3 推荐）
+        pathRewrite: (path, _req) => (rewritePath ? rewritePath(path) : path),
+
+        // 直接设置额外的headers，http-proxy-middleware会自动合并
+        headers,
+
+        // v3：事件放进 on: { ... }
+        on: {
+            proxyReq(proxyReq, request, _res) {
+                // 记录请求headers（调试用）
+                log.debug(`代理请求头设置:`, {
+                    target,
+                    originalRequestHeaders: request.headers,
+                    mergedHeaders: headers,
+                    finalProxyHeaders: proxyReq.getHeaders()
+                })
+            },
+
+            proxyRes(proxyRes, req, res) {
+                // 记录响应headers（调试用）
+                log.debug(`代理响应头:`, {
+                    statusCode: proxyRes.statusCode,
+                    statusMessage: proxyRes.statusMessage,
+                    responseHeaders: proxyRes.headers,
+                    url: req.url
+                })
+
+                proxyRes.headers['access-control-allow-origin'] ||= '*'
+                proxyRes.headers['access-control-allow-headers'] ||= 'Authorization, Range, Content-Type'
+                proxyRes.headers['access-control-allow-methods'] ||= 'GET, HEAD, OPTIONS'
+            },
+
+            error(err, req, res) {
+                log.error(`代理错误: ${err.message}`, {
+                    target,
+                    url: req.url,
+                    method: req.method,
+                    headers: Object.keys(req.headers)
+                })
+
+                try {
+                    if (isServerResponse(res)) {
+                        if (!res.headersSent) {
+                            res.writeHead(502, {
+                                'Content-Type': 'text/plain',
+                                'Access-Control-Allow-Origin': '*',
+                            })
+                        }
+                        res.end('Proxy error.')
+                    } else {
+                        try {
+                            res.write(
+                                'HTTP/1.1 502 Bad Gateway\r\n' +
+                                'Connection: close\r\n' +
+                                'Content-Length: 11\r\n' +
+                                '\r\n' +
+                                'Bad Gateway'
+                            )
+                        } catch { }
+                        try { res.end() } catch { }
+                        try { res.destroy() } catch { }
+                    }
+                } catch { }
+            },
+        },
+
+        logger: {
+            info: (msg: any) => log.info(String(msg)),
+            warn: (msg: any) => log.warn(String(msg)),
+            error: (msg: any) => log.error(String(msg)),
+        },
+    })
+
+    return mw(req, res, () => undefined)
 }

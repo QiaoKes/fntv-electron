@@ -227,11 +227,33 @@ export class MpvPlayer extends BasePlayer {
                     return;
                 }
 
+                // 设置 MPV 播放器标题
+                // const currentItem = this.playlistItems.find(item => item.itemGuid === itemGuid);
+                // if (currentItem) {
+                //     const title = this.getTitle(currentItem);
+                //     this.mpvInstance?.setProperty('media-title', title).catch(err => {
+                //         if (this.config.debug) {
+                //             log.debug('设置标题失败:', err);
+                //         }
+                //     });
+                // }
+
                 const fnapi = this.getFnApi();
                 fnapi.getPlayInfo(itemGuid).then(resp => {
                     if (!resp.success || !resp.data) {
                         log.error('path changed: 获取播放信息失败:', resp ? resp.message : '未知错误');
                         return;
+                    }
+
+                    const currentItem = this.playlistItems.find(item => item.itemGuid === itemGuid);
+                    if (currentItem) {
+                        const title = this.getTitle(currentItem);
+                        // 设置窗口标题
+                        this.mpvInstance?.setProperty('force-media-title', title).catch(err => {
+                            if (this.config.debug) {
+                                log.debug('设置窗口标题失败:', err);
+                            }
+                        });
                     }
 
                     // 只有当进度大于0时才执行跳转

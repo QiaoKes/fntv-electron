@@ -1,159 +1,12 @@
 // server.ts
 import express, { Express, Request, Response, NextFunction } from 'express'
-import https from 'https'
 import fs from 'fs'
-import { createProxyMiddleware } from 'http-proxy-middleware'
 import * as log from '../logger'
 import { ApiService } from '../fn_api/api'
 import * as fnConfig from '../fn_config/config'
 import { RouteResolver, RouteResolution } from './types'
 import { isTrusted } from '../cert_trust'
 import * as utils from './utils'
-import { pipeline } from 'stream'
-
-
-
-type RangeAlignCfg = { enabled: boolean, partSize?: number }
-/**
- * 核心：按请求实时创建 proxy 中间件（可自定义目标与头）
- * - secure: false 允许代理到自签名 SSL 上游
- * - changeOrigin: true 以目标 Host 发送
- * - follow redirects: 我们不 302 给客户端，而是直连上游（若上游再 302，可用 onProxyRes 做二次处理）
- */
-function dynamicProxy(req: Request, res: Response, resolution: RouteResolution) {
-    const target = resolution.target
-    const extraHeaders = resolution.headers || {}
-    const rewritePath = resolution.rewritePath
-
-    // 组合需要透传/追加的头
-    const headers = {
-        ...utils.passthroughHeaders(req),
-        ...extraHeaders,
-    }
-
-    // 记录组合后的headers（调试用）
-    // log.debug(`组合headers:`, {
-    //     target,
-    //     pickPassthroughHeaders: pickPassthroughHeaders(req),
-    //     extraHeaders,
-    //     finalHeaders: headers
-    // })
-
-    const mw = createProxyMiddleware({
-        target,
-        changeOrigin: true,
-        secure: resolution.certTrust ? !resolution.certTrust : false,           // 允许代理到自签名上游
-        ws: true,
-        selfHandleResponse: false,
-        xfwd: false,
-
-        // 用 pathRewrite 做路径改写（v3 推荐）
-        pathRewrite: (path, _req) => (rewritePath ? rewritePath(path) : path),
-
-        // 直接设置额外的headers，http-proxy-middleware会自动合并
-        headers,
-
-        // v3：事件放进 on: { ... }
-        on: {
-            proxyReq(proxyReq, request, _res) {
-                // 确保Range header被正确转发（有时会被过滤）
-                // const range = request.headers['range']
-                // if (typeof range === 'string') {
-                //     proxyReq.setHeader('range', range)
-                // }
-
-                // 记录请求headers（调试用）
-                log.debug(`代理请求头设置:`, {
-                    target,
-                    originalRequestHeaders: request.headers,
-                    mergedHeaders: headers,
-                    finalProxyHeaders: proxyReq.getHeaders()
-                })
-
-                // 可以在这里添加更多自定义逻辑
-                // 比如修改特定的header值
-            },
-
-            proxyRes(proxyRes, req, res) {
-                // 记录响应headers（调试用）
-                log.debug(`代理响应头:`, {
-                    statusCode: proxyRes.statusCode,
-                    statusMessage: proxyRes.statusMessage,
-                    responseHeaders: proxyRes.headers,
-                    url: req.url
-                })
-
-                proxyRes.headers['access-control-allow-origin'] ||= '*'
-                proxyRes.headers['access-control-allow-headers'] ||= 'Authorization, Range, Content-Type'
-                proxyRes.headers['access-control-allow-methods'] ||= 'GET, HEAD, OPTIONS'
-            },
-
-            error(err, req, res) {
-                log.error(`代理错误: ${err.message}`, {
-                    target,
-                    url: req.url,
-                    method: req.method,
-                    headers: Object.keys(req.headers)
-                })
-
-                try {
-                    if (utils.isServerResponse(res)) {
-                        if (!res.headersSent) {
-                            res.writeHead(502, {
-                                'Content-Type': 'text/plain',
-                                'Access-Control-Allow-Origin': '*',
-                            })
-                        }
-                        res.end('Proxy error.')
-                    } else {
-                        try {
-                            res.write(
-                                'HTTP/1.1 502 Bad Gateway\r\n' +
-                                'Connection: close\r\n' +
-                                'Content-Length: 11\r\n' +
-                                '\r\n' +
-                                'Bad Gateway'
-                            )
-                        } catch { }
-                        try { res.end() } catch { }
-                        try { res.destroy() } catch { }
-                    }
-                } catch { }
-            },
-        },
-
-        logger: {
-            info: (msg: any) => log.info(String(msg)),
-            warn: (msg: any) => log.warn(String(msg)),
-            error: (msg: any) => log.error(String(msg)),
-        },
-    })
-
-    return mw(req, res, () => undefined)
-}
-
-/** 默认路由解析器（支持 /proxy 与 query target、headers*）*/
-const defaultRouteResolver: RouteResolver = (req) => {
-    // 仅 /proxy 开头才由此解析；其它路径交给业务路由（如 /playproxy/:itemGuid）
-    if (!req.path.startsWith('/proxy')) return null
-
-    const rawTarget = (req.query.target as string) || ''
-    if (!rawTarget) {
-        return null
-    }
-
-    // 支持 base64url 或 直接 URL
-    let target = rawTarget
-    try {
-        target = Buffer.from(rawTarget, 'base64url').toString('utf8')
-    } catch { }
-
-    const headers = utils.passthroughHeaders(req)
-    // 缺省从路径去掉 /proxy 前缀
-    const rewritePath = (p: string) => p.replace(/^\/proxy/, '') || '/'
-
-    return { target, headers, rewritePath }
-}
 
 /**
  * 代理服务器类
@@ -164,15 +17,11 @@ export class ProxyServer {
     private port: number
     private isRunning: boolean = false
     private host: string = ''
-    private routeResolver: RouteResolver = defaultRouteResolver
-    private httpsKeyPath?: string
-    private httpsCertPath?: string
+    private routeResolver: RouteResolver = utils.defaultRouteResolver
 
-    constructor(host: string, port: number, opts?: { httpsKeyPath?: string; httpsCertPath?: string }) {
+    constructor(host: string, port: number) {
         this.port = port
         this.host = host
-        this.httpsKeyPath = opts?.httpsKeyPath
-        this.httpsCertPath = opts?.httpsCertPath
         this.app = express()
         this.setupMiddleware()
         this.registerDefaultRoutes()
@@ -206,7 +55,7 @@ export class ProxyServer {
             try {
                 const resolved = await this.routeResolver(req)
                 if (!resolved) return res.status(400).send('Missing or invalid proxy target')
-                return dynamicProxy(req, res, resolved)
+                return utils.dynamicProxy(req, res, resolved)
             } catch (e) {
                 log.error('proxy 解析失败:', e)
                 return res.status(500).send('Proxy resolve error')
@@ -254,6 +103,7 @@ export class ProxyServer {
             let target = fnapi.getVideoUrl(mediaGuid)
             const extraHeaders: Record<string, string> = utils.passthroughHeaders(req)
 
+            let useAligned = false
             // 云盘：优先直接链 + Cookie（不 302 到客户端）
             if (stream.cloud_storage_info) {
                 const cookie = stream.header?.Cookie
@@ -276,7 +126,7 @@ export class ProxyServer {
             const u = new URL(target)
             const origin = `${u.protocol}//${u.host}`
             // 开始透明代理
-            return dynamicProxy(req, res, {
+            return utils.dynamicProxy(req, res, {
                 target: origin,                                  // 只给代理 origin
                 headers: extraHeaders,
                 rewritePath: () => u.pathname + (u.search || ''), // 把目标的完整路径+查询写回
@@ -293,7 +143,7 @@ export class ProxyServer {
         this.app.use((req: Request, res: Response) => res.status(404).send('Not Found'))
     }
 
-    /** 启动（支持可选自签名 HTTPS） */
+    /** 启动 */
     public start(): Promise<void> {
         return new Promise((resolve, reject) => {
             if (this.isRunning) {
@@ -308,14 +158,7 @@ export class ProxyServer {
             }
 
             try {
-                if (this.httpsKeyPath && this.httpsCertPath && fs.existsSync(this.httpsKeyPath) && fs.existsSync(this.httpsCertPath)) {
-                    const key = fs.readFileSync(this.httpsKeyPath)
-                    const cert = fs.readFileSync(this.httpsCertPath)
-                    this.server = https.createServer({ key, cert }, this.app).listen(this.port, this.host, listenCb)
-                    log.info('已启用 HTTPS（可使用自签名证书）')
-                } else {
-                    this.server = this.app.listen(this.port, this.host, listenCb)
-                }
+                this.server = this.app.listen(this.port, this.host, listenCb)
 
                 this.server.on('error', (error: Error) => {
                     log.error('代理服务器启动失败:', error)
