@@ -68,7 +68,7 @@ export function getProxyUrl(itemGuid: string): string {
 }
 
 // 导出ProxyServer类和常量
-export { ProxyServer, ResponseCode } from './server';
+export { ProxyServer } from './server';
 
 // 导出类型
 export * from './types';

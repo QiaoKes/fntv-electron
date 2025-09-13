@@ -40,15 +40,27 @@ export class ApiService {
     /**
      * 创建带缓存的函数版本
      * @param fn - 要缓存的函数
-     * @param ttl - 缓存过期时间（秒），默认为300秒（5分钟）
-     * @returns 返回带缓存的函数
+     * @param defaultTtl - 默认缓存过期时间（秒），默认为300秒（5分钟）
+     * @returns 返回带缓存的函数，支持可选的 options 参数
      */
     private createCachedFunction<T extends (...args: any[]) => Promise<any>>(
         fn: T,
-        ttl: number = 300
-    ): T {
+        defaultTtl: number = 300
+    ): (...args: [...Parameters<T>, options?: { ttl?: number, forceRefresh?: boolean }]) => ReturnType<T> {
         const originalName = fn.name.replace(/^bound /, ''); // 移除bind前缀
-        return ((...args: Parameters<T>) => {
+        return ((...allArgs: any[]) => {
+            const lastArg = allArgs[allArgs.length - 1];
+            let options = { ttl: defaultTtl, forceRefresh: false };
+            let args: Parameters<T>;
+            if (lastArg && typeof lastArg === 'object' && (lastArg.ttl !== undefined || lastArg.forceRefresh !== undefined)) {
+                options = { ...options, ...lastArg };
+                args = allArgs.slice(0, -1) as Parameters<T>;
+            } else {
+                args = allArgs as Parameters<T>;
+            }
+            if (options.forceRefresh) {
+                return fn(...args);
+            }
             // 缓存key包含baseURL，确保不同实例的缓存不会冲突
             const key = `${this.baseURL}_${originalName}_${JSON.stringify(args)}`;
             const cached = ApiService.cache.get(key);
@@ -67,9 +79,9 @@ export class ApiService {
             }
 
             const promise = fn(...args).then(result => {
-                ApiService.cache.set(key, result, ttl);
+                ApiService.cache.set(key, result, options.ttl);
                 ApiService.cache.del(cachePromiseKey); // 清理promise缓存
-                log.info(`缓存设置: ${key}, TTL: ${ttl}s`);
+                log.info(`缓存设置: ${key}, TTL: ${options.ttl}s`);
                 return result;
             }).catch(error => {
                 ApiService.cache.del(cachePromiseKey); // 清理promise缓存
@@ -79,7 +91,7 @@ export class ApiService {
             // 临时缓存promise以避免并发重复请求
             ApiService.cache.set(cachePromiseKey, promise, 30); // promise缓存30秒
             return promise;
-        }) as T;
+        }) as any;
     }
 
     /**

@@ -7,84 +7,13 @@ import * as log from '../logger'
 import { ApiService } from '../fn_api/api'
 import * as fnConfig from '../fn_config/config'
 import { RouteResolver, RouteResolution } from './types'
-// 顶部 import（新增）
-import * as http from 'http'
-import type { Socket } from 'net'
 import { isTrusted } from '../cert_trust'
-const { v5: uuidv5 } = require('uuid')
+import * as utils from './utils'
+import { pipeline } from 'stream'
 
-// 响应代码常量
-export const ResponseCode = {
-    SUCCESS: 0,
-    ERROR: 10000,
-} as const
 
-// 固定命名空间：可用官方的 DNS，也可换成你自己团队固定的 UUID
-const NAMESPACE = uuidv5.DNS // DNS namespace
 
-export function stringToUUID(name: string): string {
-    // 建议先做统一化，避免大小写/空格导致不同结果
-    const normalized = (name ?? '').trim()
-    return uuidv5(normalized, NAMESPACE)
-}
-
-// 类型守卫：判断是否为 ServerResponse（HTTP）
-function isServerResponse(
-    res: http.ServerResponse<http.IncomingMessage> | Socket
-): res is http.ServerResponse<http.IncomingMessage> {
-    // ServerResponse 独有 writeHead / statusCode 等
-    return typeof (res as http.ServerResponse).writeHead === 'function'
-}
-
-/** 将查询参数/自定义头解析成对象（支持 base64/json 两种形式） */
-function parseCustomHeaders(req: Request): Record<string, string> {
-    // 1) 支持 query: ?headers_base64=base64(JSON.stringify({...}))
-    const b64 = (req.query.headers_base64 as string) || ''
-    if (b64) {
-        try {
-            const json = Buffer.from(b64, 'base64url').toString('utf8')
-            const obj = JSON.parse(json)
-            if (obj && typeof obj === 'object') return flatHeaderObject(obj)
-        } catch { }
-    }
-
-    // 2) 支持 query: ?headers_json={"Cookie":"a=b","X-Token":"..."}
-    const json = (req.query.headers_json as string) || ''
-    if (json) {
-        try {
-            const obj = JSON.parse(json)
-            if (obj && typeof obj === 'object') return flatHeaderObject(obj)
-        } catch { }
-    }
-
-    // 3) 支持以 x-fwd- 前缀传头（如：x-fwd-cookie, x-fwd-authorization）
-    const out: Record<string, string> = {}
-    for (const [k, v] of Object.entries(req.headers)) {
-        if (k.startsWith('x-fwd-') && typeof v === 'string') {
-            out[k.replace(/^x-fwd-/, '')] = v
-        }
-    }
-    return out
-}
-
-/** 递平 & 仅保留 string 值 */
-function flatHeaderObject(obj: any): Record<string, string> {
-    const ans: Record<string, string> = {}
-    for (const [k, v] of Object.entries(obj)) {
-        if (typeof v === 'string') ans[k] = v
-    }
-    return ans
-}
-
-/** 复制透传与视频相关的关键头（Range、Accept、Origin 等） */
-function pickPassthroughHeaders(req: Request): Record<string, string> {
-    const out: Record<string, string> = {}
-    for (const [k, v] of Object.entries(req.headers)) {
-        if (typeof v === 'string') out[k] = v
-    }
-    return out
-}
-
+type RangeAlignCfg = { enabled: boolean, partSize?: number }
 /**
  * 核心：按请求实时创建 proxy 中间件（可自定义目标与头）
  * - secure: false 允许代理到自签名 SSL 上游
@@ -98,7 +27,7 @@ function dynamicProxy(req: Request, res: Response, resolution: RouteResolution) 
 
     // 组合需要透传/追加的头
     const headers = {
-        ...pickPassthroughHeaders(req),
+        ...utils.passthroughHeaders(req),
         ...extraHeaders,
     }
 
@@ -168,7 +97,7 @@ function dynamicProxy(req: Request, res: Response, resolution: RouteResolution) 
                 })
 
                 try {
-                    if (isServerResponse(res)) {
+                    if (utils.isServerResponse(res)) {
                         if (!res.headersSent) {
                             res.writeHead(502, {
                                 'Content-Type': 'text/plain',
@@ -219,7 +148,7 @@ const defaultRouteResolver: RouteResolver = (req) => {
         target = Buffer.from(rawTarget, 'base64url').toString('utf8')
     } catch { }
 
-    const headers = parseCustomHeaders(req)
+    const headers = utils.passthroughHeaders(req)
     // 缺省从路径去掉 /proxy 前缀
     const rewritePath = (p: string) => p.replace(/^\/proxy/, '') || '/'
 
@@ -314,7 +243,7 @@ export class ProxyServer {
             const playInfo = resp.data
             // 获取流信息
             const mediaGuid = playInfo.media_guid
-            const streamResp = await fnapi.getStreamCached(mediaGuid, stringToUUID(config.account))
+            const streamResp = await fnapi.getStreamCached(mediaGuid, utils.stringToUUID(config.account))
             if (!streamResp.success || !streamResp.data) {
                 log.error('获取视频流失败:', streamResp ? streamResp.message : '未知错误')
                 return res.status(500).send('Failed to get stream')
@@ -323,7 +252,7 @@ export class ProxyServer {
 
             // 目标 URL & 附加头
             let target = fnapi.getVideoUrl(mediaGuid)
-            const extraHeaders: Record<string, string> = parseCustomHeaders(req)
+            const extraHeaders: Record<string, string> = utils.passthroughHeaders(req)
 
             // 云盘：优先直接链 + Cookie（不 302 到客户端）
             if (stream.cloud_storage_info) {
@@ -336,7 +265,7 @@ export class ProxyServer {
                 target = qualities[0].url || target
                 if (cookie) extraHeaders['cookie'] = cookie.join('; ')
                 extraHeaders['user-agent'] = 'Lavf/59.27.100'
-                extraHeaders['Play-Link'] = `Play-Link:${stringToUUID(config.account)}`
+                extraHeaders['Play-Link'] = `Play-Link:${utils.stringToUUID(config.account)}`
                 extraHeaders['host'] = "dl-pc-zb.pds.quark.cn"
             } else {
                 extraHeaders['Authorization'] = config.token
