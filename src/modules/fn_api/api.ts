@@ -371,11 +371,7 @@ export class ApiService {
             ip: ip,
         };
 
-        const extraHeaders = {
-            "cookie": "mode=relay"
-        };
-
-        return fn.request(this.baseURL, '/v/api/v1/stream', HttpMethod.POST, this.token, data, extraHeaders);
+        return fn.request(this.baseURL, '/v/api/v1/stream', HttpMethod.POST, this.token, data);
     }
 
     /**

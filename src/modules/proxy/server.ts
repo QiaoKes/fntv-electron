@@ -19,11 +19,6 @@ export const ResponseCode = {
     ERROR: 10000,
 } as const
 
-interface CacheItem {
-    data: any
-    timestamp: number
-}
-
 // 固定命名空间：可用官方的 DNS，也可换成你自己团队固定的 UUID
 const NAMESPACE = uuidv5.DNS // DNS namespace
 
@@ -83,24 +78,8 @@ function flatHeaderObject(obj: any): Record<string, string> {
 
 /** 复制透传与视频相关的关键头（Range、Accept、Origin 等） */
 function pickPassthroughHeaders(req: Request): Record<string, string> {
-    const keep = [
-        'range',
-        'accept',
-        'accept-encoding',
-        'accept-language',
-        'user-agent',
-        'origin',
-        'referer',
-        'cache-control',
-        'pragma',
-        'connection',
-        'sec-fetch-mode',
-        'sec-fetch-site',
-        'sec-fetch-dest',
-    ]
     const out: Record<string, string> = {}
-    for (const k of keep) {
-        const v = req.headers[k]
+    for (const [k, v] of Object.entries(req.headers)) {
         if (typeof v === 'string') out[k] = v
     }
     return out
@@ -137,8 +116,6 @@ function dynamicProxy(req: Request, res: Response, resolution: RouteResolution) 
         secure: resolution.certTrust ? !resolution.certTrust : false,           // 允许代理到自签名上游
         ws: true,
         selfHandleResponse: false,
-        proxyTimeout: 60_000,
-        timeout: 60_000,
         xfwd: false,
 
         // 用 pathRewrite 做路径改写（v3 推荐）
@@ -157,12 +134,12 @@ function dynamicProxy(req: Request, res: Response, resolution: RouteResolution) 
                 // }
 
                 // 记录请求headers（调试用）
-                // log.debug(`代理请求头设置:`, {
-                //     target,
-                //     originalRequestHeaders: request.headers,
-                //     mergedHeaders: headers,
-                //     finalProxyHeaders: proxyReq.getHeaders()
-                // })
+                log.debug(`代理请求头设置:`, {
+                    target,
+                    originalRequestHeaders: request.headers,
+                    mergedHeaders: headers,
+                    finalProxyHeaders: proxyReq.getHeaders()
+                })
 
                 // 可以在这里添加更多自定义逻辑
                 // 比如修改特定的header值
@@ -170,12 +147,12 @@ function dynamicProxy(req: Request, res: Response, resolution: RouteResolution) 
 
             proxyRes(proxyRes, req, res) {
                 // 记录响应headers（调试用）
-                // log.debug(`代理响应头:`, {
-                //     statusCode: proxyRes.statusCode,
-                //     statusMessage: proxyRes.statusMessage,
-                //     responseHeaders: proxyRes.headers,
-                //     url: req.url
-                // })
+                log.debug(`代理响应头:`, {
+                    statusCode: proxyRes.statusCode,
+                    statusMessage: proxyRes.statusMessage,
+                    responseHeaders: proxyRes.headers,
+                    url: req.url
+                })
 
                 proxyRes.headers['access-control-allow-origin'] ||= '*'
                 proxyRes.headers['access-control-allow-headers'] ||= 'Authorization, Range, Content-Type'
@@ -216,7 +193,6 @@ function dynamicProxy(req: Request, res: Response, resolution: RouteResolution) 
             },
         },
 
-        // v3：用 logger 替代 logProvider
         logger: {
             info: (msg: any) => log.info(String(msg)),
             warn: (msg: any) => log.warn(String(msg)),
@@ -259,7 +235,6 @@ export class ProxyServer {
     private port: number
     private isRunning: boolean = false
     private host: string = ''
-    private playInfoCache: Map<string, CacheItem> = new Map()
     private routeResolver: RouteResolver = defaultRouteResolver
     private httpsKeyPath?: string
     private httpsCertPath?: string
@@ -352,20 +327,21 @@ export class ProxyServer {
 
             // 云盘：优先直接链 + Cookie（不 302 到客户端）
             if (stream.cloud_storage_info) {
-                // const cookie = stream.header?.Cookie
-                // const qualities = stream.direct_link_qualities
-                // if (!cookie || !qualities?.length) {
-                //     log.error('云盘直链数据不完整')
-                //     return res.status(500).send('Cloud direct link not available')
-                // }
-                // target = qualities[0].url || target
-                // if (cookie) extraHeaders['cookie'] = cookie.join('; ')
-                // extraHeaders['user-agent'] = 'Lavf/59.27.100'
+                const cookie = stream.header?.Cookie
+                const qualities = stream.direct_link_qualities
+                if (!cookie || !qualities?.length) {
+                    log.error('云盘直链数据不完整')
+                    return res.status(500).send('Cloud direct link not available')
+                }
+                target = qualities[0].url || target
+                if (cookie) extraHeaders['cookie'] = cookie.join('; ')
+                extraHeaders['user-agent'] = 'Lavf/59.27.100'
+                extraHeaders['Play-Link'] = `Play-Link:${stringToUUID(config.account)}`
+                extraHeaders['host'] = "dl-pc-zb.pds.quark.cn"
             } else {
                 extraHeaders['Authorization'] = config.token
+                extraHeaders['connection'] = 'keep-alive'
             }
-
-            extraHeaders['Authorization'] = config.token
 
             // 将完整 target 拆分为 origin 与 path
             const u = new URL(target)
