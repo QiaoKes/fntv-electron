@@ -1,4 +1,7 @@
 import { app, BrowserWindow, dialog, Notification } from 'electron';
+import { spawn, ChildProcess } from 'child_process';
+import * as path from 'path';
+import * as fs from 'fs';
 import { registerAllPlugins } from './handlers';
 import { getInstance as getUpdateChecker } from '../modules/updater/updateChecker';
 import * as winctrl from './common/winctrl';
@@ -6,8 +9,8 @@ import { createTray, showTrayNotification, destroyTray } from './common/tray';
 import { getMacCloseAction, setMacCloseAction, getTrayNotificationShown, setTrayNotificationShown } from './common/preferences';
 import * as log from '../modules/logger';
 import { getMainWindow } from './common/mainwin';
-import * as proxyModule from '../modules/proxy';
 import { isTrusted } from '../modules/cert_trust';
+import { startProxyProcess } from './proxy';
 
 // 禁用输入法自动切换
 app.commandLine.appendSwitch('--lang', 'en-US');
@@ -23,39 +26,8 @@ app.commandLine.appendSwitch('--ignore-ssl-errors-spki-list'); // 忽略SSL SPKI
 app.commandLine.appendSwitch('--ignore-ssl-errors'); // 忽略SSL错误（减少相关日志）
 
 let mainWindow: BrowserWindow | null = null;
+let proxyProcess: ChildProcess | null = null;
 
-// 启动代理服务器
-async function startProxyServer(): Promise<void> {
-    try {
-        await proxyModule.startProxyServer('127.0.0.1', 2345);
-    } catch (error) {
-        log.error('启动代理服务器失败:', error);
-
-        // 显示错误对话框
-        const result = await dialog.showMessageBox({
-            type: 'error',
-            title: '启动失败',
-            message: '代理服务器启动失败',
-            detail: `错误信息: ${error instanceof Error ? error.message : '未知错误'}\n\n代理服务器用于处理视频播放链接，启动失败将影响视频播放功能。`,
-            buttons: ['重试', '退出应用'],
-            defaultId: 0,
-            cancelId: 1
-        });
-
-        if (result.response === 0) {
-            // 用户选择重试
-            log.info('用户选择重试启动代理服务器');
-            await startProxyServer(); // 递归重试
-        } else {
-            // 用户选择退出应用
-            log.info('用户选择退出应用');
-            app.quit();
-            throw error; // 重新抛出错误以终止应用启动
-        }
-    }
-}
-
-// 单实例应用锁定
 const gotTheLock = app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
@@ -95,7 +67,7 @@ if (!gotTheLock) {
             });
 
             // 启动代理服务器
-            await startProxyServer();
+            proxyProcess = await startProxyProcess();
 
             // 创建主窗口
             mainWindow = getMainWindow();
@@ -104,7 +76,7 @@ if (!gotTheLock) {
             registerAllPlugins();
 
             // 创建系统托盘
-            createTray(mainWindow);
+            await createTray(mainWindow);
 
             // 设置窗口关闭事件
             setupWindowEvents(mainWindow);
@@ -220,13 +192,19 @@ function showMacNotification(): void {
 app.on('before-quit', async () => {
     (app as any).isQuiting = true;
 
-    // 停止代理服务器
-    if (proxyModule.isProxyRunning()) {
-        log.info('应用退出前停止代理服务器');
+    // 停止proxy进程
+    if (proxyProcess) {
+        log.info('应用退出前停止proxy进程');
         try {
-            await proxyModule.stopProxyServer();
+            proxyProcess.kill('SIGTERM');
+            // 等待进程退出，最多等待5秒
+            setTimeout(() => {
+                if (!proxyProcess?.killed) {
+                    proxyProcess?.kill('SIGKILL');
+                }
+            }, 5000);
         } catch (error) {
-            log.error('停止代理服务器失败:', error);
+            log.error('停止proxy进程失败:', error);
         }
     }
 

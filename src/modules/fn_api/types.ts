@@ -21,7 +21,14 @@ export interface LoginData {
 export interface PlayInfoData {
     /** 视频项目的唯一标识符 */
     item_guid: string;
-    media_guid?: string; // 可选，媒体文件的唯一标识符,有可能有多个同名文件
+    /** 媒体文件的唯一标识符，可选 */
+    media_guid?: string;
+    /** 音频流的唯一标识符，可选 */
+    audio_guid?: string;
+    /** 字幕流的唯一标识符，可选 */
+    subtitle_guid?: string;
+    /** 视频流的唯一标识符，可选 */
+    video_guid?: string;
 }
 
 /**
@@ -216,6 +223,231 @@ export interface MediaStream {
 }
 
 /**
+ * 播放质量项目
+ */
+export interface PlayQualityItem {
+    /** 比特率 */
+    bitrate: number;
+    /** 分辨率 */
+    resolution: string;
+    /** 是否渐进式 */
+    progressive: boolean;
+}
+
+/**
+ * 播放质量响应数据
+ */
+export type PlayQualityResponse = PlayQualityItem[];
+
+/**
+ * 播放信息请求数据（扩展版）
+ */
+export interface PlayInfoDataExtended {
+    /** 音频流的唯一标识符 */
+    audio_guid: string;
+    /** 视频项目的唯一标识符 */
+    item_guid: string;
+    /** 媒体文件的唯一标识符 */
+    media_guid: string;
+    /** 字幕流的唯一标识符 */
+    subtitle_guid: string;
+    /** 视频流的唯一标识符 */
+    video_guid: string;
+}
+
+/**
+ * 文件信息
+ */
+export interface FileInfo {
+    /** 文件的唯一标识符 */
+    guid: string;
+    /** 文件路径 */
+    path: string;
+    /** 文件大小（字节） */
+    size: number;
+    /** 时间戳 */
+    timestamp: number;
+    /** 文件类型 */
+    type: number;
+    /** 是否可播放 */
+    can_play: number;
+    /** 播放错误信息 */
+    play_error: string;
+    /** 创建时间 */
+    create_time: number;
+    /** 更新时间 */
+    update_time: number;
+    /** 文件出生时间 */
+    file_birth_time: number;
+    /** 进度缩略图哈希目录 */
+    progress_thumb_hash_dir: string;
+}
+
+/**
+ * 视频流信息
+ */
+export interface VideoStream {
+    /** 媒体文件的唯一标识符 */
+    media_guid: string;
+    /** 标题 */
+    title: string;
+    /** 流的唯一标识符 */
+    guid: string;
+    /** 分辨率类型 */
+    resolution_type: string;
+    /** 颜色范围类型 */
+    color_range_type: string;
+    /** 编解码器名称 */
+    codec_name: string;
+    /** 编解码器类型 */
+    codec_type: string;
+    /** 颜色范围 */
+    color_range: string;
+    /** 配置文件 */
+    profile: string;
+    /** 索引 */
+    index: number;
+    /** 宽度 */
+    width: number;
+    /** 高度 */
+    height: number;
+    /** 编码宽度 */
+    coded_width: number;
+    /** 编码高度 */
+    coded_height: number;
+    /** 显示宽高比 */
+    display_aspect_ratio: string;
+    /** 像素格式 */
+    pix_fmt: string;
+    /** 级别 */
+    level: number;
+    /** 颜色空间 */
+    color_space: string;
+    /** 颜色传输 */
+    color_transfer: string;
+    /** 颜色 primaries */
+    color_primaries: string;
+    /** 时长 */
+    duration: number;
+    /** DV配置文件 */
+    dv_profile: number;
+    /** 参考帧数 */
+    refs: number;
+    /** 原始帧率 */
+    r_frame_rate: string;
+    /** 平均帧率 */
+    avg_frame_rate: string;
+    /** 每原始样本比特数 */
+    bits_per_raw_sample: string;
+    /** 比特率 */
+    bps: number;
+    /** 是否渐进式 */
+    progressive: number;
+    /** 比特深度 */
+    bit_depth: number;
+    /** 包装器 */
+    wrapper: string;
+    /** 创建时间 */
+    create_time: number;
+    /** 更新时间 */
+    update_time: number;
+    /** 旋转角度 */
+    rotation: number;
+    /** 扩展1 */
+    ext1: number;
+    /** 是否蓝光 */
+    is_bluray: boolean;
+}
+
+/**
+ * 音频流信息
+ */
+export interface AudioStream {
+    /** 媒体文件的唯一标识符 */
+    media_guid: string;
+    /** 标题 */
+    title: string;
+    /** 流的唯一标识符 */
+    guid: string;
+    /** 音频类型 */
+    audio_type: string;
+    /** 编解码器名称 */
+    codec_name: string;
+    /** 编解码器类型 */
+    codec_type: string;
+    /** 语言 */
+    language: string;
+    /** 声道数 */
+    channels: number;
+    /** 配置文件 */
+    profile: string;
+    /** 采样率 */
+    sample_rate: string;
+    /** 是否默认 */
+    is_default: number;
+    /** 声道布局 */
+    channel_layout: string;
+    /** 时长 */
+    duration: number;
+    /** 索引 */
+    index: number;
+    /** 每原始样本比特数 */
+    bits_per_raw_sample: string;
+    /** 比特率 */
+    bps: number;
+    /** 创建时间 */
+    create_time: number;
+    /** 更新时间 */
+    update_time: number;
+    /** 是否为假流 */
+    is_fake: boolean;
+}
+
+/**
+ * 字幕流信息（扩展版）
+ */
+export interface SubtitleStreamExtended {
+    /** 媒体文件的唯一标识符 */
+    media_guid: string;
+    /** 标题 */
+    title: string;
+    /** 流的唯一标识符 */
+    guid: string;
+    /** 编解码器名称 */
+    codec_name: string;
+    /** 编解码器类型 */
+    codec_type: string;
+    /** 语言 */
+    language: string;
+    /** 是否强制 */
+    forced: number;
+    /** 索引 */
+    index: number;
+    /** 是否默认 */
+    is_default: number;
+    /** 是否外部 */
+    is_external: number;
+    /** 格式 */
+    format: string;
+    /** Trim ID */
+    trim_id: string;
+    /** 来源ID */
+    source_id: string;
+    /** 来源 */
+    Source: string;
+    /** 创建时间 */
+    create_time: number;
+    /** 更新时间 */
+    update_time: number;
+    /** 额外文件 */
+    extra_file: number;
+    /** 是否位图 */
+    is_bitmap: number;
+    /** 文件大小 */
+    file_size: number;
+}
+
+/**
  * 播放列表项目
  */
 export interface PlayListItem {
@@ -291,4 +523,168 @@ export interface PlayListItem {
     video_guid: string;
     /** 文件名 */
     file_name: string;
+}
+
+/**
+ * 流列表响应数据
+ */
+export interface StreamListResponse {
+    /** 文件列表 */
+    files: FileInfo[];
+    /** 视频流列表 */
+    video_streams: VideoStream[];
+    /** 音频流列表 */
+    audio_streams: AudioStream[];
+    /** 字幕流列表 */
+    subtitle_streams: SubtitleStreamExtended[];
+}
+
+/**
+ * 流请求数据
+ */
+export interface StreamRequestData {
+    /** 请求头部 */
+    header: {
+        /** 用户代理 */
+        "User-Agent": string[];
+    };
+    /** 级别 */
+    level: number;
+    /** 媒体文件的唯一标识符 */
+    media_guid: string;
+    /** IP地址 */
+    ip: string;
+}
+
+/**
+ * 质量信息
+ */
+export interface Quality {
+    /** 比特率 */
+    bitrate: number;
+    /** 分辨率 */
+    resolution: string;
+    /** 是否渐进式 */
+    progressive: boolean;
+    /** 是否M3U8 */
+    is_m3u8: boolean;
+}
+
+/**
+ * 云存储信息
+ */
+export interface CloudStorageInfo {
+    /** DAV用户名 */
+    dav_username: string;
+    /** 是否有效 */
+    valid: boolean;
+    /** 是否禁用 */
+    disabled: boolean;
+    /** 云存储类型 */
+    cloud_storage_type: number;
+    /** 云存储昵称 */
+    cloud_nick_name: string;
+    /** 文件系统大小 */
+    fssize: number;
+    /** 文件系统剩余大小 */
+    frsize: number;
+    /** 已用大小 */
+    fusize: number;
+    /** 是否VIP */
+    is_vip: boolean;
+    /** 夸克VIP类型 */
+    quark_vip_type: string;
+    /** 夸克PC支付链接 */
+    quark_pc_pay_link: string;
+    /** 夸克WAP支付链接 */
+    quark_wap_pay_link: string;
+}
+
+/**
+ * 直接链接质量
+ */
+export interface DirectLinkQuality {
+    /** 比特率 */
+    bitrate: number;
+    /** 分辨率 */
+    resolution: string;
+    /** 是否渐进式 */
+    progressive: boolean;
+    /** 链接URL */
+    url: string;
+    /** 是否M3U8 */
+    is_m3u8: boolean;
+    /** 过期时间 */
+    expired_at: number;
+}
+
+/**
+ * 直接链接音频流
+ */
+export interface DirectLinkAudioStream {
+    /** 媒体文件的唯一标识符 */
+    media_guid: string;
+    /** 标题 */
+    title: string;
+    /** 流的唯一标识符 */
+    guid: string;
+    /** 音频类型 */
+    audio_type: string;
+    /** 编解码器名称 */
+    codec_name: string;
+    /** 编解码器类型 */
+    codec_type: string;
+    /** 语言 */
+    language: string;
+    /** 声道数 */
+    channels: number;
+    /** 配置文件 */
+    profile: string;
+    /** 采样率 */
+    sample_rate: string;
+    /** 是否默认 */
+    is_default: boolean;
+    /** 声道布局 */
+    channel_layout: string;
+    /** 时长 */
+    duration: number;
+    /** 索引 */
+    index: number;
+    /** 每原始样本比特数 */
+    bits_per_raw_sample: string;
+    /** 比特率 */
+    bps: number;
+    /** 创建时间 */
+    create_time: number;
+    /** 更新时间 */
+    update_time: number;
+    /** 是否假流 */
+    is_fake: boolean;
+}
+
+/**
+ * 流响应数据
+ */
+export interface StreamResponse {
+    /** 文件流信息 */
+    file_stream: FileInfo;
+    /** 视频流信息 */
+    video_stream: VideoStream;
+    /** 音频流列表 */
+    audio_streams: AudioStream[];
+    /** 字幕流列表 */
+    subtitle_streams: SubtitleStreamExtended[];
+    /** 质量列表 */
+    qualities: Quality[];
+    /** 云存储信息 */
+    cloud_storage_info: CloudStorageInfo | null;
+    /** 请求头部信息 */
+    header: {
+        /** Cookie列表 */
+        Cookie: string[];
+    };
+    /** 直接链接质量列表 */
+    direct_link_qualities: DirectLinkQuality[];
+    /** 直接链接音频流列表 */
+    direct_link_audio_streams: DirectLinkAudioStream[];
 }

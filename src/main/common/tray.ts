@@ -1,66 +1,82 @@
-import { Tray, Menu, nativeImage, BrowserWindow, app, dialog } from 'electron';
+import { Tray, Menu, nativeImage, BrowserWindow, app, dialog, ipcMain } from 'electron';
 import * as path from 'path';
 import { getInstance as getUpdateChecker } from '../../modules/updater/updateChecker';
 import { setMacCloseAction, getTrayNotificationShown, setTrayNotificationShown } from './preferences';
 import * as log from '../../modules/logger';
+import * as fnConfig from '../../modules/fn_config/config';
 
 let tray: Tray | null = null;
 let mainWindow: BrowserWindow | null = null; // 主窗口引用
 
 /**
- * 创建系统托盘
- * @param {BrowserWindow} mainWindow - 主窗口实例
+ * 创建设置子菜单
  */
-export function createTray(mainWindowInstance: BrowserWindow): void {
-    // 保存窗口引用
-    mainWindow = mainWindowInstance;
-    
-    // 根据平台选择合适的图标
-    let iconPath: string;
-    let icon: Electron.NativeImage;
-    
-    if (process.platform === 'darwin') {
-        // macOS 推荐用 template 图标
-        iconPath = path.join(__dirname, '../../../build/iconTemplate2.png');
-        icon = nativeImage.createFromPath(iconPath);
+async function createSettingsSubmenu(mainWindow: BrowserWindow | null): Promise<Electron.MenuItemConstructorOptions[]> {
+    // 获取当前配置
+    const proxyConfig = fnConfig.getDownloadProxyConfig();
+    const hideOriginalPlayButton = fnConfig.getHideOriginalPlayButton();
+    const nasProxyEnabled = fnConfig.getNasProxyEnabled();
 
-        if (icon.isEmpty()) {
-            // fallback: 用通用图标
-            iconPath = path.join(__dirname, '../../../build/icon.png');
-            icon = nativeImage.createFromPath(iconPath);
-
-            if (!icon.isEmpty()) {
-                // 尺寸适配状态栏（通常 16x16 即可，Retina 自动缩放）
-                icon = icon.resize({ width: 16, height: 16 });
+    const submenu: Electron.MenuItemConstructorOptions[] = [
+        {
+            label: `下载代理: ${proxyConfig.enabled ? '开启' : '关闭'}`,
+            type: 'checkbox',
+            checked: proxyConfig.enabled,
+            click: () => {
+                const newEnabled = !proxyConfig.enabled;
+                fnConfig.setDownloadProxyConfig({ enabled: newEnabled, proxyUrl: proxyConfig.proxyUrl });
+                // 更新托盘菜单以刷新状态
+                updateTrayMenu();
+            }
+        },
+        {
+            type: 'separator'
+        },
+        {
+            label: `隐藏原始播放按钮`,
+            type: 'checkbox',
+            checked: hideOriginalPlayButton,
+            click: () => {
+                const newHide = !hideOriginalPlayButton;
+                fnConfig.setHideOriginalPlayButton(newHide);
+                // 更新托盘菜单以刷新状态
+                updateTrayMenu();
+            }
+        },
+        {
+            type: 'separator'
+        },
+        {
+            label: `NAS本地网盘代理: ${nasProxyEnabled ? '开启' : '关闭'}`,
+            type: 'checkbox',
+            checked: nasProxyEnabled,
+            click: () => {
+                const newEnabled = !nasProxyEnabled;
+                fnConfig.setNasProxyEnabled(newEnabled);
+                // 更新托盘菜单以刷新状态
+                updateTrayMenu();
             }
         }
+    ];
 
-        if (!icon.isEmpty()) {
-            icon.setTemplateImage(true); // 关键：启用 macOS 自动浅色/深色模式适配
-        }
-    } else {
-        // Windows 和 Linux 使用 ICO 格式
-        iconPath = path.join(__dirname, '../../../build/icon.ico');
-        icon = nativeImage.createFromPath(iconPath);
-        if (!icon.isEmpty()) {
-            icon = icon.resize({ width: 16, height: 16 });
-        }
-    }
-    
-    // 如果图标仍然为空，记录错误但继续创建托盘
-    if (icon.isEmpty()) {
-        log.warn('托盘图标加载失败，使用默认图标');
-        // 创建一个简单的默认图标
-        icon = nativeImage.createEmpty();
-    }
-    
-    tray = new Tray(icon);
-    
-    // 设置托盘提示文字
-    tray.setToolTip('飞牛影视');
-    
+    return submenu;
+}
+
+/**
+ * 更新托盘菜单
+ */
+async function updateTrayMenu(): Promise<void> {
+    if (!tray) return;
+
     // 创建托盘菜单
     const menuTemplate: Electron.MenuItemConstructorOptions[] = [
+        {
+            label: '设置',
+            submenu: await createSettingsSubmenu(mainWindow)
+        },
+        {
+            type: 'separator'
+        },
         {
             label: process.platform === 'darwin' ? '显示窗口' : '显示主窗口',
             click: () => {
@@ -142,8 +158,64 @@ export function createTray(mainWindowInstance: BrowserWindow): void {
     
     const contextMenu = Menu.buildFromTemplate(menuTemplate);
     
-    // 设置托盘菜单
+    // 更新托盘菜单
     tray.setContextMenu(contextMenu);
+}
+
+/**
+ * 创建系统托盘
+ * @param {BrowserWindow} mainWindow - 主窗口实例
+ */
+export async function createTray(mainWindowInstance: BrowserWindow): Promise<void> {
+    // 保存窗口引用
+    mainWindow = mainWindowInstance;
+    
+    // 根据平台选择合适的图标
+    let iconPath: string;
+    let icon: Electron.NativeImage;
+    
+    if (process.platform === 'darwin') {
+        // macOS 推荐用 template 图标
+        iconPath = path.join(__dirname, '../../../build/iconTemplate2.png');
+        icon = nativeImage.createFromPath(iconPath);
+
+        if (icon.isEmpty()) {
+            // fallback: 用通用图标
+            iconPath = path.join(__dirname, '../../../build/icon.png');
+            icon = nativeImage.createFromPath(iconPath);
+
+            if (!icon.isEmpty()) {
+                // 尺寸适配状态栏（通常 16x16 即可，Retina 自动缩放）
+                icon = icon.resize({ width: 16, height: 16 });
+            }
+        }
+
+        if (!icon.isEmpty()) {
+            icon.setTemplateImage(true); // 关键：启用 macOS 自动浅色/深色模式适配
+        }
+    } else {
+        // Windows 和 Linux 使用 ICO 格式
+        iconPath = path.join(__dirname, '../../../build/icon.ico');
+        icon = nativeImage.createFromPath(iconPath);
+        if (!icon.isEmpty()) {
+            icon = icon.resize({ width: 16, height: 16 });
+        }
+    }
+    
+    // 如果图标仍然为空，记录错误但继续创建托盘
+    if (icon.isEmpty()) {
+        log.warn('托盘图标加载失败，使用默认图标');
+        // 创建一个简单的默认图标
+        icon = nativeImage.createEmpty();
+    }
+    
+    tray = new Tray(icon);
+    
+    // 设置托盘提示文字
+    tray.setToolTip('飞牛影视');
+    
+    // 初始创建菜单
+    await updateTrayMenu();
     
     // 根据平台设置不同的点击行为
     if (process.platform === 'darwin') {

@@ -1,18 +1,18 @@
 {
     "name": "fntv",
-    "version": "2.1.0",
+    "version": "2.2.0",
     "description": "A fntv app built with Electron",
     "main": "dest/main/main.js",
     "scripts": {
-        "start": "tsc && electron .",
+        "build:proxy:win": "cd src/modules/proxy && go build -o ../../../third_party/proxy/proxy.exe",
+        "build:proxy:other": "cd src/modules/proxy && go build -o ../../../third_party/proxy/proxy",
+        "start": "npm run clean && npm run build:proxy:win && tsc && electron .",
         "compile": "tsc",
         "watch": "tsc --watch",
         "clean": "rimraf dest",
-        "build": "tsc && electron-builder",
-        "build:win": "tsc && electron-builder --win",
-        "build:mac": "tsc && electron-builder --mac",
-        "build:linux": "tsc && electron-builder --linux",
-        "build:all": "tsc && electron-builder --win --mac --linux"
+        "build:win": "npm run build:proxy:win && tsc && electron-builder --win",
+        "build:mac": "npm run build:proxy:other && tsc && electron-builder --mac",
+        "build:linux": "npm run build:proxy:other && tsc && electron-builder --linux"
     },
     "author": "tracing",
     "devDependencies": {
@@ -23,6 +23,7 @@
         "@types/http-cache-semantics": "^4.0.4",
         "@types/keyv": "^3.1.4",
         "@types/ms": "^2.1.0",
+        "@types/multistream": "^4.1.3",
         "@types/node": "^20.19.11",
         "@types/plist": "^3.0.5",
         "@types/responselike": "^1.0.3",
@@ -40,8 +41,13 @@
     "dependencies": {
         "axios": "^1.11.0",
         "express": "^5.1.0",
+        "http-proxy-middleware": "^3.0.5",
+        "http-range-fetcher": "^2.0.0",
+        "multistream": "^4.1.0",
+        "node-cache": "^5.1.2",
         "node-mpv-2": "^2.0.0-beta.3",
-        "semver": "^7.7.2"
+        "semver": "^7.7.2",
+        "uuid": "^13.0.0"
     },
     "build": {
         "directories": {
@@ -69,6 +75,13 @@
                     "filter": [
                         "**/*"
                     ]
+                },
+                {
+                    "from": "third_party/proxy",
+                    "to": "third_party/proxy",
+                    "filter": [
+                        "**/*"
+                    ]
                 }
             ]
         },
@@ -93,6 +106,13 @@
                 {
                     "from": "third_party/fntv-mpv/portable_config",
                     "to": "third_party/fntv-mpv/portable_config",
+                    "filter": [
+                        "**/*"
+                    ]
+                },
+                {
+                    "from": "third_party/proxy",
+                    "to": "third_party/proxy",
                     "filter": [
                         "**/*"
                     ]
@@ -142,6 +162,13 @@
                 {
                     "from": "third_party/fntv-mpv/portable_config",
                     "to": "third_party/fntv-mpv/portable_config",
+                    "filter": [
+                        "**/*"
+                    ]
+                },
+                {
+                    "from": "third_party/proxy",
+                    "to": "third_party/proxy",
                     "filter": [
                         "**/*"
                     ]

@@ -9,11 +9,13 @@ import { app } from 'electron';
 import log from '../logger';
 import * as types from './types';
 import { isTrusted } from '../cert_trust';
+import NodeCache from 'node-cache';
 
 export class ApiService {
     private baseURL: string;
     private tempDir: string;
     private token: string;
+    private static cache: NodeCache = new NodeCache({ stdTTL: 300 }); // 静态缓存实例，类共享
 
     /**
      * 创建api服务实例
@@ -26,6 +28,70 @@ export class ApiService {
         this.token = token;
 
         this.downloadSubtitle = this.downloadSubtitle.bind(this);
+    }
+
+    /** 获取当前API基础URL
+     * @returns 返回基础URL字符串
+     */
+    getBaseURL(): string {
+        return this.baseURL;
+    }
+
+    /**
+     * 创建带缓存的函数版本
+     * @param fn - 要缓存的函数
+     * @param defaultTtl - 默认缓存过期时间（秒），默认为300秒（5分钟）
+     * @returns 返回带缓存的函数，支持可选的 options 参数
+     */
+    private createCachedFunction<T extends (...args: any[]) => Promise<any>>(
+        fn: T,
+        defaultTtl: number = 300
+    ): (...args: [...Parameters<T>, options?: { ttl?: number, forceRefresh?: boolean }]) => ReturnType<T> {
+        const originalName = fn.name.replace(/^bound /, ''); // 移除bind前缀
+        return ((...allArgs: any[]) => {
+            const lastArg = allArgs[allArgs.length - 1];
+            let options = { ttl: defaultTtl, forceRefresh: false };
+            let args: Parameters<T>;
+            if (lastArg && typeof lastArg === 'object' && (lastArg.ttl !== undefined || lastArg.forceRefresh !== undefined)) {
+                options = { ...options, ...lastArg };
+                args = allArgs.slice(0, -1) as Parameters<T>;
+            } else {
+                args = allArgs as Parameters<T>;
+            }
+            if (options.forceRefresh) {
+                return fn(...args);
+            }
+            // 缓存key包含baseURL，确保不同实例的缓存不会冲突
+            const key = `${this.baseURL}_${originalName}_${JSON.stringify(args)}`;
+            const cached = ApiService.cache.get(key);
+            if (cached !== undefined) {
+                log.debug(`缓存命中: ${key}`);
+                return Promise.resolve(cached);
+            }
+
+            // 使用缓存的promise来避免并发竞争条件
+            const cachePromiseKey = `promise_${key}`;
+            const existingPromise = ApiService.cache.get(cachePromiseKey) as Promise<any> | undefined;
+
+            if (existingPromise) {
+                log.info(`使用现有请求: ${key}`);
+                return existingPromise;
+            }
+
+            const promise = fn(...args).then(result => {
+                ApiService.cache.set(key, result, options.ttl);
+                ApiService.cache.del(cachePromiseKey); // 清理promise缓存
+                log.info(`缓存设置: ${key}, TTL: ${options.ttl}s`);
+                return result;
+            }).catch(error => {
+                ApiService.cache.del(cachePromiseKey); // 清理promise缓存
+                throw error;
+            });
+
+            // 临时缓存promise以避免并发重复请求
+            ApiService.cache.set(cachePromiseKey, promise, 30); // promise缓存30秒
+            return promise;
+        }) as any;
     }
 
     /**
@@ -74,7 +140,7 @@ export class ApiService {
             app_name: "trimemedia-web",
             username: username,
             password: password,
-        } as types.LoginData, 2000);
+        } as types.LoginData);
     }
 
     /**
@@ -94,13 +160,45 @@ export class ApiService {
     /**
      * 获取视频播放信息
      * @param itemGuid - 视频项目的唯一标识符
+     * @param options - 可选参数，包括媒体、音频、字幕、视频流的GUID
      * @returns 返回播放信息的Promise
      */
     getPlayInfo(itemGuid: string): Promise<fn.ApiResponse<types.PlayInfo>> {
-        return fn.request(this.baseURL, '/v/api/v1/play/info', HttpMethod.POST, this.token, {
+        const data: types.PlayInfoData = {
             item_guid: itemGuid,
-        } as types.PlayInfoData);
+        };
+        return fn.request(this.baseURL, '/v/api/v1/play/info', HttpMethod.POST, this.token, data);
     }
+
+    /**
+     * 获取播放质量列表
+     * @param mediaGuid - 媒体文件的唯一标识符
+     * @returns 返回播放质量列表的Promise
+     */
+    getPlayQuality(mediaGuid: string): Promise<fn.ApiResponse<types.PlayQualityResponse>> {
+        return fn.request(this.baseURL, '/v/api/v1/play/quality', HttpMethod.POST, this.token, {
+            media_guid: mediaGuid,
+        });
+    }
+
+
+    /**
+     * 获取流列表（包括视频、音频、字幕流）
+     * @param itemGuid - 视频项目的唯一标识符
+     * @returns 返回流列表的Promise
+     */
+    getStreamList(itemGuid: string): Promise<fn.ApiResponse<types.StreamListResponse>> {
+        return fn.request(this.baseURL, `/v/api/v1/stream/list/${itemGuid}`, HttpMethod.GET, this.token);
+    }
+    
+    /**
+     * 获取播放列表（带缓存）
+     */
+    getEpisodeListCached = (() => {
+        const cachedFn = this.createCachedFunction(this.getEpisodeList.bind(this), 600);
+        Object.defineProperty(cachedFn, 'name', { value: 'getEpisodeList' });
+        return cachedFn;
+    })(); // 10分钟缓存
 
     /**
      * 获取播放列表
@@ -110,6 +208,7 @@ export class ApiService {
         return fn.request(this.baseURL, `/v/api/v1/episode/list/${id}`, HttpMethod.GET, this.token);
     }
 
+
     /**
      * 获取字幕文件列表
      * @param itemGuid - 视频项目的唯一标识符
@@ -117,17 +216,11 @@ export class ApiService {
      */
     async getSubtitle(itemGuid: string): Promise<types.Subtitle[]> {
         try {
-            const response = await fn.request<types.SubtitleResponse>(
-                this.baseURL, 
-                '/v/api/v1/stream/list/' + itemGuid, 
-                HttpMethod.GET, 
-                this.token, 
-                null
-            );
+            const response = await this.getStreamList(itemGuid);
 
             if (response.success && response.data) {
                 const streams = response.data.subtitle_streams || [];
-                const subtitles: types.Subtitle[] = streams.map(stream => ({
+                const subtitles: types.Subtitle[] = streams.filter(stream => stream.is_external).map(stream => ({
                     id: stream.guid,
                     format: stream.format,
                     name: stream.title
@@ -272,6 +365,71 @@ export class ApiService {
     recordPlayStatus(statusData: types.PlayStatusData): Promise<fn.ApiResponse<any>> {
         return fn.request(this.baseURL, '/v/api/v1/play/record', HttpMethod.POST, this.token, statusData);
     }
+
+    /**
+     * 获取流信息（包括视频、音频、字幕流和质量信息）
+     * @param mediaGuid - 媒体文件的唯一标识符
+     * @param ip - IP地址
+     * @param nonce - 随机数
+     * @returns 返回流信息的Promise
+     */
+    getStream(mediaGuid: string, ip: string): Promise<fn.ApiResponse<types.StreamResponse>> {
+        const data: types.StreamRequestData = {
+            header: {
+                "User-Agent": ["trim_player"]
+            },
+            level: 1,
+            media_guid: mediaGuid,
+            ip: ip,
+        };
+
+        return fn.request(this.baseURL, '/v/api/v1/stream', HttpMethod.POST, this.token, data);
+    }
+
+    /**
+     * 获取用户信息（带缓存）
+     */
+    getUserInfoCached = (() => {
+        const cachedFn = this.createCachedFunction(this.getUserInfo.bind(this), 600);
+        Object.defineProperty(cachedFn, 'name', { value: 'getUserInfo' });
+        return cachedFn;
+    })();
+
+    /**
+     * 获取视频播放信息（带缓存）
+     */
+    getPlayInfoCached = (() => {
+        const cachedFn = this.createCachedFunction(this.getPlayInfo.bind(this), 300);
+        Object.defineProperty(cachedFn, 'name', { value: 'getPlayInfo' });
+        return cachedFn;
+    })();
+
+    /**
+     * 获取播放质量列表（带缓存）
+     */
+    getPlayQualityCached = (() => {
+        const cachedFn = this.createCachedFunction(this.getPlayQuality.bind(this), 300);
+        Object.defineProperty(cachedFn, 'name', { value: 'getPlayQuality' });
+        return cachedFn;
+    })(); // 5分钟缓存
+
+    /**
+     * 获取流列表（带缓存）
+     */
+    getStreamListCached = (() => {
+        const cachedFn = this.createCachedFunction(this.getStreamList.bind(this), 300);
+        Object.defineProperty(cachedFn, 'name', { value: 'getStreamList' });
+        return cachedFn;
+    })(); // 5分钟缓存
+    
+    /**
+     * 获取流信息（带缓存）
+     */
+    getStreamCached = (() => {
+        const cachedFn = this.createCachedFunction(this.getStream.bind(this), 300);
+        Object.defineProperty(cachedFn, 'name', { value: 'getStream' });
+        return cachedFn;
+    })(); // 5分钟缓存
 }
 
 // 重新导出类型定义，保持向后兼容

@@ -53,12 +53,31 @@ function handleSetPlayButtonConfig(event: IpcMainEvent, { hideOriginalPlayButton
     }
 }
 
+// 获取NAS代理配置
+function handleGetNasProxyConfig(event: IpcMainEvent): void {
+    const nasProxyEnabled = fnConfig.getNasProxyEnabled();
+    event.reply('nas-proxy-info', { nasProxyEnabled });
+}
+
+// 设置NAS代理配置
+function handleSetNasProxyConfig(event: IpcMainEvent, { nasProxyEnabled }: { nasProxyEnabled: boolean }): void {
+    try {
+        fnConfig.setNasProxyEnabled(nasProxyEnabled !== false);
+        event.reply('nas-proxy-set', { success: true });
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        event.reply('nas-proxy-set', { success: false, error: errorMessage });
+    }
+}
+
 // 注册配置相关处理器
 function init(): void {
     registerHandler('get-download-proxy', handleGetDownloadProxy);
     registerHandler('set-download-proxy', handleSetDownloadProxy);
     registerHandler('get-play-button-config', handleGetPlayButtonConfig);
     registerHandler('set-play-button-config', handleSetPlayButtonConfig);
+    registerHandler('get-nas-proxy', handleGetNasProxyConfig);
+    registerHandler('set-nas-proxy', handleSetNasProxyConfig);
 }
 
 export {

@@ -9,7 +9,7 @@ import * as os from 'os';
 import * as fs from 'fs';
 import { PlayStatusData } from '../../../modules/fn_api/types';
 import { escape } from 'querystring';
-import * as proxyModule from '../../../modules/proxy';
+import { isTrusted } from '../../../modules/cert_trust';
 
 /**
 * 媒体播放插件
@@ -132,13 +132,13 @@ function eventHandler(fnapi: fn.ApiService) {
                 //     return;
                 // }
                 // 优先从缓存查询播放信息
-                const resp = await proxyModule.getPlayInfoCacheByGuid(progressData.itemGuid);
-                if (resp.code !== 0 || !resp.data) {
+                const resp = await fnapi.getPlayInfoCached(progressData.itemGuid);
+                if (!resp.success || !resp.data) {
                     log.error('获取播放信息失败:', resp ? resp.message : '未知错误');
                     return;
                 }
 
-                const info = resp.data.playInfo;
+                const info = resp.data;
 
                 const record: fn.PlayStatusData = {
                     item_guid: progressData.itemGuid,
@@ -184,13 +184,13 @@ function eventHandler(fnapi: fn.ApiService) {
                 // } else {
                 // 优先从缓存查询播放信息
                 {
-                    const resp = await proxyModule.getPlayInfoCacheByGuid(event.status.itemGuid);
-                    if (resp.code !== 0 || !resp.data) {
+                    const resp = await fnapi.getPlayInfoCached(event.status.itemGuid);
+                    if (!resp.success || !resp.data) {
                         log.error('获取播放信息失败:', resp ? resp.message : '未知错误');
                         return;
                     }
 
-                    const info = resp.data.playInfo;
+                    const info = resp.data;
 
                     const record: fn.PlayStatusData = {
                         item_guid: event.status.itemGuid,
@@ -259,12 +259,12 @@ async function handlePlayMovie(event: IpcMainEvent, { id, token }: PlayRequest):
         }
 
         for (const episode of episodeList.data) {
-            const mediaItem = processEpisodeMedia(episode);
+            const mediaItem = processEpisodeMedia(config, episode);
             playList.push(mediaItem);
             log.info('添加剧集到播放列表:', mediaItem);
         }
     } else {
-        const mediaItem = processSingleMedia(response.data);
+        const mediaItem = processSingleMedia(config, response.data);
         playList.push(mediaItem);
         log.info('添加单集到播放列表:', mediaItem);
     }
@@ -287,11 +287,12 @@ async function handlePlayMovie(event: IpcMainEvent, { id, token }: PlayRequest):
     let playConfig: ply.Config = {
         fnapi: fnapi,
         playerPath: playerPath,
-        headers: {
-            Authorization: token,
-        },
+        // headers: {
+        //     Authorization: token,
+        // },
         extraArgs: [
             '--force-window=immediate',
+            // "--user-agent=Lavf/59.27.100",
         ],
         debug: true,
         onEvent: eventHandler(fnapi)
@@ -307,8 +308,18 @@ async function handlePlayMovie(event: IpcMainEvent, { id, token }: PlayRequest):
     player.playList(playList, currentIndex);
 }
 
+// 生成代理URL
+function getProxyUrl(cfg: fnConfig.Config, itemGuid: string): string {
+    const skipVerify = isTrusted(cfg.domain || '') ? '1' : '0';
+    const useNasLocal = cfg.nasProxyEnabled === true ? '1' : '0';
+    // urlencode
+    const domain = escape(cfg.domain || '');
+    // const skipVerify = '1'; // 永远跳过证书验证
+    return `http://127.0.0.1:2345/api/v1/playvideo/${itemGuid}?token=${cfg.token}&skipVerify=${skipVerify}&account=${cfg.account}&domain=${domain}&useNasLocal=${useNasLocal}`;
+}
+
 // 处理当前播放的媒体信息
-function processEpisodeMedia(info: fn.PlayListItem): ply.PlayItem {
+function processEpisodeMedia(cfg: fnConfig.Config, info: fn.PlayListItem): ply.PlayItem {
     return {
         itemGuid: info.guid,
         title: info.title,
@@ -317,12 +328,12 @@ function processEpisodeMedia(info: fn.PlayListItem): ply.PlayItem {
         episodeNumber: info.episode_number,
         ts: info.ts,
         duration: info.duration,
-        playLink: proxyModule.getProxyUrl(info.guid),
+        playLink: getProxyUrl(cfg, info.guid),
     };
 }
 
 // 处理单个待播放媒体信息
-function processSingleMedia(info: fn.PlayInfo): ply.PlayItem {
+function processSingleMedia(cfg: fnConfig.Config, info: fn.PlayInfo): ply.PlayItem {
     return {
         itemGuid: info.guid,
         title: info.item.title,
@@ -331,7 +342,7 @@ function processSingleMedia(info: fn.PlayInfo): ply.PlayItem {
         episodeNumber: info.item.episode_number,
         ts: info.ts,
         duration: info.item.duration,
-        playLink: proxyModule.getProxyUrl(info.guid),
+        playLink: getProxyUrl(cfg, info.guid),
     };
 }
 
