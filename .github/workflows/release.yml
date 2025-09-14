@@ -61,6 +61,11 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
       - name: Setup build environment (Windows)
         if: runner.os == 'Windows'
         shell: cmd
