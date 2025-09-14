@@ -76,7 +76,7 @@ if (!gotTheLock) {
             registerAllPlugins();
 
             // 创建系统托盘
-            createTray(mainWindow);
+            await createTray(mainWindow);
 
             // 设置窗口关闭事件
             setupWindowEvents(mainWindow);

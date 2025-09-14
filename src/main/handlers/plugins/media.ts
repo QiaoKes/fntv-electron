@@ -311,10 +311,11 @@ async function handlePlayMovie(event: IpcMainEvent, { id, token }: PlayRequest):
 // 生成代理URL
 function getProxyUrl(cfg: fnConfig.Config, itemGuid: string): string {
     const skipVerify = isTrusted(cfg.domain || '') ? '1' : '0';
+    const useNasLocal = cfg.nasProxyEnabled === true ? '1' : '0';
     // urlencode
     const domain = escape(cfg.domain || '');
     // const skipVerify = '1'; // 永远跳过证书验证
-    return `http://127.0.0.1:2345/api/v1/playvideo/${itemGuid}?token=${cfg.token}&skipVerify=${skipVerify}&account=${cfg.account}&domain=${domain}`;
+    return `http://127.0.0.1:2345/api/v1/playvideo/${itemGuid}?token=${cfg.token}&skipVerify=${skipVerify}&account=${cfg.account}&domain=${domain}&useNasLocal=${useNasLocal}`;
 }
 
 // 处理当前播放的媒体信息

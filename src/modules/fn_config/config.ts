@@ -24,6 +24,7 @@ export interface Config {
     hideOriginalPlayButton?: boolean;
     macCloseAction?: 'minimize' | 'quit' | 'ask';
     trayNotificationShown?: boolean;
+    nasProxyEnabled?: boolean;
 }
 
 /**
@@ -215,6 +216,19 @@ export function setHideOriginalPlayButton(hide: boolean): void {
     fs.writeFileSync(getConfigPath(), JSON.stringify(config, null, 2));
 }
 
+// 获取NAS本地网盘代理配置
+export function getNasProxyEnabled(): boolean {
+    const config: Config = readConfig() || {};
+    return config.nasProxyEnabled === true; // 默认关闭
+}
+
+// 设置NAS本地网盘代理配置
+export function setNasProxyEnabled(enabled: boolean): void {
+    const config: Config = readConfig() || {};
+    config.nasProxyEnabled = enabled;
+    fs.writeFileSync(getConfigPath(), JSON.stringify(config, null, 2));
+}
+
 // 获取 macOS 关闭行为偏好
 export function getMacCloseAction(): 'minimize' | 'quit' | 'ask' {
     const config: Config = readConfig() || {};
@@ -265,6 +279,8 @@ module.exports = {
     setDownloadProxyConfig,
     getHideOriginalPlayButton,
     setHideOriginalPlayButton,
+    getNasProxyEnabled,
+    setNasProxyEnabled,
     getMacCloseAction,
     setMacCloseAction,
     getTrayNotificationShown,
