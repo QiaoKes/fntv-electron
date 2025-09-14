@@ -12,3 +12,5 @@ paly_Full.txt
 77777.txt
 play_video.py
 *.exe
+.idea
+.vscode

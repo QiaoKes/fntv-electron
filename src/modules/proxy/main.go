@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	logger.SetLevel(logger.INFO)
+	logger.SetLevel(logger.DEBUG)
 	logger.SetColor(false)
 
 	r := gin.Default()
