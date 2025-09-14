@@ -187,6 +187,18 @@ export class MpvPlayer extends BasePlayer {
     }
 
     /**
+     * 保存当前播放项状态
+     * @param status 播放状态数据
+     * @param itemGuid 当前播放项 GUID
+     */
+    private saveCurrentItemStatus(status: PlayStatusData): void {
+        const item = this.playlistItems.find(i => i.itemGuid === status.itemGuid);
+        if (item) {
+            item.ts = status.ts;
+        }
+    }
+
+    /**
      * 设置事件监听器
      */
     private setupEventListeners(): void {
@@ -219,11 +231,20 @@ export class MpvPlayer extends BasePlayer {
                 log.debug('MPV 状态变化:', status);
             }
 
+            if (status.property === 'playlist-pos' && typeof status.value === 'number') {
+                // 更新当前播放项状态
+                this.updateCurrentItemStatus(status.value);
+            }
+
             // 监听播放路径位置
             if (status.property === 'path' && typeof status.value === 'string') {
-                const itemGuid = String(status.value).split('/').pop();
+                // 解析url中的itemid
+                const url = new URL(status.value);
+                const itemGuid = url.pathname.split('/').pop();
                 if (!itemGuid) {
-                    log.warn('无法从文件名中解析出 itemGuid:', status.value);
+                    if (this.config.debug) {
+                        log.debug('path changed: 无法从路径中解析出 itemGuid:', status.value);
+                    }
                     return;
                 }
 
@@ -243,16 +264,10 @@ export class MpvPlayer extends BasePlayer {
                                 log.debug('设置窗口标题失败:', err);
                             }
                         });
-                    }
 
-                    // 只有当进度大于0时才执行跳转
-                    const ts = resp.data.ts;
-                    if (ts > 0) {
-                        // 使用重试机制进行跳转, 这里粗暴了点, 视频没加载没法跳，只能重试
-                        this.seekWithRetry(ts, 50000, 10);
-                    } else {
-                        if (this.config.debug) {
-                            log.debug('path changed: 跳过跳转，播放进度为0秒');
+                        if (currentItem.ts > 0) {
+                            // 使用重试机制进行跳转, 这里粗暴了点, 视频没加载没法跳，只能重试
+                            this.seekWithRetry(currentItem.ts, 50000, 10);
                         }
                     }
                 });
@@ -281,9 +296,14 @@ export class MpvPlayer extends BasePlayer {
             // 通知更新跳转
             const st = this.getStatus();
             st.ts = Math.floor(t.end);
+
+            // 保存到全局的playlist
+            this.saveCurrentItemStatus(st);
             this.emitEvent(EventType.PROGRESS, st);
         });
     }
+    
+
 
     /**
      * 带重试机制的跳转函数
@@ -360,9 +380,10 @@ export class MpvPlayer extends BasePlayer {
                     log.warn('视频时长为 0，无法获取进度信息');
                     return;
                 }
-
+                
                 // 从filename获取当前播放的itemGuid
-                const itemGuid = String(filename).split('/').pop();
+                const url = new URL(String(filename));
+                const itemGuid = url.pathname.split('/').pop();
                 if (!itemGuid) {
                     log.warn('无法从文件名中解析出 itemGuid:', filename);
                     return;
@@ -374,6 +395,8 @@ export class MpvPlayer extends BasePlayer {
                 progressData.duration = Math.floor(duration);
                 progressData.percentage = Math.floor(percentage);
 
+                // 保存当前播放项状态
+                this.saveCurrentItemStatus(progressData);
                 // 更新全局状态
                 this.updateGlobalStatus(progressData);
                 // 节流处理

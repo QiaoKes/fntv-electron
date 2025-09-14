@@ -32,7 +32,7 @@ function getPortableConfigDir(): string {
     } else if (process.platform === 'win32') {
         // Windows: 复制了完整的fntv-mpv目录，包含portable_config子目录
         const appPath = app.getAppPath();
-        return path.join(path.dirname(appPath), 'third_party', 'fntv-mpv', 'portable_config');
+        return path.join(appPath, 'third_party', 'fntv-mpv', 'portable_config');
     } else {
         // Linux: 构建时只复制了portable_config目录内容到third_party/fntv-mpv/portable_config
         const appPath = app.getAppPath();
