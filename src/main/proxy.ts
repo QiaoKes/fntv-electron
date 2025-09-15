@@ -97,9 +97,9 @@ export async function startProxyProcess(): Promise<ChildProcess> {
         // 设置进程退出处理
         proxyProcess.on('close', (code) => {
             log.info('Proxy进程退出，退出码:', code);
-            if (code !== 0) {
-                app.quit();
-            }
+            // 弹窗提示
+            dialog.showErrorBox('Proxy模块已退出', `Proxy模块意外退出，退出码: ${code}\n请检查日志以获取更多信息。`);
+            app.quit();
         });
 
         return proxyProcess;

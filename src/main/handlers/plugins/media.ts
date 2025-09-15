@@ -315,7 +315,7 @@ function getProxyUrl(cfg: fnConfig.Config, itemGuid: string): string {
     // urlencode
     const domain = escape(cfg.domain || '');
     // const skipVerify = '1'; // 永远跳过证书验证
-    return `http://127.0.0.1:2345/api/v1/playvideo/${itemGuid}?token=${cfg.token}&skipVerify=${skipVerify}&account=${cfg.account}&domain=${domain}&useNasLocal=${useNasLocal}`;
+    return `http://127.0.0.1:22345/api/v1/playvideo/${itemGuid}?token=${cfg.token}&skipVerify=${skipVerify}&account=${cfg.account}&domain=${domain}&useNasLocal=${useNasLocal}`;
 }
 
 // 处理当前播放的媒体信息

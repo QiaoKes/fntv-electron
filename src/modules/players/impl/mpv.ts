@@ -248,30 +248,23 @@ export class MpvPlayer extends BasePlayer {
                     return;
                 }
 
-                const fnapi = this.getFnApi();
-                fnapi.getPlayInfo(itemGuid).then(resp => {
-                    if (!resp.success || !resp.data) {
-                        log.error('path changed: 获取播放信息失败:', resp ? resp.message : '未知错误');
-                        return;
-                    }
-
-                    const currentItem = this.playlistItems.find(item => item.itemGuid === itemGuid);
-                    if (currentItem) {
-                        const title = this.getTitle(currentItem);
-                        // 设置窗口标题
-                        this.mpvInstance?.setProperty('force-media-title', title).catch(err => {
-                            if (this.config.debug) {
-                                log.debug('设置窗口标题失败:', err);
-                            }
-                        });
-
-                        if (currentItem.ts > 0) {
-                            // 使用重试机制进行跳转, 这里粗暴了点, 视频没加载没法跳，只能重试
-                            this.seekWithRetry(currentItem.ts, 50000, 10);
+                const currentItem = this.playlistItems.find(item => item.itemGuid === itemGuid);
+                if (currentItem) {
+                    const title = this.getTitle(currentItem);
+                    // 设置窗口标题
+                    this.mpvInstance?.setProperty('force-media-title', title).catch(err => {
+                        if (this.config.debug) {
+                            log.debug('设置窗口标题失败:', err);
                         }
-                    }
-                });
+                    });
 
+                    if (currentItem.ts > 0) {
+                        // 使用重试机制进行跳转, 这里粗暴了点, 视频没加载没法跳，只能重试
+                        this.seekWithRetry(currentItem.ts, 50000, 10);
+                    }
+                }
+
+                const fnapi = this.getFnApi();
                 // 获取并下载字幕
                 fnapi.getSubtitle(itemGuid).then(fnapi.downloadSubtitle).then(subPaths => {
                     // 加载字幕
@@ -302,7 +295,7 @@ export class MpvPlayer extends BasePlayer {
             this.emitEvent(EventType.PROGRESS, st);
         });
     }
-    
+
 
 
     /**
@@ -380,7 +373,7 @@ export class MpvPlayer extends BasePlayer {
                     log.warn('视频时长为 0，无法获取进度信息');
                     return;
                 }
-                
+
                 // 从filename获取当前播放的itemGuid
                 const url = new URL(String(filename));
                 const itemGuid = url.pathname.split('/').pop();
