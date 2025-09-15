@@ -5,7 +5,8 @@ export enum LogLevel {
     DEBUG = 0,
     INFO = 1,
     WARN = 2,
-    ERROR = 3
+    ERROR = 3,
+    NOFORMAT = 4 // 不格式化，直接输出
 }
 
 /**

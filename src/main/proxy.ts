@@ -70,7 +70,7 @@ export async function startProxyProcess(): Promise<ChildProcess> {
             // 监听stdout来确认进程已启动
             proxyProcess.stdout?.on('data', (data) => {
                 const output = data.toString('utf8');
-                log.info('Proxy stdout:', output);
+                log.noformat(output);
                 // 检查启动成功的标志
                 if (output.includes('启动') || output.includes('listening') || output.includes('server') || output.includes('运行')) {
                     clearTimeout(timeout);
