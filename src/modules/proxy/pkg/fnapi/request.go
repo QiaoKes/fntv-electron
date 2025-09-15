@@ -69,8 +69,6 @@ func GenFnAuthx(url string, data interface{}) string {
 	}
 	dataJsonMd5 := GetMd5(dataJson)
 
-	logger.Debugf("生成签名参数: url=%s, nonce=%s, timestamp=%d, dataMd5=%s", url, nonce, timestamp, dataJsonMd5)
-
 	signArray := []string{
 		apiKey,
 		url,
@@ -82,7 +80,6 @@ func GenFnAuthx(url string, data interface{}) string {
 	signStr := strings.Join(signArray, "_")
 	finalSign := GetMd5(signStr)
 
-	logger.Debugf("最终签名: %s", finalSign)
 	return fmt.Sprintf("nonce=%s&timestamp=%d&sign=%s", nonce, timestamp, finalSign)
 }
 
@@ -98,7 +95,6 @@ func Request[T any](client *http.Client, baseURL, url string, method HttpMethod,
 	}
 
 	fullURL := baseURL + url
-	logger.Infof("开始API请求: %s %s", string(method), fullURL)
 
 	// 为POST/PUT请求添加随机数防重放
 	if method == MethodPOST || method == MethodPUT {
@@ -114,7 +110,6 @@ func Request[T any](client *http.Client, baseURL, url string, method HttpMethod,
 	}
 
 	authx := GenFnAuthx(url, data)
-	logger.Debugf("生成的授权签名: %s", authx)
 
 	headers := map[string]string{
 		"Content-Type":  "application/json",

@@ -26,6 +26,11 @@ let currentPlayer: ply.BasePlayer | null = null;
 // MPV播放器路径缓存
 let cachedPlayerPath: string | null = null;
 
+// 设置MPV播放器路径（用于覆盖默认路径）
+export function setMpvPlayerPath(path: string | null): void {
+    cachedPlayerPath = path;
+}
+
 /**
  * 获取MPV播放器路径（带缓存）
  * @returns 播放器路径或undefined
@@ -315,7 +320,7 @@ function getProxyUrl(cfg: fnConfig.Config, itemGuid: string): string {
     // urlencode
     const domain = escape(cfg.domain || '');
     // const skipVerify = '1'; // 永远跳过证书验证
-    return `http://127.0.0.1:2345/api/v1/playvideo/${itemGuid}?token=${cfg.token}&skipVerify=${skipVerify}&account=${cfg.account}&domain=${domain}&useNasLocal=${useNasLocal}`;
+    return `http://127.0.0.1:22345/api/v1/playvideo/${itemGuid}?token=${cfg.token}&skipVerify=${skipVerify}&account=${cfg.account}&domain=${domain}&useNasLocal=${useNasLocal}`;
 }
 
 // 处理当前播放的媒体信息
@@ -360,6 +365,13 @@ function handleBeforeQuit(): void {
 
 // 注册媒体播放处理器
 function init(): void {
+    // 从配置中读取MPV播放器路径并设置
+    const configMpvPath = fnConfig.getMpvPlayerPath();
+    if (configMpvPath) {
+        setMpvPlayerPath(configMpvPath);
+        log.info(`从配置中加载MPV播放器路径: ${configMpvPath}`);
+    }
+
     registerHandler('play-movie', handlePlayMovie);
     registerAppHook('beforeQuit', handleBeforeQuit);
 }

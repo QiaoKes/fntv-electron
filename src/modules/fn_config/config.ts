@@ -25,6 +25,7 @@ export interface Config {
     macCloseAction?: 'minimize' | 'quit' | 'ask';
     trayNotificationShown?: boolean;
     nasProxyEnabled?: boolean;
+    mpvPlayerPath?: string;
 }
 
 /**
@@ -255,6 +256,23 @@ export function setTrayNotificationShown(shown: boolean): void {
     fs.writeFileSync(getConfigPath(), JSON.stringify(config, null, 2));
 }
 
+// 获取MPV播放器路径配置
+export function getMpvPlayerPath(): string | undefined {
+    const config: Config = readConfig() || {};
+    return config.mpvPlayerPath;
+}
+
+// 设置MPV播放器路径配置
+export function setMpvPlayerPath(path: string | null): void {
+    const config: Config = readConfig() || {};
+    if (path === null || path === '') {
+        delete config.mpvPlayerPath; // 清空配置
+    } else {
+        config.mpvPlayerPath = path;
+    }
+    fs.writeFileSync(getConfigPath(), JSON.stringify(config, null, 2));
+}
+
 // 向后兼容的函数
 export function getDownloadProxyUrl(): string {
     return getDownloadProxyConfig().proxyUrl;
@@ -284,5 +302,7 @@ module.exports = {
     getMacCloseAction,
     setMacCloseAction,
     getTrayNotificationShown,
-    setTrayNotificationShown
+    setTrayNotificationShown,
+    getMpvPlayerPath,
+    setMpvPlayerPath
 };

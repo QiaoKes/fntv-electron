@@ -16,6 +16,7 @@ async function createSettingsSubmenu(mainWindow: BrowserWindow | null): Promise<
     const proxyConfig = fnConfig.getDownloadProxyConfig();
     const hideOriginalPlayButton = fnConfig.getHideOriginalPlayButton();
     const nasProxyEnabled = fnConfig.getNasProxyEnabled();
+    const currentMpvPath = fnConfig.getMpvPlayerPath();
 
     const submenu: Electron.MenuItemConstructorOptions[] = [
         {
@@ -53,6 +54,60 @@ async function createSettingsSubmenu(mainWindow: BrowserWindow | null): Promise<
             click: () => {
                 const newEnabled = !nasProxyEnabled;
                 fnConfig.setNasProxyEnabled(newEnabled);
+                // 更新托盘菜单以刷新状态
+                updateTrayMenu();
+            }
+        },
+        {
+            type: 'separator'
+        },
+        {
+            label: `设置MPV播放器路径${currentMpvPath ? ` (${currentMpvPath})` : ''}`,
+            click: async () => {
+                if (mainWindow) {
+                    const result = await dialog.showOpenDialog(mainWindow, {
+                        title: '选择MPV播放器',
+                        properties: ['openFile'],
+                        filters: [
+                            { name: '可执行文件', extensions: process.platform === 'win32' ? ['exe'] : [] },
+                            { name: '所有文件', extensions: ['*'] }
+                        ]
+                    });
+
+                    if (!result.canceled && result.filePaths.length > 0) {
+                        const selectedPath = result.filePaths[0];
+                        fnConfig.setMpvPlayerPath(selectedPath);
+                        
+                        // 导入media模块并刷新MPV路径
+                        try {
+                            const media = await import('../handlers/plugins/media.js');
+                            media.setMpvPlayerPath(selectedPath);
+                            log.info(`MPV播放器路径已设置为: ${selectedPath}`);
+                        } catch (error) {
+                            log.error('刷新MPV播放器路径失败:', error);
+                        }
+                        
+                        // 更新托盘菜单以显示新路径
+                        updateTrayMenu();
+                    }
+                }
+            }
+        },
+        {
+            label: '清空MPV播放器路径',
+            enabled: !!currentMpvPath, // 只有当有设置路径时才启用
+            click: async () => {
+                fnConfig.setMpvPlayerPath(''); // 清空配置中的路径
+                
+                // 导入media模块并重置MPV路径
+                try {
+                    const media = await import('../handlers/plugins/media.js');
+                    media.setMpvPlayerPath(null); // 传入null来清除缓存
+                    log.info('MPV播放器路径已清空，将使用自动检测');
+                } catch (error) {
+                    log.error('清空MPV播放器路径失败:', error);
+                }
+                
                 // 更新托盘菜单以刷新状态
                 updateTrayMenu();
             }
