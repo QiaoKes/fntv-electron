@@ -112,7 +112,7 @@ func PlayVideoHandler(c *gin.Context) {
 			proxyType = TransparentProxy
 		}
 		// 云盘直链模式不允许忽略证书错误
-		params.SkipVerify = 0
+		skipVerify = false
 	}
 
 	// 通用头部
