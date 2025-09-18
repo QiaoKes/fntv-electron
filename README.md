@@ -53,7 +53,7 @@ brew install mpv
 sudo xattr -rd com.apple.quarantine /Applications/飞牛影视.app
 ```
 
-- linux请先安装mpv播放器再使用，插件前往[fntv-mpv](https://github.com/QiaoKes/fntv-mpv-config/releases) 自行安装
+- linux请先安装mpv播放器(版本>0.37.0)再使用，插件前往[fntv-mpv](https://github.com/QiaoKes/fntv-mpv-config/releases) 自行安装
 
 ### 从源码构建
 
