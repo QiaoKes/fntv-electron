@@ -12,9 +12,17 @@ import * as log from '../modules/logger';
 
 // 获取应用中的proxy可执行文件路径
 function getProxyExecPath(): string {
+    // 检查是否在开发环境（未打包）
+    if (!app.isPackaged) {
+        // 未打包时使用相对路径
+        return process.platform === 'win32' 
+            ? ".\\third_party\\proxy\\proxy.exe"
+            : "./third_party/proxy/proxy";
+    }
+
+    // 已打包情况下的路径处理
     if (process.platform === 'darwin') {
         // macOS: third_party目录在应用包的Contents目录下，而不是在app.asar内
-        // 构建时只复制了proxy目录内容到third_party/proxy
         const appPath = app.getAppPath();
         const contentsPath = path.dirname(path.dirname(appPath)); // 从app.asar向上两级到Contents
         return path.join(contentsPath, 'third_party', 'proxy', 'proxy');
@@ -23,7 +31,8 @@ function getProxyExecPath(): string {
     } else {
         // Linux: 构建时只复制了proxy目录内容到third_party/proxy
         const appPath = app.getAppPath();
-        return path.join(appPath, 'third_party', 'proxy', 'proxy');
+        const contentsPath = path.dirname(path.dirname(appPath));
+        return path.join(contentsPath, 'third_party', 'proxy', 'proxy');
     }
 }
 
