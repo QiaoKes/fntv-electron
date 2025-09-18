@@ -232,7 +232,7 @@ jobs:
             |------|----------|------|
             | 💻 Windows | `.exe` | 安装程序，双击运行 |
             | 🍎 macOS | `.dmg` | 磁盘镜像，安装后执行: `sudo find "/Applications/飞牛影视.app" -exec xattr -d com.apple.quarantine {} \; 2>/dev/null` |
-            | 🐧 Linux | `.AppImage` | 便携应用，添加执行权限后直接运行 |
+            | 🐧 Linux | `.AppImage` | 便携应用，添加执行权限后直接运行。 插件前往[fntv-mpv](https://github.com/QiaoKes/fntv-mpv-config/releases) 自行安装，要求mpv版本>0.37.0 |
             
             ---
             *自动构建于 GitHub Actions* 🤖

@@ -20,7 +20,8 @@ const LogLevelNames: Record<LogLevel, string> = {
     [LogLevel.DEBUG]: 'DEBUG',
     [LogLevel.INFO]: 'INFO',
     [LogLevel.WARN]: 'WARN',
-    [LogLevel.ERROR]: 'ERROR'
+    [LogLevel.ERROR]: 'ERROR',
+    [LogLevel.NOFORMAT]: 'NOFORMAT'
 };
 
 /**
@@ -48,10 +49,10 @@ export class Logger {
         this.maxFiles = logConfig.maxFiles;
         this.logDir = this.getLogDirectory();
         this.currentLogFile = path.join(this.logDir, 'app.log');
-        
+
         // 确保日志目录存在
         this.ensureLogDirectory();
-        
+
         // 初始化时检查并清理旧的日志文件
         this.cleanupOldLogs();
     }
@@ -63,7 +64,7 @@ export class Logger {
         if (app) {
             // 在Electron环境中，优先使用用户数据目录，这样重装不会丢失日志
             const isPackaged = app.isPackaged;
-            
+
             if (isPackaged) {
                 // 打包后，使用用户数据目录的logs子文件夹
                 // 这样日志文件不会在重新安装时被删除
@@ -116,12 +117,12 @@ export class Logger {
         try {
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const rotatedFile = path.join(this.logDir, `app-${timestamp}.log`);
-            
+
             // 移动当前日志文件
             if (fs.existsSync(this.currentLogFile)) {
                 fs.renameSync(this.currentLogFile, rotatedFile);
             }
-            
+
             // 清理超过限制的旧日志文件
             this.cleanupOldLogs();
         } catch (error) {
@@ -166,7 +167,7 @@ export class Logger {
         const now = new Date();
         // 北京时间 = UTC + 8小时
         const beijingTime = new Date(now.getTime() + 8 * 60 * 60 * 1000);
-        
+
         const year = beijingTime.getUTCFullYear();
         const month = String(beijingTime.getUTCMonth() + 1).padStart(2, '0');
         const day = String(beijingTime.getUTCDate()).padStart(2, '0');
@@ -174,7 +175,7 @@ export class Logger {
         const minutes = String(beijingTime.getUTCMinutes()).padStart(2, '0');
         const seconds = String(beijingTime.getUTCSeconds()).padStart(2, '0');
         const milliseconds = String(beijingTime.getUTCMilliseconds()).padStart(3, '0');
-        
+
         return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}`;
     }
 
@@ -184,15 +185,15 @@ export class Logger {
     private formatMessage(level: LogLevel, message: string, ...args: any[]): string {
         const timestamp = this.formatBeijingTime();
         const levelName = LogLevelNames[level];
-        
+
         // 对参数进行脱敏处理
         const maskedArgs = maskLogArguments(message, ...args);
         const [maskedMessage, ...restMaskedArgs] = maskedArgs;
-        
-        const formattedArgs = restMaskedArgs.length > 0 ? ' ' + restMaskedArgs.map(arg => 
+
+        const formattedArgs = restMaskedArgs.length > 0 ? ' ' + restMaskedArgs.map(arg =>
             typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
         ).join(' ') : '';
-        
+
         return `[${timestamp}] [${levelName}] ${maskedMessage}${formattedArgs}`;
     }
 
@@ -203,7 +204,7 @@ export class Logger {
         try {
             // 检查是否需要轮转日志
             this.checkLogRotation();
-            
+
             // 写入日志
             fs.appendFileSync(this.currentLogFile, formattedMessage + '\n', 'utf8');
         } catch (error) {
@@ -216,11 +217,14 @@ export class Logger {
      */
     public log(level: LogLevel, message: string, ...args: any[]): void {
         if (level >= this.logLevel) {
-            const formattedMessage = this.formatMessage(level, message, ...args);
-            
+            let formattedMessage = message;
+            if (level != LogLevel.NOFORMAT) {
+                formattedMessage = this.formatMessage(level, message, ...args);
+            }
+
             // 写入文件
             this.writeToFile(formattedMessage);
-            
+
             // 同时输出到控制台（开发环境）
             if (logConfig.consoleOutput && (!app || !app.isPackaged)) {
                 switch (level) {
@@ -228,6 +232,7 @@ export class Logger {
                         console.log(formattedMessage);
                         break;
                     case LogLevel.INFO:
+                    case LogLevel.NOFORMAT:
                         console.info(formattedMessage);
                         break;
                     case LogLevel.WARN:
@@ -273,8 +278,14 @@ export class Logger {
             }
             return arg;
         });
-        
+
         this.log(LogLevel.ERROR, message, ...processedArgs);
+    }
+
+    /** Noformat级别日志，直接输出不格式化
+     */
+    public noformat(message: string): void {
+        this.log(LogLevel.NOFORMAT, message);
     }
 
     /**

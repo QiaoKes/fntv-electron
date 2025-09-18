@@ -63,8 +63,8 @@ export class UpdateChecker {
         this.currentVersion = currentVersion || (app ? app.getVersion() : 'unknown');
         this.githubApiUrl = `https://api.github.com/repos/${owner}/${repo}/releases/latest`;
         // 重试配置
-        this.maxRetries = 5;
-        this.baseRetryDelay = 2000; // 基础延迟2秒
+        this.maxRetries = 3;
+        this.baseRetryDelay = 1000; // 基础延迟1秒
     }
 
     /**

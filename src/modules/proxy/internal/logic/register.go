@@ -1,13 +1,15 @@
 package logic
 
 import (
-	"github.com/gin-gonic/gin"
 	"proxy/internal/logic/api"
 	"proxy/pkg/logger"
+
+	"github.com/gin-gonic/gin"
 )
 
 // RunApiServer 启动 API 服务器
 func RunApiServer(addr string) error {
+	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 
 	r.GET("/api/v1/playvideo/:itemGuid", api.PlayVideoHandler)

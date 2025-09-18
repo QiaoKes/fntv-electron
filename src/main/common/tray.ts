@@ -248,9 +248,16 @@ export async function createTray(mainWindowInstance: BrowserWindow): Promise<voi
         if (!icon.isEmpty()) {
             icon.setTemplateImage(true); // 关键：启用 macOS 自动浅色/深色模式适配
         }
-    } else {
-        // Windows 和 Linux 使用 ICO 格式
+    } else if (process.platform === 'win32') {
+        // Windows 使用 ICO 格式
         iconPath = path.join(__dirname, '../../../build/icon.ico');
+        icon = nativeImage.createFromPath(iconPath);
+        if (!icon.isEmpty()) {
+            icon = icon.resize({ width: 16, height: 16 });
+        }
+    } else {
+        // Linux 使用 PNG 格式
+        iconPath = path.join(__dirname, '../../../build/icon.png');
         icon = nativeImage.createFromPath(iconPath);
         if (!icon.isEmpty()) {
             icon = icon.resize({ width: 16, height: 16 });

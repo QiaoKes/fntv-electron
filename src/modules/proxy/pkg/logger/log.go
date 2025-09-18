@@ -60,7 +60,7 @@ func NewLogger(level LogLevel, out io.Writer) *Logger {
 	return &Logger{
 		minLevel:   level,
 		logger:     log.New(out, "", 0),
-		color:      true,
+		color:      false,
 		callerInfo: true,
 	}
 }
