@@ -23,7 +23,7 @@ function getProxyExecPath(): string {
     } else {
         // Linux: 构建时只复制了proxy目录内容到third_party/proxy
         const appPath = app.getAppPath();
-        return path.join(path.dirname(appPath), 'third_party', 'proxy', 'proxy');
+        return path.join(appPath, 'third_party', 'proxy', 'proxy');
     }
 }
 

@@ -36,7 +36,7 @@ function getPortableConfigDir(): string {
     } else {
         // Linux: 构建时只复制了portable_config目录内容到third_party/fntv-mpv/portable_config
         const appPath = app.getAppPath();
-        return path.join(path.dirname(appPath), 'third_party', 'fntv-mpv', 'portable_config');
+        return path.join(appPath, 'third_party', 'fntv-mpv', 'portable_config');
     }
 }
 
@@ -126,8 +126,8 @@ function stopConfigCheck(): void {
 // 插件初始化函数
 function init(): void {
     logger.info('Initializing MPV Config Plugin...');
-    // 只在macOS和Linux上执行
-    if (process.platform === 'win32') {
+    // 只在macOS上执行
+    if (process.platform === 'win32' || process.platform === 'linux') {
         return;
     }
 
