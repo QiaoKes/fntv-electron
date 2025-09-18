@@ -10,6 +10,7 @@ import * as fs from 'fs';
 import { PlayStatusData } from '../../../modules/fn_api/types';
 import { escape } from 'querystring';
 import { isTrusted } from '../../../modules/cert_trust';
+import { checkLibraryPageUrl } from '../../common/utils';
 
 /**
 * 媒体播放插件
@@ -96,6 +97,12 @@ function getMpvPlayerPath(): string | undefined {
 
 // 刷新窗口
 async function refreshWindow(): Promise<void> {
+    const currentURL = BrowserWindow.getFocusedWindow()?.webContents.getURL() || '';
+    // 如果是资源库页面则不刷新
+    if (checkLibraryPageUrl(currentURL)) {
+        return;
+    }
+
     log.info('刷新所有窗口');
     try {
         const allWindows = BrowserWindow.getAllWindows();
