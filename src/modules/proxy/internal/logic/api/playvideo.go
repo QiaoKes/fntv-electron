@@ -102,6 +102,7 @@ func PlayVideoHandler(c *gin.Context) {
 	// 有云盘信息，并且没有启用NAS本地代理模式
 	if cloudInfo != nil && !useNasLocal {
 		target = cloudInfo.DownloadURL
+		extraHeaders["Cookie"] = cloudInfo.Cookie
 		logger.Infof("检测到云存储信息: type=%d, url=%s", cloudInfo.CloudType, cloudInfo.DownloadURL)
 		switch cloudInfo.CloudType {
 		case QuarkPan, AliPan, BaiduPan, Cloud123Pan:
@@ -128,7 +129,7 @@ func PlayVideoHandler(c *gin.Context) {
 	case ChunkedProxy:
 		logger.Infof("开始切片对齐代理到: %s", target)
 		// 使用云盘处理器处理边下边播请求
-		handler := utils.NewCloudStorageHandler(target, extraHeaders["cookie"], skipVerify)
+		handler := utils.NewCloudStorageHandler(target, extraHeaders, skipVerify)
 		handler.HandleRequest(c)
 	default:
 		logger.Infof("unknown proxy type, default to transparent: %s", target)
