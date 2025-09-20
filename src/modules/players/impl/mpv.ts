@@ -141,7 +141,7 @@ export class MpvPlayer extends BasePlayer {
         // 构建标题
         let title = info.title || '';
         if (info.tvTitle) {
-            title = `${info.tvTitle || ''} - S${info.seasonNumber || ''}E${info.episodeNumber || ''}: ${info.title || ''}`;
+            title = `${info.tvTitle || 'noTVTitle'} - S${info.seasonNumber || '0'}E${info.episodeNumber || '0'}: ${info.title || 'noTitle'}`;
         }
 
         // 补充一个item_id用于区分当前是哪个视频
@@ -239,8 +239,7 @@ export class MpvPlayer extends BasePlayer {
             // 监听播放路径位置
             if (status.property === 'path' && typeof status.value === 'string') {
                 // 解析url中的itemid
-                const url = new URL(status.value);
-                const itemGuid = url.pathname.split('/').pop();
+                const itemGuid = this.getItemIdFromFilename(status.value);
                 if (!itemGuid) {
                     if (this.config.debug) {
                         log.debug('path changed: 无法从路径中解析出 itemGuid:', status.value);
@@ -304,7 +303,7 @@ export class MpvPlayer extends BasePlayer {
      * @param maxRetries 最大重试次数
      * @param delayMs 每次重试的延迟时间（毫秒）
      */
-    private async seekWithRetry(position: number, maxRetries: number = 3, delayMs: number = 500): Promise<void> {
+    private async seekWithRetry(position: number, maxRetries: number, delayMs: number): Promise<void> {
         let retryCount = 0;
 
         const attemptSeek = async (): Promise<void> => {
@@ -347,6 +346,16 @@ export class MpvPlayer extends BasePlayer {
         }
     }
 
+    /**
+     * 从 filename 中提取 itemId
+     * @param filename 播放的文件名或 URL
+     * @returns 提取的 itemId 或 null
+     */
+    public getItemIdFromFilename(filename: string): string | null {
+        const url = new URL(filename);
+        const itemGuid = url.pathname.split('/').pop();
+        return itemGuid || null;
+    }
 
     /**
      * 开始进度监控
@@ -375,8 +384,7 @@ export class MpvPlayer extends BasePlayer {
                 }
 
                 // 从filename获取当前播放的itemGuid
-                const url = new URL(String(filename));
-                const itemGuid = url.pathname.split('/').pop();
+                const itemGuid = this.getItemIdFromFilename(String(filename));
                 if (!itemGuid) {
                     log.warn('无法从文件名中解析出 itemGuid:', filename);
                     return;

@@ -293,11 +293,13 @@ type StreamListResponse struct {
 	SubtitleStreams []SubtitleStreamExtended `json:"subtitle_streams"`
 }
 
+type Header struct {
+	UserAgent []string `json:"User-Agent"`
+}
+
 // StreamRequestData 流请求数据
 type StreamRequestData struct {
-	Header struct {
-		UserAgent []string `json:"User-Agent"`
-	} `json:"header"`
+	Header    Header `json:"header"`
 	Level     int    `json:"level"`
 	MediaGUID string `json:"media_guid"`
 	IP        string `json:"ip"`

@@ -20,7 +20,7 @@ func RunApiServer(addr string) error {
 		c.JSON(404, gin.H{"error": "Not Found"})
 	})
 
-	logger.Infof("服务器启动在 :22345")
+	logger.Infof("服务器启动在:%s", addr)
 
 	err := r.Run(addr)
 	if err != nil {

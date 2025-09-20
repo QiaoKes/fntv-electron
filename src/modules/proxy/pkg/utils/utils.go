@@ -145,6 +145,8 @@ func DynamicProxy(c *gin.Context, targetURL string, extraHeaders map[string]stri
 
 	// 修改响应后的处理
 	proxy.ModifyResponse = func(resp *http.Response) error {
+		// 打印相应头
+		logger.Infof("响应状态: %s, 头部: %v", resp.Status, resp.Header)
 		// 可以在这里修改响应头部或内容
 		return nil
 	}

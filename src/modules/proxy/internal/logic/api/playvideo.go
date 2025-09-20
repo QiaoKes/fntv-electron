@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"proxy/pkg/fnapi"
 	"proxy/pkg/logger"
@@ -8,7 +9,18 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/time/rate"
 )
+
+var (
+	// 115盘请求速率限制器，1s/次
+	globalLimiter = rate.NewLimiter(rate.Limit(1), 1)
+	globalCtx     = context.Background()
+)
+
+func waitLimiter() error {
+	return globalLimiter.Wait(globalCtx)
+}
 
 // parseQueryParam 解析查询参数
 func parseQueryParam(c *gin.Context) (*PlayVideoParams, error) {
@@ -94,7 +106,7 @@ func PlayVideoHandler(c *gin.Context) {
 	// 代理URL
 	target := fnApi.GetVideoURL(mediaGuid)
 	// 代理模式, 默认透明代理
-	var proxyType ProxyType
+	proxyType := TransparentProxy
 	// 额外头部
 	extraHeaders := utils.PassthroughHeaders(c.Request)
 
@@ -114,6 +126,11 @@ func PlayVideoHandler(c *gin.Context) {
 		}
 		// 云盘直链模式不允许忽略证书错误
 		skipVerify = false
+	}
+
+	// 等待速率限制, 防止风控
+	if cloudInfo != nil && cloudInfo.CloudType == Cloud115Pan {
+		_ = waitLimiter()
 	}
 
 	// 通用头部
