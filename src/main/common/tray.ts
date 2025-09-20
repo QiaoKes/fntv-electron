@@ -325,8 +325,8 @@ export async function createTray(mainWindowInstance: BrowserWindow): Promise<voi
                 app.dock?.show();
             }
         });
-    } else {
-        // Windows 和 Linux 上双击托盘图标恢复窗口
+    } else if (process.platform === 'win32') {
+        // Windows上双击托盘图标恢复窗口
         tray.on('double-click', () => {
             if (mainWindow) {
                 if (mainWindow.isMinimized()) mainWindow.restore();
