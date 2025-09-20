@@ -11,6 +11,7 @@ import { PlayStatusData } from '../../../modules/fn_api/types';
 import { escape } from 'querystring';
 import { isTrusted } from '../../../modules/cert_trust';
 import { checkLibraryPageUrl } from '../../common/utils';
+import { getMainWindow } from '../../common/mainwin';
 
 /**
 * 媒体播放插件
@@ -97,28 +98,14 @@ function getMpvPlayerPath(): string | undefined {
 
 // 刷新窗口
 async function refreshWindow(): Promise<void> {
-    const currentURL = BrowserWindow.getFocusedWindow()?.webContents.getURL() || '';
+    const currentURL = getMainWindow().webContents.getURL() || '';
     // 如果是资源库页面则不刷新
     if (checkLibraryPageUrl(currentURL)) {
         return;
     }
 
-    log.info('刷新所有窗口');
-    try {
-        const allWindows = BrowserWindow.getAllWindows();
-
-        // 刷新所有窗口
-        for (const window of allWindows) {
-            if (!window.isDestroyed()) {
-                // 直接重新加载页面，忽略缓存
-                window.webContents.reloadIgnoringCache();
-                log.info(`窗口 ${window.id} 重新加载成功`);
-            }
-        }
-
-    } catch (error) {
-        log.error('刷新窗口失败:', error);
-    }
+    log.info('刷新当前窗口');
+    getMainWindow().webContents.reloadIgnoringCache();
 }
 
 /**
