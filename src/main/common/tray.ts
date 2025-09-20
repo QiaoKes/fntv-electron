@@ -77,7 +77,7 @@ async function createSettingsSubmenu(mainWindow: BrowserWindow | null): Promise<
                     if (!result.canceled && result.filePaths.length > 0) {
                         const selectedPath = result.filePaths[0];
                         fnConfig.setMpvPlayerPath(selectedPath);
-                        
+
                         // 导入media模块并刷新MPV路径
                         try {
                             const media = await import('../handlers/plugins/media.js');
@@ -86,7 +86,7 @@ async function createSettingsSubmenu(mainWindow: BrowserWindow | null): Promise<
                         } catch (error) {
                             log.error('刷新MPV播放器路径失败:', error);
                         }
-                        
+
                         // 更新托盘菜单以显示新路径
                         updateTrayMenu();
                     }
@@ -98,7 +98,7 @@ async function createSettingsSubmenu(mainWindow: BrowserWindow | null): Promise<
             enabled: !!currentMpvPath, // 只有当有设置路径时才启用
             click: async () => {
                 fnConfig.setMpvPlayerPath(''); // 清空配置中的路径
-                
+
                 // 导入media模块并重置MPV路径
                 try {
                     const media = await import('../handlers/plugins/media.js');
@@ -107,7 +107,7 @@ async function createSettingsSubmenu(mainWindow: BrowserWindow | null): Promise<
                 } catch (error) {
                     log.error('清空MPV播放器路径失败:', error);
                 }
-                
+
                 // 更新托盘菜单以刷新状态
                 updateTrayMenu();
             }
@@ -139,7 +139,7 @@ async function updateTrayMenu(): Promise<void> {
                     if (mainWindow.isMinimized()) mainWindow.restore();
                     if (!mainWindow.isVisible()) mainWindow.show();
                     mainWindow.focus();
-                    
+
                     // macOS 特有：确保应用在 dock 中显示
                     if (process.platform === 'darwin') {
                         app.dock?.show();
@@ -159,7 +159,7 @@ async function updateTrayMenu(): Promise<void> {
             }
         }
     ];
-    
+
     // 在 macOS 上添加偏好设置选项
     if (process.platform === 'darwin') {
         menuTemplate.push(
@@ -179,7 +179,7 @@ async function updateTrayMenu(): Promise<void> {
                             defaultId: 2,
                             cancelId: 3
                         });
-                        
+
                         switch (result.response) {
                             case 0:
                                 setMacCloseAction('minimize');
@@ -195,8 +195,43 @@ async function updateTrayMenu(): Promise<void> {
                 }
             }
         );
+    } else {
+        // Windows 和 Linux 上添加退出模式设置
+        menuTemplate.push(
+            {
+                type: 'separator'
+            },
+            {
+                label: '退出行为设置',
+                click: async () => {
+                    if (mainWindow) {
+                        const result = await dialog.showMessageBox(mainWindow, {
+                            type: 'question',
+                            title: '退出行为设置',
+                            message: '设置点击退出时的行为',
+                            detail: '您可以选择单击退出时的默认行为。',
+                            buttons: ['直接退出', '最小化到托盘', '每次询问', '取消'],
+                            defaultId: 2,
+                            cancelId: 3
+                        });
+
+                        switch (result.response) {
+                            case 0:
+                                fnConfig.setExitMode('direct');
+                                break;
+                            case 1:
+                                fnConfig.setExitMode('minimize');
+                                break;
+                            case 2:
+                                fnConfig.setExitMode('ask');
+                                break;
+                        }
+                    }
+                }
+            }
+        );
     }
-    
+
     menuTemplate.push(
         {
             type: 'separator'
@@ -204,15 +239,15 @@ async function updateTrayMenu(): Promise<void> {
         {
             label: process.platform === 'darwin' ? '退出飞牛影视' : '退出',
             click: () => {
-                // 真正退出应用
+                // 托盘菜单中的退出按钮直接退出应用
                 (app as any).isQuiting = true;
                 app.quit();
             }
         }
     );
-    
+
     const contextMenu = Menu.buildFromTemplate(menuTemplate);
-    
+
     // 更新托盘菜单
     tray.setContextMenu(contextMenu);
 }
@@ -224,11 +259,11 @@ async function updateTrayMenu(): Promise<void> {
 export async function createTray(mainWindowInstance: BrowserWindow): Promise<void> {
     // 保存窗口引用
     mainWindow = mainWindowInstance;
-    
+
     // 根据平台选择合适的图标
     let iconPath: string;
     let icon: Electron.NativeImage;
-    
+
     if (process.platform === 'darwin') {
         // macOS 推荐用 template 图标
         iconPath = path.join(__dirname, '../../../build/iconTemplate2.png');
@@ -263,22 +298,22 @@ export async function createTray(mainWindowInstance: BrowserWindow): Promise<voi
             icon = icon.resize({ width: 16, height: 16 });
         }
     }
-    
+
     // 如果图标仍然为空，记录错误但继续创建托盘
     if (icon.isEmpty()) {
         log.warn('托盘图标加载失败，使用默认图标');
         // 创建一个简单的默认图标
         icon = nativeImage.createEmpty();
     }
-    
+
     tray = new Tray(icon);
-    
+
     // 设置托盘提示文字
     tray.setToolTip('飞牛影视');
-    
+
     // 初始创建菜单
     await updateTrayMenu();
-    
+
     // 根据平台设置不同的点击行为
     if (process.platform === 'darwin') {
         // macOS 上单击托盘图标恢复窗口

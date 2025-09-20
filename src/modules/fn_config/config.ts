@@ -26,6 +26,7 @@ export interface Config {
     trayNotificationShown?: boolean;
     nasProxyEnabled?: boolean;
     mpvPlayerPath?: string;
+    exitMode?: 'direct' | 'minimize' | 'ask';
 }
 
 /**
@@ -283,6 +284,20 @@ export function setDownloadProxyUrl(proxyUrl: string): void {
     setDownloadProxyConfig({ enabled: current.enabled, proxyUrl });
 }
 
+export function getExitMode(): 'direct' | 'minimize' | 'ask' {
+    const config = readConfig();
+    return config?.exitMode ?? 'ask';
+}
+
+export function setExitMode(mode: 'direct' | 'minimize' | 'ask'): void {
+    const config = readConfig() ?? {};
+    const updatedConfig = {
+        ...config,
+        exitMode: mode
+    };
+    fs.writeFileSync(getConfigPath(), JSON.stringify(updatedConfig, null, 2));
+}
+
 // CommonJS导出，确保与现有代码兼容
 module.exports = {
     saveConfig,
@@ -304,5 +319,7 @@ module.exports = {
     getTrayNotificationShown,
     setTrayNotificationShown,
     getMpvPlayerPath,
-    setMpvPlayerPath
+    setMpvPlayerPath,
+    getExitMode,
+    setExitMode
 };
