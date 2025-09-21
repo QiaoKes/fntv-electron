@@ -13,6 +13,8 @@ func RunApiServer(addr string) error {
 	r := gin.Default()
 
 	r.GET("/api/v1/playvideo/:itemGuid", api.PlayVideoHandler)
+	r.GET("/api/v1/skipinfo/:itemGuid", api.GetSkipInfoHandler)
+	r.POST("/api/v1/skipinfo", api.SetSkipInfoHandler)
 
 	// 404 路由
 	r.NoRoute(func(c *gin.Context) {
@@ -20,7 +22,7 @@ func RunApiServer(addr string) error {
 		c.JSON(404, gin.H{"error": "Not Found"})
 	})
 
-	logger.Infof("服务器启动在 :22345")
+	logger.Infof("服务器启动在:%s", addr)
 
 	err := r.Run(addr)
 	if err != nil {

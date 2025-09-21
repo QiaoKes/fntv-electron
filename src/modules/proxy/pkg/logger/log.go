@@ -157,7 +157,7 @@ func (l *Logger) log(level LogLevel, format string, args ...interface{}) {
 	defer l.mu.Unlock()
 
 	// 构建日志前缀
-	now := time.Now().Format("2006-01-02 15:04:05")
+	now := time.Now().Format("2006-01-02 15:04:05.000")
 	levelStr := levelStrings[level]
 	callerInfo := l.getCallerInfo()
 

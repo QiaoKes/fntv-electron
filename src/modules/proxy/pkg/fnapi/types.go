@@ -293,11 +293,13 @@ type StreamListResponse struct {
 	SubtitleStreams []SubtitleStreamExtended `json:"subtitle_streams"`
 }
 
+type Header struct {
+	UserAgent []string `json:"User-Agent"`
+}
+
 // StreamRequestData 流请求数据
 type StreamRequestData struct {
-	Header struct {
-		UserAgent []string `json:"User-Agent"`
-	} `json:"header"`
+	Header    Header `json:"header"`
 	Level     int    `json:"level"`
 	MediaGUID string `json:"media_guid"`
 	IP        string `json:"ip"`
@@ -373,4 +375,11 @@ type StreamResponse struct {
 	} `json:"header"`
 	DirectLinkQualities    []DirectLinkQuality     `json:"direct_link_qualities"`
 	DirectLinkAudioStreams []DirectLinkAudioStream `json:"direct_link_audio_streams"`
+}
+
+// SetSkipInfoData 设置跳过片头片尾请求数据
+type SetSkipInfoReq struct {
+	ParentGuid string `json:"guid"`
+	SkipStart  int    `json:"skip_opening"`
+	SkipEnd    int    `json:"skip_ending"`
 }

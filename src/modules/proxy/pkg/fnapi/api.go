@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"proxy/pkg/utils"
 	"sync"
 	"time"
 
@@ -169,9 +170,7 @@ func (s *ApiService) RecordPlayStatus(statusData PlayStatusData) (*ApiResponse[i
 // GetStream 获取流信息
 func (s *ApiService) GetStream(mediaGUID, ip string) (*ApiResponse[StreamResponse], error) {
 	data := StreamRequestData{
-		Header: struct {
-			UserAgent []string `json:"User-Agent"`
-		}{
+		Header: Header{
 			UserAgent: []string{"trim_player"},
 		},
 		Level:     1,
@@ -179,6 +178,23 @@ func (s *ApiService) GetStream(mediaGUID, ip string) (*ApiResponse[StreamRespons
 		IP:        ip,
 	}
 	return Request[StreamResponse](s.client, s.baseURL, "/v/api/v1/stream", MethodPOST, s.token, data, nil, 0, 0)
+}
+
+// SetSkipInfo 设置跳过片头片尾信息
+func (s *ApiService) SetSkipInfo(parentGuid string, skipStart, skipEnd int) error {
+	data := SetSkipInfoReq{
+		ParentGuid: parentGuid,
+		SkipStart:  skipStart,
+		SkipEnd:    skipEnd,
+	}
+	resp, err := Request[any](s.client, s.baseURL, "/v/api/v1/play/setConfigByItem", MethodPOST, s.token, data, nil, 0, 0)
+	if err != nil {
+		return err
+	}
+	if !resp.Success {
+		return fmt.Errorf("设置跳过片头片尾信息失败: %s", resp.Message)
+	}
+	return nil
 }
 
 // GetUserInfoCached 获取用户信息（带缓存）
@@ -242,11 +258,10 @@ func (s *ApiService) GetStreamListCached(itemGUID string) (*ApiResponse[StreamLi
 }
 
 // GetStreamCached 获取流信息（带缓存）
-func (s *ApiService) GetStreamCached(mediaGUID, ip string) (*ApiResponse[StreamResponse], error) {
+func (s *ApiService) GetStreamCached(mediaGUID, account string) (*ApiResponse[StreamResponse], error) {
+	ip := utils.StringToUUID(account)
 	data := StreamRequestData{
-		Header: struct {
-			UserAgent []string `json:"User-Agent"`
-		}{
+		Header: Header{
 			UserAgent: []string{"trim_player"},
 		},
 		Level:     1,

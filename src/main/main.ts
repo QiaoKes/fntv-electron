@@ -7,6 +7,7 @@ import { getInstance as getUpdateChecker } from '../modules/updater/updateChecke
 import * as winctrl from './common/winctrl';
 import { createTray, showTrayNotification, destroyTray } from './common/tray';
 import { getMacCloseAction, setMacCloseAction, getTrayNotificationShown, setTrayNotificationShown } from './common/preferences';
+import * as fnConfig from '../modules/fn_config/config';
 import * as log from '../modules/logger';
 import { getMainWindow } from './common/mainwin';
 import { isTrusted } from '../modules/cert_trust';
@@ -112,14 +113,14 @@ function setupWindowEvents(mainWindow: BrowserWindow): void {
         // 监听窗口关闭事件
         mainWindow.on('close', async (event) => {
             if (!(app as any).isQuiting) {
+                event.preventDefault();
+                
                 if (process.platform === 'darwin') {
                     // macOS 上的特殊处理
                     const action = getMacCloseAction();
                     
                     if (action === 'ask') {
                         // 询问用户偏好
-                        event.preventDefault();
-                        
                         const result = await dialog.showMessageBox(mainWindow, {
                             type: 'question',
                             title: '关闭窗口',
@@ -151,7 +152,6 @@ function setupWindowEvents(mainWindow: BrowserWindow): void {
                         // 取消则什么都不做
                     } else if (action === 'minimize') {
                         // 直接隐藏到托盘
-                        event.preventDefault();
                         mainWindow.hide();
                         app.dock?.hide();
                         showMacNotification();
@@ -161,12 +161,47 @@ function setupWindowEvents(mainWindow: BrowserWindow): void {
                         app.quit();
                     }
                 } else {
-                    // Windows 和 Linux：阻止窗口关闭，改为隐藏到托盘
-                    event.preventDefault();
-                    mainWindow.hide();
+                    // Windows 和 Linux 上根据退出模式处理
+                    const exitMode = fnConfig.getExitMode();
 
-                    // 显示托盘提示（仅在Windows上首次显示）
-                    showTrayNotification();
+                    if (exitMode === 'ask') {
+                        // 询问用户
+                        const result = await dialog.showMessageBox(mainWindow, {
+                            type: 'question',
+                            title: '退出确认',
+                            message: '确定要退出飞牛影视吗？',
+                            detail: '您可以选择完全退出应用或最小化到托盘。',
+                            buttons: ['退出应用', '最小化到托盘', '取消'],
+                            defaultId: 1,
+                            cancelId: 2,
+                            checkboxLabel: '记住我的选择',
+                            checkboxChecked: false
+                        });
+
+                        if (result.response === 0) {
+                            // 退出应用
+                            if (result.checkboxChecked) {
+                                fnConfig.setExitMode('direct');
+                            }
+                            (app as any).isQuiting = true;
+                            app.quit();
+                        } else if (result.response === 1) {
+                            // 最小化到托盘
+                            if (result.checkboxChecked) {
+                                fnConfig.setExitMode('minimize');
+                            }
+                            mainWindow.hide();
+                            showTrayNotification();
+                        }
+                    } else if (exitMode === 'minimize') {
+                        // 隐藏到托盘
+                        mainWindow.hide();
+                        showTrayNotification();
+                    } else {
+                        // 直接退出
+                        (app as any).isQuiting = true;
+                        app.quit();
+                    }
                 }
             }
         });
