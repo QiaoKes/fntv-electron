@@ -16,6 +16,15 @@ const (
 	ChunkedProxy                      // ChunkedProxy 切片对齐转发
 )
 
+const (
+	InternalErrorCode = 1000 // InternalErrorCode 内部错误
+)
+
+type ResponseBase struct {
+	Code int32  `json:"code"`
+	Msg  string `json:"msg"`
+}
+
 // PlayVideoParams 播放视频请求参数
 type PlayVideoParams struct {
 	ItemGuid    string `json:"itemGuid" uri:"itemGuid"`
@@ -31,4 +40,32 @@ type CloudStorageInfo struct {
 	CloudType   CloudType `json:"cloudType"`
 	DownloadURL string    `json:"downloadUrl"`
 	Cookie      string    `json:"cookie"`
+}
+
+// SkipInfo 跳过片头片尾信息
+type SkipInfo struct {
+	SkipStart int `json:"skipStart"`
+	SkipEnd   int `json:"skipEnd"`
+}
+
+// SkipInfoParams 跳过片头片尾请求参数
+type GetSkipInfoParams struct {
+	ItemGuid   string `json:"itemGuid" uri:"itemGuid"`
+	Token      string `json:"token" form:"token"`
+	Domain     string `json:"domain" form:"domain"`
+	SkipVerify int32  `json:"skipVerify" form:"skipVerify"`
+}
+
+type GetSkipInfoResp struct {
+	ResponseBase
+	Data *SkipInfo `json:"data"`
+}
+
+// SkipInfoReq 跳过片头片尾请求体
+type SetSkipInfoReq struct {
+	SkipInfo
+	Guid       string `json:"guid"`
+	Token      string `json:"token" form:"token"`
+	Domain     string `json:"domain" form:"domain"`
+	SkipVerify int32  `json:"skipVerify" form:"skipVerify"`
 }

@@ -180,6 +180,23 @@ func (s *ApiService) GetStream(mediaGUID, ip string) (*ApiResponse[StreamRespons
 	return Request[StreamResponse](s.client, s.baseURL, "/v/api/v1/stream", MethodPOST, s.token, data, nil, 0, 0)
 }
 
+// SetSkipInfo 设置跳过片头片尾信息
+func (s *ApiService) SetSkipInfo(parentGuid string, skipStart, skipEnd int) error {
+	data := SetSkipInfoReq{
+		ParentGuid: parentGuid,
+		SkipStart:  skipStart,
+		SkipEnd:    skipEnd,
+	}
+	resp, err := Request[any](s.client, s.baseURL, "/v/api/v1/play/setConfigByItem", MethodPOST, s.token, data, nil, 0, 0)
+	if err != nil {
+		return err
+	}
+	if !resp.Success {
+		return fmt.Errorf("设置跳过片头片尾信息失败: %s", resp.Message)
+	}
+	return nil
+}
+
 // GetUserInfoCached 获取用户信息（带缓存）
 func (s *ApiService) GetUserInfoCached() (*ApiResponse[UserInfo], error) {
 	cacheKey := generateCacheKey("GET", "/v/api/v1/user/info", nil)

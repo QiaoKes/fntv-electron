@@ -376,3 +376,10 @@ type StreamResponse struct {
 	DirectLinkQualities    []DirectLinkQuality     `json:"direct_link_qualities"`
 	DirectLinkAudioStreams []DirectLinkAudioStream `json:"direct_link_audio_streams"`
 }
+
+// SetSkipInfoData 设置跳过片头片尾请求数据
+type SetSkipInfoReq struct {
+	ParentGuid string `json:"guid"`
+	SkipStart  int    `json:"skip_opening"`
+	SkipEnd    int    `json:"skip_ending"`
+}
