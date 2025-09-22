@@ -155,10 +155,7 @@ function eventHandler(fnapi: fn.ApiService) {
 
             case ply.EventType.ERROR:
                 const errorData = data as ply.PlayErrorData;
-                log.error('MPV error:', errorData.message);
-                // 等待50ms
-                await new Promise(resolve => setTimeout(resolve, 50));
-                await refreshWindow();
+                log.error('MPV error:', String(errorData.message));
                 break;
 
             case ply.EventType.EXIT:
