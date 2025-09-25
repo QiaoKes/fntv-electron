@@ -150,15 +150,14 @@ function eventHandler(fnapi: fn.ApiService) {
                     duration: progressData.duration,
                 };
 
+                log.info('播放进度更新:', record);
+
                 await fnapi.recordPlayStatus(record);
                 break;
 
             case ply.EventType.ERROR:
                 const errorData = data as ply.PlayErrorData;
-                log.error('MPV error:', errorData.message);
-                // 等待50ms
-                await new Promise(resolve => setTimeout(resolve, 50));
-                await refreshWindow();
+                log.error('MPV error:', String(errorData.message));
                 break;
 
             case ply.EventType.EXIT:
