@@ -19,7 +19,6 @@ import { title } from 'process';
 
 export class MpvPlayer extends BasePlayer {
     private mpvInstance: NodeMpv | null = null;
-    private progressInterval: NodeJS.Timeout | null = null;
     // 节流调用
     private lastProgressTime: number = 0;
     private throttleInterval: number = 15000; // 15秒间隔（毫秒）
@@ -74,9 +73,6 @@ export class MpvPlayer extends BasePlayer {
                 log.debug('MPV 实例启动成功');
             }
 
-            // 开始进度监控
-            this.startProgressMonitoring();
-
             return true;
 
         } catch (error: any) {
@@ -119,7 +115,8 @@ export class MpvPlayer extends BasePlayer {
             if (pos > 0) {
                 // 更新全局状态
                 this.updateCurrentItemStatus(pos);
-                await this.mpvInstance.jump(pos);
+                // 这个函数如果await的话有可能会卡死，有点坑
+                this.mpvInstance.jump(pos);
                 if (this.config.debug) {
                     log.debug(`跳转到播放列表位置: ${pos} (${infos[pos].title})`);
                 }
@@ -203,6 +200,9 @@ export class MpvPlayer extends BasePlayer {
      */
     private setupEventListeners(): void {
         if (!this.mpvInstance) return;
+
+        // 开始进度监控
+        this.startProgressMonitoring();
 
         // 监听播放结束事件
         this.mpvInstance.on('stopped', () => {
@@ -295,8 +295,6 @@ export class MpvPlayer extends BasePlayer {
         });
     }
 
-
-
     /**
      * 带重试机制的跳转函数
      * @param position 跳转位置（秒）
@@ -360,70 +358,53 @@ export class MpvPlayer extends BasePlayer {
     /**
      * 开始进度监控
      */
-    private async startProgressMonitoring(): Promise<void> {
-        if (this.progressInterval) {
-            clearInterval(this.progressInterval);
-        }
-
-        this.progressInterval = setInterval(async () => {
-            try {
-                if (!this.mpvInstance || !this.mpvInstance.isRunning()) {
-                    return;
-                }
-
-                const [currentTime, duration, percentage, filename] = await Promise.all([
-                    this.mpvInstance.getTimePosition().catch(() => 0),
-                    this.mpvInstance.getDuration().catch(() => 0),
-                    this.mpvInstance.getPercentPosition().catch(() => 0),
-                    this.mpvInstance.getFilename().catch(() => 0)
-                ]);
-
-                if (duration === 0) {
-                    log.warn('视频时长为 0，无法获取进度信息');
-                    return;
-                }
-
-                // 从filename获取当前播放的itemGuid
-                const itemGuid = this.getItemIdFromFilename(String(filename));
-                if (!itemGuid) {
-                    log.warn('无法从文件名中解析出 itemGuid:', filename);
-                    return;
-                }
-
-                const progressData: PlayStatusData = this.getStatus();
-                progressData.itemGuid = itemGuid;
-                progressData.ts = Math.floor(currentTime);
-                progressData.duration = Math.floor(duration);
-                progressData.percentage = Math.floor(percentage);
-
-                // 保存当前播放项状态
-                this.saveCurrentItemStatus(progressData);
-                // 更新全局状态
-                this.updateGlobalStatus(progressData);
-                // 节流处理
-                const now = Date.now();
-                if (now - this.lastProgressTime >= this.throttleInterval) {
-                    this.emitEvent(EventType.PROGRESS, progressData);
-                    this.lastProgressTime = now;
-                }
-            } catch (error) {
-                if (this.config.debug) {
-                    log.debug('获取进度信息失败:', error);
-                }
+    private startProgressMonitoring(): void {
+        this.mpvInstance?.on('timeposition', async (currentTime: number) => {
+            if (!this.mpvInstance || !this.mpvInstance.isRunning()) {
+                return;
             }
-        }, 1000); // 每1秒检查一次
+
+            const [duration, percentage, filename] = await Promise.all([
+                this.mpvInstance.getDuration().catch(() => 0),
+                this.mpvInstance.getPercentPosition().catch(() => 0),
+                this.mpvInstance.getFilename().catch(() => 0)
+            ]);
+
+            if (duration === 0) {
+                log.warn('视频时长为 0，无法获取进度信息');
+                return;
+            }
+
+            // 从filename获取当前播放的itemGuid
+            const itemGuid = this.getItemIdFromFilename(String(filename));
+            if (!itemGuid) {
+                log.warn('无法从文件名中解析出 itemGuid:', filename);
+                return;
+            }
+
+            const progressData: PlayStatusData = this.getStatus();
+            progressData.itemGuid = itemGuid;
+            progressData.ts = Math.floor(currentTime);
+            progressData.duration = Math.floor(duration);
+            progressData.percentage = Math.floor(percentage);
+
+            // 保存当前播放项状态
+            this.saveCurrentItemStatus(progressData);
+            // 更新全局状态
+            this.updateGlobalStatus(progressData);
+            // 节流处理
+            const now = Date.now();
+            if (now - this.lastProgressTime >= this.throttleInterval) {
+                this.emitEvent(EventType.PROGRESS, progressData);
+                this.lastProgressTime = now;
+            }
+        });
     }
 
     /**
      * 处理退出事件
      */
     private handleExit(code: number): void {
-        // 清理进度监控
-        if (this.progressInterval) {
-            clearInterval(this.progressInterval);
-            this.progressInterval = null;
-        }
-
         // 清理播放列表文件
         this.cleanupPlaylistFile();
 

@@ -150,6 +150,8 @@ function eventHandler(fnapi: fn.ApiService) {
                     duration: progressData.duration,
                 };
 
+                log.info('播放进度更新:', record);
+
                 await fnapi.recordPlayStatus(record);
                 break;
 

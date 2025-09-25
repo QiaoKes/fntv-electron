@@ -96,7 +96,7 @@ export abstract class BasePlayer {
         return this.globalStatus;
     }
 
-    // 事件发射方法
+    // 发送播放事件
     protected emitEvent(type: EventType, event: EventData): void {
         this.config.onEvent(type, event);
     }
