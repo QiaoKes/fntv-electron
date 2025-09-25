@@ -5,14 +5,18 @@
     "main": "dest/main/main.js",
     "scripts": {
         "build:proxy:win": "cd src/modules/proxy && go build -o ../../../third_party/proxy/proxy.exe",
-        "build:proxy:other": "cd src/modules/proxy && go build -o ../../../third_party/proxy/proxy",
+        "build:proxy:linux": "cd src/modules/proxy && go build -o ../../../third_party/proxy/proxy",
+        "build:proxy:mac:x64": "cd src/modules/proxy && GOOS=darwin GOARCH=amd64 go build -o ../../../third_party/proxy/proxy_x64",
+        "build:proxy:mac:arm64": "cd src/modules/proxy && GOOS=darwin GOARCH=arm64 go build -o ../../../third_party/proxy/proxy_arm64",
+        "build:proxy:mac:universal": "lipo -create -output third_party/proxy/proxy third_party/proxy/proxy_x64 third_party/proxy/proxy_arm64",
+        "clean:proxy:mac": "rimraf third_party/proxy/proxy_x64 third_party/proxy/proxy_arm64",
         "start": "npm run clean && npm run build:proxy:win && tsc && electron .",
         "compile": "tsc",
         "watch": "tsc --watch",
         "clean": "rimraf dest",
-        "build:win": "npm run build:proxy:win && tsc && electron-builder --win",
-        "build:mac": "npm run build:proxy:other && tsc && electron-builder --mac",
-        "build:linux": "npm run build:proxy:other && tsc && electron-builder --linux"
+        "build:win": "npm-run-all -s build:proxy:win compile && electron-builder --win",
+        "build:mac": "npm-run-all -s build:proxy:mac:x64 build:proxy:mac:arm64 build:proxy:mac:universal compile clean:proxy:mac && electron-builder --mac",
+        "build:linux": "npm-run-all -s build:proxy:linux compile && electron-builder --linux"
     },
     "author": "tracing",
     "devDependencies": {
