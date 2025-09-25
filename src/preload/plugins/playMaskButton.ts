@@ -162,30 +162,34 @@ function tryGetItemGuidFromOriginalLogic(button: HTMLElement): Promise<string | 
 // 从DOM获取id
 function getItemGuidFromDOM(button: HTMLElement): string | null {
     try {
-        // 检查按钮父元素中的 A 标签 href
-        let parent: Element | null = button.parentElement;
-        while (parent && parent !== document.body) {
-            if (parent.tagName === 'A' && (parent as HTMLAnchorElement).href) {
-                // 匹配32位十六进制字符串
-                const guidMatch = (parent as HTMLAnchorElement).href.match(/([a-f0-9]{32})/i);
-                if (guidMatch && guidMatch[1]) {
-                    logger.info('Found guid from href:', guidMatch[1]);
-                    return guidMatch[1];
+        // 从播放按钮向上查找包含 data-id="details" 的容器
+        let container: Element | null = button;
+        while (container && container !== document.body) {
+            if (container.getAttribute('data-id') === 'details') {
+                // 在details容器中查找包含 /v/tv/episode/ 的A标签
+                const aLinks = container.querySelectorAll('a[href*="/v/tv/episode/"]');
+                if (aLinks.length > 0) {
+                    const link = aLinks[0] as HTMLAnchorElement;
+                    const guidMatch = link.href.match(/\/v\/tv\/episode\/([a-f0-9]{32})/i);
+                    if (guidMatch && guidMatch[1]) {
+                        logger.info('Found guid:', guidMatch[1]);
+                        return guidMatch[1];
+                    }
                 }
+                break;
             }
-            parent = parent.parentElement;
+            container = container.parentElement;
         }
 
-        // 如果A标签中没有找到，检查当前URL
+        // 如果找不到，从当前URL获取
         const url = window.location.href;
-        const urlMatch = url.match(/([a-f0-9]{32})/i);
+        const urlMatch = url.match(/\/v\/tv\/episode\/([a-f0-9]{32})/i);
         if (urlMatch && urlMatch[1]) {
             logger.info('Found guid from URL:', urlMatch[1]);
             return urlMatch[1];
         }
 
         return null;
-
     } catch (error) {
         logger.error('Error extracting guid from DOM:', error);
         return null;
