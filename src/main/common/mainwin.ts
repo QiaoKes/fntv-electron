@@ -10,7 +10,7 @@ const mainwinConfig: BrowserWindowConstructorOptions = {
     show: false,
     icon: path.join(__dirname, '../../../build/icon.ico'),
     frame: false,
-    transparent: true,
+    // transparent: true,
     webPreferences: {
         webgl: true,
         partition: 'persist:fntv',
