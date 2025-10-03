@@ -80,13 +80,14 @@
 
 前往 [Releases页面](https://github.com/QiaoKes/fntv-electron/releases) 下载最新版本：
 
-* 文件名: `FNMedia_${version}_${os}_${arch}.exe`
+* 文件名: `FNMedia_${version}_${os}_${arch}.${ext}`
 
 1.字段含义：
 
 - version：版本号
 - os：操作系统
 - arch：系统架构
+- ext：文件扩展名
 
 2.安装步骤
 
