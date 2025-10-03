@@ -1,4 +1,4 @@
-# fntv-electron 桌面客户端
+﻿# fntv-electron 桌面客户端
 
 ![Electron](https://img.shields.io/badge/Electron-47848F?style=for-the-badge&logo=Electron&logoColor=white)
 ![Vue](https://img.shields.io/badge/Vue.js-4FC08D?style=for-the-badge&logo=vue.js&logoColor=white)
@@ -36,6 +36,42 @@
 感谢这些来自爱发电的赞助者：
 
 <!-- AFDIAN-ACTION:START -->
+
+<a href="https://afdian.net/u/f9548ae809f311ef805e52540025c377">
+    <img src="https://pic1.afdiancdn.com/user/f9548ae809f311ef805e52540025c377/avatar/b585c02959db06c4ea614f6e94fba294_w279_h252_s65.jpg.gif?imageView2/1/w/120/h/120" width="40" height="40" alt="1" title="1"/>
+</a>
+<a href="https://afdian.net/u/4514cc8c9a8411f0992b52540025c377">
+    <img src="https://pic1.afdiancdn.com/default/avatar/avatar-purple.png?imageView2/1/?imageView2/1/w/120/h/120" width="40" height="40" alt="爱发电用户_4514c" title="爱发电用户_4514c"/>
+</a>
+<a href="https://afdian.net/u/2685303096b611f0b4a652540025c377">
+    <img src="https://pic1.afdiancdn.com/default/avatar/avatar-purple.png?imageView2/1/?imageView2/1/w/120/h/120" width="40" height="40" alt="嬴游仙人莫迪" title="嬴游仙人莫迪"/>
+</a>
+<a href="https://afdian.net/u/8a03268e8ba411f0bcbb52540025c377">
+    <img src="https://pic1.afdiancdn.com/default/avatar/avatar-orange.png?imageView2/1/w/120/h/120" width="40" height="40" alt="爱发电用户_e6g3" title="爱发电用户_e6g3"/>
+</a>
+
+<details>
+  <summary>点我 打开/关闭 赞助者列表</summary>
+
+<a href="https://afdian.net/u/f9548ae809f311ef805e52540025c377">
+1
+</a>
+<span>( 0 次赞助, 共 ￥0 ) 留言: </span><br>
+<a href="https://afdian.net/u/4514cc8c9a8411f0992b52540025c377">
+爱发电用户_4514c
+</a>
+<span>( 0 次赞助, 共 ￥0 ) 留言: </span><br>
+<a href="https://afdian.net/u/2685303096b611f0b4a652540025c377">
+嬴游仙人莫迪
+</a>
+<span>( 0 次赞助, 共 ￥0 ) 留言: </span><br>
+<a href="https://afdian.net/u/8a03268e8ba411f0bcbb52540025c377">
+爱发电用户_e6g3
+</a>
+<span>( 0 次赞助, 共 ￥0 ) 留言: </span><br>
+
+</details>
+<!-- 注意: 尽量将标签前靠,否则经测试可能被 GitHub 解析为代码块 -->
 <!-- AFDIAN-ACTION:END -->
 
 ## 📦 安装方法
