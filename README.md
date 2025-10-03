@@ -7,7 +7,6 @@
 
 <img src="resource/docs/switch.png" width="90%">
 <img src="resource/docs/simple.png" width="90%">
-<img src="resource/docs/danmu.png" width="90%">
 
 [演示视频](https://www.bilibili.com/video/BV12dYXzhE6U/)
 
