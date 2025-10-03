@@ -5,14 +5,19 @@ on:
     - cron: '0 * * * *' # Runs every hour, on the hour
   workflow_dispatch: # Run workflow manually (without waiting for the cron to be called), through the Github Actions Workflow page directly
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
-          ref: release # 注意修改为你的分支, 例如: release
+          ref: release
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Afdian action
         uses: yiyungent/afdian-action@main
@@ -29,15 +34,49 @@ jobs:
           assemblyReferences: "System.Runtime, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"
           usings: "System"
 
-      # 下方为 直接 push 到目标分支, 当然你也可以选择 Pull Request 方式
-      - name: Commit files
+      # 检查是否有变更并创建 PR
+      - name: Check for changes and create PR
         run: |
+          # 配置 git
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git commit -m "[skip ci] 爱发电赞助信息更新" -a
-      
-      - name: Push changes
-        uses: ad-m/github-push-action@master # https://github.com/ad-m/github-push-action
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: release # 注意修改为你的分支, 例如: release
+          
+          # 检查是否有变更
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "No changes detected, skipping PR creation"
+            exit 0
+          fi
+          
+          # 创建新的分支名称（使用时间戳确保唯一性）
+          BRANCH_NAME="afdian-update-$(date +%Y%m%d-%H%M%S)"
+          
+          # 创建并切换到新分支
+          git checkout -b "$BRANCH_NAME"
+          
+          # 添加并提交变更
+          git add .
+          git commit -m "[skip ci] 爱发电赞助信息更新"
+          
+          # 推送分支
+          git push origin "$BRANCH_NAME"
+          
+          # 创建 Pull Request
+          gh pr create \
+            --title "🤖 爱发电赞助信息自动更新" \
+            --body "## 🤖 自动更新爱发电赞助信息
+
+          此 PR 由 GitHub Actions 自动创建，用于更新爱发电赞助信息。
+
+          ### 更改内容
+          - 📝 更新 README.md 中的赞助信息
+
+          ### 说明
+          - ✅ 此更新不会触发 release 构建流水线
+          - 🔍 请检查更新内容是否正确
+          - ✅ 确认无误后可直接合并" \
+            --base release \
+            --head "$BRANCH_NAME" \
+            --label "documentation,automated,afdian" \
+            --assignee QiaoKes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
