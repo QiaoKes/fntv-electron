@@ -1,7 +1,7 @@
 @{
     var viewModel = (Afdian.Action.ViewModels.AfdianViewModel)@Model;
-    string meUserId = "e6bacc3e730d11ea857252540025c377";
-    string currentRepoPlanId = "cd7b3152731011eabcd452540025c377";
+    string meUserId = ${{ secrets.AFDIAN_USERID }};
+    string currentRepoPlanId = ${{ secrets.AFDIAN_PLANID }};
     // 排除自己
     viewModel.Sponsor.data.list = viewModel.Sponsor.data.list.Where(m => m.user.user_id != meUserId).ToList();
     // 只要 当前仓库 对应的计划
