@@ -1,0 +1,58 @@
+@{
+    var viewModel = (Afdian.Action.ViewModels.AfdianViewModel)@Model;
+    string meUserId = "e6bacc3e730d11ea857252540025c377";
+    string currentRepoPlanId = "cd7b3152731011eabcd452540025c377";
+    // 排除自己
+    viewModel.Sponsor.data.list = viewModel.Sponsor.data.list.Where(m => m.user.user_id != meUserId).ToList();
+    // 只要 当前仓库 对应的计划
+    viewModel.Order.data.list = viewModel.Order.data.list.Where(m => m.plan_id == currentRepoPlanId).ToList();
+}
+
+@for (int i = 0; i < viewModel.Sponsor.data.list.Count(); i++)
+{
+    @{ 
+        var sponsorItem  = viewModel.Sponsor.data.list[i];
+     }
+
+<a href="https://afdian.net/u/@sponsorItem.user.user_id">
+    <img src="@sponsorItem.user.avatar?imageView2/1/w/120/h/120" width="40" height="40" alt="@sponsorItem.user.name" title="@sponsorItem.user.name"/>
+</a>
+}
+
+<details>
+  <summary>点我 打开/关闭 赞助者列表</summary>
+
+@for (int i = 0; i < viewModel.Sponsor.data.list.Count(); i++)
+{
+    @{ 
+        var sponsorItem  = viewModel.Sponsor.data.list[i];
+        // 计算此赞助者总共赞助金额
+        double totalMoney = 0;
+        int orderNum = 0;
+        string remarks = "";
+
+        for (int j = 0; j < viewModel.Order.data.list.Count(); j++)
+        {
+            var orderItem  = viewModel.Order.data.list[j];
+            if (orderItem.user_id == sponsorItem.user.user_id) {
+                totalMoney += Convert.ToDouble(orderItem.total_amount);
+                orderNum++;
+                if (!string.IsNullOrEmpty(orderItem.remark)) {
+                    // 只要最新留言
+                    remarks = orderItem.remark;
+                }
+            }
+        }
+        if (remarks.Length > 10) {
+            remarks = remarks.Substring(0, 10) + "...";
+        }
+     }
+
+<a href="https://afdian.net/u/@sponsorItem.user.user_id">
+@sponsorItem.user.name
+</a>
+<span>( @orderNum 次赞助, 共 ￥@totalMoney ) 留言: @remarks</span><br>
+}
+
+</details>
+<!-- 注意: 尽量将标签前靠,否则经测试可能被 GitHub 解析为代码块 -->
