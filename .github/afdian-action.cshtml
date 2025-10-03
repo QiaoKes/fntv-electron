@@ -1,11 +1,14 @@
 @{
     var viewModel = (Afdian.Action.ViewModels.AfdianViewModel)@Model;
-    string meUserId = ${{ secrets.AFDIAN_USERID }};
-    string currentRepoPlanId = ${{ secrets.AFDIAN_PLANID }};
+    string meUserId = Environment.GetEnvironmentVariable("AFDIAN_USERID") ?? "";
+    string currentRepoPlanId = Environment.GetEnvironmentVariable("AFDIAN_PLANID") ?? "";
     // 排除自己
     viewModel.Sponsor.data.list = viewModel.Sponsor.data.list.Where(m => m.user.user_id != meUserId).ToList();
     // 只要 当前仓库 对应的计划
-    viewModel.Order.data.list = viewModel.Order.data.list.Where(m => m.plan_id == currentRepoPlanId).ToList();
+    if (!string.IsNullOrEmpty(currentRepoPlanId))
+    {
+        viewModel.Order.data.list = viewModel.Order.data.list.Where(m => m.plan_id == currentRepoPlanId).ToList();
+    }
 }
 
 @for (int i = 0; i < viewModel.Sponsor.data.list.Count(); i++)
