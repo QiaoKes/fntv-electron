@@ -30,13 +30,26 @@ jobs:
           usings: "System"
 
       # 下方为 直接 push 到目标分支, 当然你也可以选择 Pull Request 方式
+      - name: Check for changes
+        id: verify-changed-files
+        run: |
+          if git diff --quiet; then
+            echo "No changes detected, skipping commit and push"
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "Changes detected, proceeding with commit and push"
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+      
       - name: Commit files
+        if: steps.verify-changed-files.outputs.changed == 'true'
         run: |
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git commit -m "[skip ci] afadian msg update" -a
       
       - name: Push changes
+        if: steps.verify-changed-files.outputs.changed == 'true'
         uses: ad-m/github-push-action@master # https://github.com/ad-m/github-push-action
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
