@@ -12,7 +12,7 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v2
         with:
-          ref: master # 注意修改为你的分支, 例如: master
+          ref: release # 注意修改为你的分支, 例如: release
 
       - name: Afdian action
         uses: yiyungent/afdian-action@main
