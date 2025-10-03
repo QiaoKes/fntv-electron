@@ -49,6 +49,7 @@ jobs:
           
           # 创建新的分支名称（使用时间戳确保唯一性）
           BRANCH_NAME="afdian-update-$(date +%Y%m%d-%H%M%S)"
+          echo "Creating branch: $BRANCH_NAME"
           
           # 创建并切换到新分支
           git checkout -b "$BRANCH_NAME"
@@ -58,10 +59,12 @@ jobs:
           git commit -m "[skip ci] 爱发电赞助信息更新"
           
           # 推送分支
+          echo "Pushing branch to remote..."
           git push origin "$BRANCH_NAME"
           
           # 创建 Pull Request
-          gh pr create \
+          echo "Creating Pull Request..."
+          PR_URL=$(gh pr create \
             --title "🤖 爱发电赞助信息自动更新" \
             --body "## 🤖 自动更新爱发电赞助信息
 
@@ -73,10 +76,24 @@ jobs:
           ### 说明
           - ✅ 此更新不会触发 release 构建流水线
           - 🔍 请检查更新内容是否正确
-          - ✅ 确认无误后可直接合并" \
+          - ✅ 确认无误后可直接合并
+          
+          ---
+          *分支: \`$BRANCH_NAME\`*" \
             --base release \
             --head "$BRANCH_NAME" \
-            --label "documentation,automated,afdian" \
-            --assignee QiaoKes
+            --assignee QiaoKes 2>/dev/null || echo "")
+          
+          if [ -n "$PR_URL" ]; then
+            echo "✅ Pull Request created successfully: $PR_URL"
+            
+            # 尝试添加标签（如果失败则忽略，不影响主流程）
+            echo "Adding labels..."
+            gh pr edit "$PR_URL" --add-label "documentation" 2>/dev/null || echo "⚠️ Could not add 'documentation' label"
+            gh pr edit "$PR_URL" --add-label "afdian" 2>/dev/null || echo "⚠️ Could not add 'afdian' label"
+          else
+            echo "❌ Failed to create Pull Request"
+            exit 1
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
