@@ -1,0 +1,43 @@
+name: afdian-action
+
+on:
+  schedule: # Run workflow automatically
+    - cron: '0 * * * *' # Runs every hour, on the hour
+  workflow_dispatch: # Run workflow manually (without waiting for the cron to be called), through the Github Actions Workflow page directly
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+        with:
+          ref: master # 注意修改为你的分支, 例如: master
+
+      - name: Afdian action
+        uses: yiyungent/afdian-action@main
+        with:
+          # 在 Settings->Secrets 配置 AFDIAN_USERID, AFDIAN_TOKEN
+          # 爱发电 user_id
+          afdian_userId: ${{ secrets.AFDIAN_USERID }}
+          # 爱发电 token
+          afdian_token: ${{ secrets.AFDIAN_TOKEN }}
+          # 默认为: .github/afdian-action.cshtml
+          template_filePath: ".github/afdian-action.cshtml"
+          # 默认为: README.md
+          target_filePath: "README.md"
+          assemblyReferences: "System.Runtime, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"
+          usings: "System"
+
+      # 下方为 直接 push 到目标分支, 当然你也可以选择 Pull Request 方式
+      - name: Commit files
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git commit -m "[skip ci] 爱发电赞助信息更新" -a
+      
+      - name: Push changes
+        uses: ad-m/github-push-action@master # https://github.com/ad-m/github-push-action
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: release # 注意修改为你的分支, 例如: release

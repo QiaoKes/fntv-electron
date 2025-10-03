@@ -4,6 +4,23 @@ on:
   push:
     branches:
       - release
+    # 排除爱发电相关的提交和文档更新
+    paths-ignore:
+      - 'README.md'
+      - '.github/afdian-action.cshtml'
+      - '.github/workflows/afdian-action.yml'
+      - 'docs/**'
+      - '*.md'
+  pull_request:
+    branches:
+      - release
+    # 排除爱发电相关文件的变更和文档更新
+    paths-ignore:
+      - 'README.md'
+      - '.github/afdian-action.cshtml'
+      - '.github/workflows/afdian-action.yml'
+      - 'docs/**'
+      - '*.md'
   workflow_dispatch:
 
 permissions:
@@ -11,9 +28,40 @@ permissions:
   packages: write
 
 jobs:
+  # 检查提交消息是否应该跳过构建
+  check-commit:
+    runs-on: ubuntu-latest
+    outputs:
+      should-skip: ${{ steps.check.outputs.should-skip }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Check commit message
+        id: check
+        run: |
+          commit_message="${{ github.event.head_commit.message }}"
+          echo "Commit message: $commit_message"
+          
+          # 检查是否包含跳过关键词
+          if [[ "$commit_message" == *"[skip ci]"* ]] || \
+             [[ "$commit_message" == *"爱发电"* ]] || \
+             [[ "$commit_message" == *"afdian"* ]] || \
+             [[ "$commit_message" == *"sponsor"* ]]; then
+            echo "should-skip=true" >> $GITHUB_OUTPUT
+            echo "⏭️ Skipping build due to commit message"
+          else
+            echo "should-skip=false" >> $GITHUB_OUTPUT
+            echo "✅ Proceeding with build"
+          fi
+
   build:
     name: Build on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    needs: check-commit
+    if: needs.check-commit.outputs.should-skip != 'true'
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -170,9 +218,9 @@ jobs:
 
   release:
     name: Create Release
-    needs: build
+    needs: [check-commit, build]
     runs-on: ubuntu-latest
-    if: success()
+    if: success() && needs.check-commit.outputs.should-skip != 'true'
 
     steps:
       - name: Checkout code
