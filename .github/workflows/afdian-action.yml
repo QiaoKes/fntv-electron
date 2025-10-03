@@ -40,4 +40,4 @@ jobs:
         uses: ad-m/github-push-action@master # https://github.com/ad-m/github-push-action
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: master # 注意修改为你的分支, 例如: master
+          branch: release # 注意修改为你的分支, 例如: release
