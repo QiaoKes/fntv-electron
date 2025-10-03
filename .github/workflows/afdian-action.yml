@@ -5,19 +5,14 @@ on:
     - cron: '0 * * * *' # Runs every hour, on the hour
   workflow_dispatch: # Run workflow manually (without waiting for the cron to be called), through the Github Actions Workflow page directly
 
-permissions:
-  contents: write
-  pull-requests: write
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v2
         with:
-          ref: release
-          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: release # 注意修改为你的分支, 例如: release
 
       - name: Afdian action
         uses: yiyungent/afdian-action@main
@@ -34,34 +29,15 @@ jobs:
           assemblyReferences: "System.Runtime, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"
           usings: "System"
 
-      # 使用 peter-evans/create-pull-request 创建 PR
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v5
+      # 下方为 直接 push 到目标分支, 当然你也可以选择 Pull Request 方式
+      - name: Commit files
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git commit -m "[skip ci] 爱发电赞助信息更新" -a
+      
+      - name: Push changes
+        uses: ad-m/github-push-action@master # https://github.com/ad-m/github-push-action
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "[skip ci] 爱发电赞助信息更新"
-          branch: afdian-action/update
-          delete-branch: true
-          branch-suffix: short-commit-hash
-          base: release
-          title: "🤖 [afdian-action] 爱发电赞助信息更新"
-          body: |
-            ## 🤖 自动更新爱发电赞助信息
-            
-            此 PR 由 GitHub Actions 自动创建，用于更新爱发电赞助信息。
-            
-            ### 更改内容
-            - 📝 更新 README.md 中的赞助信息
-            
-            ### 说明
-            - ✅ 此更新不会触发 release 构建流水线
-            - 🔍 请检查更新内容是否正确
-            - ✅ 确认无误后可直接合并
-            
-            ---
-            *由 afdian-action 自动生成*
-          labels: |
-            documentation
-            afdian-action
-            automated pr
-          assignees: QiaoKes
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: release # 注意修改为你的分支, 例如: release
