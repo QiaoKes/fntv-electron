@@ -53,19 +53,19 @@
 <details>
   <summary>点我 打开/关闭 赞助者列表</summary>
 
-<a href="https://afdian.net/u/f9548ae809f311ef805e52540025c377">
+<a href="https://afdian.com/u/f9548ae809f311ef805e52540025c377">
 1
 </a>
 <span>( 1 次赞助, 共 ￥10 ) 留言: fntv</span><br>
-<a href="https://afdian.net/u/4514cc8c9a8411f0992b52540025c377">
+<a href="https://afdian.com/u/4514cc8c9a8411f0992b52540025c377">
 爱发电用户_4514c
 </a>
 <span>( 1 次赞助, 共 ￥10 ) 留言: </span><br>
-<a href="https://afdian.net/u/2685303096b611f0b4a652540025c377">
+<a href="https://afdian.com/u/2685303096b611f0b4a652540025c377">
 嬴游仙人莫迪
 </a>
 <span>( 1 次赞助, 共 ￥60 ) 留言: 谢谢，我是真的很喜欢...</span><br>
-<a href="https://afdian.net/u/8a03268e8ba411f0bcbb52540025c377">
+<a href="https://afdian.com/u/8a03268e8ba411f0bcbb52540025c377">
 爱发电用户_e6g3
 </a>
 <span>( 1 次赞助, 共 ￥20 ) 留言: 给几个建议我是mac...</span><br>
