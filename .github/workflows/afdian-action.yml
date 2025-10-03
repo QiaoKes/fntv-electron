@@ -34,66 +34,34 @@ jobs:
           assemblyReferences: "System.Runtime, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"
           usings: "System"
 
-      # 检查是否有变更并创建 PR
-      - name: Check for changes and create PR
-        run: |
-          # 配置 git
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          
-          # 检查是否有变更
-          if git diff --quiet && git diff --cached --quiet; then
-            echo "No changes detected, skipping PR creation"
-            exit 0
-          fi
-          
-          # 创建新的分支名称（使用时间戳确保唯一性）
-          BRANCH_NAME="afdian-update-$(date +%Y%m%d-%H%M%S)"
-          echo "Creating branch: $BRANCH_NAME"
-          
-          # 创建并切换到新分支
-          git checkout -b "$BRANCH_NAME"
-          
-          # 添加并提交变更
-          git add .
-          git commit -m "[skip ci] 爱发电赞助信息更新"
-          
-          # 推送分支
-          echo "Pushing branch to remote..."
-          git push origin "$BRANCH_NAME"
-          
-          # 创建 Pull Request
-          echo "Creating Pull Request..."
-          PR_URL=$(gh pr create \
-            --title "🤖 爱发电赞助信息自动更新" \
-            --body "## 🤖 自动更新爱发电赞助信息
-
-          此 PR 由 GitHub Actions 自动创建，用于更新爱发电赞助信息。
-
-          ### 更改内容
-          - 📝 更新 README.md 中的赞助信息
-
-          ### 说明
-          - ✅ 此更新不会触发 release 构建流水线
-          - 🔍 请检查更新内容是否正确
-          - ✅ 确认无误后可直接合并
-          
-          ---
-          *分支: \`$BRANCH_NAME\`*" \
-            --base release \
-            --head "$BRANCH_NAME" \
-            --assignee QiaoKes 2>/dev/null || echo "")
-          
-          if [ -n "$PR_URL" ]; then
-            echo "✅ Pull Request created successfully: $PR_URL"
+      # 使用 peter-evans/create-pull-request 创建 PR
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "[skip ci] 爱发电赞助信息更新"
+          branch: afdian-action/update
+          delete-branch: true
+          branch-suffix: short-commit-hash
+          base: release
+          title: "🤖 [afdian-action] 爱发电赞助信息更新"
+          body: |
+            ## 🤖 自动更新爱发电赞助信息
             
-            # 尝试添加标签（如果失败则忽略，不影响主流程）
-            echo "Adding labels..."
-            gh pr edit "$PR_URL" --add-label "documentation" 2>/dev/null || echo "⚠️ Could not add 'documentation' label"
-            gh pr edit "$PR_URL" --add-label "afdian" 2>/dev/null || echo "⚠️ Could not add 'afdian' label"
-          else
-            echo "❌ Failed to create Pull Request"
-            exit 1
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            此 PR 由 GitHub Actions 自动创建，用于更新爱发电赞助信息。
+            
+            ### 更改内容
+            - 📝 更新 README.md 中的赞助信息
+            
+            ### 说明
+            - ✅ 此更新不会触发 release 构建流水线
+            - 🔍 请检查更新内容是否正确
+            - ✅ 确认无误后可直接合并
+            
+            ---
+            *由 afdian-action 自动生成*
+          labels: |
+            documentation
+            afdian-action
+            automated pr
+          assignees: QiaoKes
