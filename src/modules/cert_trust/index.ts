@@ -297,20 +297,18 @@ export async function showCertificateTrustDialog(
  * @param error - 错误信息
  * @returns 是否为证书错误
  */
-export function isCertificateError(error: string): boolean {
-    const certErrorPatterns = [
-        'unable to verify the first certificate',
-        'self signed certificate',
-        'certificate has expired',
-        'certificate authority is invalid',
-        'ERR_CERT_AUTHORITY_INVALID',
-        'ERR_CERT_COMMON_NAME_INVALID',
-        'ERR_CERT_DATE_INVALID',
-        'ERR_SSL_VERSION_OR_CIPHER_MISMATCH',
-        'ERR_CERT_INVALID'
-    ];
-    
-    return certErrorPatterns.some(pattern => 
-        error.toLowerCase().includes(pattern.toLowerCase())
-    );
+// 创建一个包含常见证书错误代码的 Set，以便快速查找
+const CERTIFICATE_ERROR_CODES = new Set([
+    'UNABLE_TO_VERIFY_LEAF_SIGNATURE', // 无法验证叶证书签名（最常见的自签名错误）
+    'DEPTH_ZERO_SELF_SIGNED_CERT',     // 深度为零的自签名证书
+    'CERT_HAS_EXPIRED',                // 证书已过期
+    'ERR_TLS_CERT_ALTNAME_INVALID',    // 主机名/证书名称不匹配
+    'CERT_SIGNATURE_FAILURE',          // 证书签名失败
+    // ... 可以根据需要添加其他来自 OpenSSL 的错误码
+]);
+
+// 新的、更可靠的错误检查函数
+export function isCertificateError(error: any): boolean {
+    // 关键：直接检查 error.code 是否在我们的 Set 中
+    return error && CERTIFICATE_ERROR_CODES.has(error.code);
 }

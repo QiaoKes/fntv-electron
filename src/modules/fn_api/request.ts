@@ -160,7 +160,7 @@ export async function request<T = any>(
             const errorMessage = error.response?.data || error.message || '未知错误';
             
             // 检查是否为证书验证错误且URL未被信任
-            if (isCertificateError(errorMessage) && !isTrusted(baseUrl)) {
+            if (isCertificateError(error) && !isTrusted(baseUrl)) {
                 log.warn(`检测到证书验证错误: ${errorMessage}, URL: ${fullUrl}`);
                 
                 // 返回特殊的证书错误响应，让上层处理
