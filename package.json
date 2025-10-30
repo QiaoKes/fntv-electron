@@ -1,6 +1,6 @@
 {
     "name": "fntv",
-    "version": "2.4.4",
+    "version": "2.4.5",
     "description": "A fntv app built with Electron",
     "main": "dest/main/main.js",
     "scripts": {

@@ -157,11 +157,12 @@ export async function request<T = any>(
             };
 
         } catch (error: any) {
+            const errorCode = error.code || ''
             const errorMessage = error.response?.data || error.message || '未知错误';
-            
+            log.info(`检测到错误: code: ${errorCode}, msg: ${errorMessage}, URL: ${fullUrl}`);
             // 检查是否为证书验证错误且URL未被信任
             if (isCertificateError(error) && !isTrusted(baseUrl)) {
-                log.warn(`检测到证书验证错误: ${errorMessage}, URL: ${fullUrl}`);
+                log.warn(`检测到证书验证错误: code: ${errorCode}, msg: ${errorMessage}, URL: ${fullUrl}`);
                 
                 // 返回特殊的证书错误响应，让上层处理
                 return {

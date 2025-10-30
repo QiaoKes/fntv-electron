@@ -23,7 +23,7 @@ function getTrustedHostsConfigPath(): string {
  */
 function loadTrustedHostsFromFile(): Set<string> {
     const configPath = getTrustedHostsConfigPath();
-    
+
     try {
         if (fs.existsSync(configPath)) {
             const data = fs.readFileSync(configPath, 'utf-8');
@@ -34,7 +34,7 @@ function loadTrustedHostsFromFile(): Set<string> {
     } catch (error) {
         log.error('加载信任主机列表失败:', error);
     }
-    
+
     log.info('创建新的信任主机列表');
     return new Set<string>();
 }
@@ -44,7 +44,7 @@ function loadTrustedHostsFromFile(): Set<string> {
  */
 function saveTrustedHostsToFile(trustedHosts: Set<string>): void {
     const configPath = getTrustedHostsConfigPath();
-    
+
     try {
         const hostsArray = Array.from(trustedHosts);
         fs.writeFileSync(configPath, JSON.stringify(hostsArray, null, 2), 'utf-8');
@@ -77,11 +77,11 @@ function normalizeHost(url: string): string {
         if (!url.startsWith('http://') && !url.startsWith('https://')) {
             url = `https://${url}`;
         }
-        
+
         const urlObj = new URL(url);
         const host = urlObj.hostname;
         const port = urlObj.port || (urlObj.protocol === 'https:' ? '443' : '80');
-        
+
         return `${host}:${port}`;
     } catch (error) {
         log.error('解析URL失败:', error);
@@ -107,13 +107,13 @@ export function isTrusted(url: string): boolean {
 export function addTrustedHost(url: string): void {
     const host = normalizeHost(url);
     const trustedHosts = getTrustedHostsCache();
-    
+
     // 添加到内存缓存
     trustedHosts.add(host);
-    
+
     // 保存到文件
     saveTrustedHostsToFile(trustedHosts);
-    
+
     log.info(`已添加信任主机: ${host}`);
 }
 
@@ -124,10 +124,10 @@ export function addTrustedHost(url: string): void {
 export function removeTrustedHost(url: string): void {
     const host = normalizeHost(url);
     const trustedHosts = getTrustedHostsCache();
-    
+
     // 从内存缓存中移除
     const deleted = trustedHosts.delete(host);
-    
+
     if (deleted) {
         // 保存到文件
         saveTrustedHostsToFile(trustedHosts);
@@ -151,13 +151,13 @@ export function getTrustedHosts(): string[] {
  */
 export function clearTrustedHosts(): void {
     const trustedHosts = getTrustedHostsCache();
-    
+
     // 清空内存缓存
     trustedHosts.clear();
-    
+
     // 保存到文件
     saveTrustedHostsToFile(trustedHosts);
-    
+
     log.info('已清空所有信任主机');
 }
 
@@ -195,7 +195,7 @@ export function isCacheLoaded(): boolean {
 export function addTrustedHosts(urls: string[]): void {
     const trustedHosts = getTrustedHostsCache();
     let addedCount = 0;
-    
+
     for (const url of urls) {
         const host = normalizeHost(url);
         if (!trustedHosts.has(host)) {
@@ -203,7 +203,7 @@ export function addTrustedHosts(urls: string[]): void {
             addedCount++;
         }
     }
-    
+
     if (addedCount > 0) {
         // 保存到文件
         saveTrustedHostsToFile(trustedHosts);
@@ -220,14 +220,14 @@ export function addTrustedHosts(urls: string[]): void {
 export function removeTrustedHosts(urls: string[]): void {
     const trustedHosts = getTrustedHostsCache();
     let removedCount = 0;
-    
+
     for (const url of urls) {
         const host = normalizeHost(url);
         if (trustedHosts.delete(host)) {
             removedCount++;
         }
     }
-    
+
     if (removedCount > 0) {
         // 保存到文件
         saveTrustedHostsToFile(trustedHosts);
@@ -245,14 +245,14 @@ export function removeTrustedHosts(urls: string[]): void {
  * @returns 用户是否选择信任证书
  */
 export async function showCertificateTrustDialog(
-    url: string, 
-    error: string, 
+    url: string,
+    error: string,
     parentWindow?: BrowserWindow
 ): Promise<boolean> {
     const host = normalizeHost(url);
-    
+
     try {
-        const result = parentWindow 
+        const result = parentWindow
             ? await dialog.showMessageBox(parentWindow, {
                 type: 'warning',
                 title: '证书安全警告',
@@ -297,14 +297,36 @@ export async function showCertificateTrustDialog(
  * @param error - 错误信息
  * @returns 是否为证书错误
  */
-// 创建一个包含常见证书错误代码的 Set，以便快速查找
 const CERTIFICATE_ERROR_CODES = new Set([
-    'UNABLE_TO_VERIFY_LEAF_SIGNATURE', // 无法验证叶证书签名（最常见的自签名错误）
-    'DEPTH_ZERO_SELF_SIGNED_CERT',     // 深度为零的自签名证书
-    'CERT_HAS_EXPIRED',                // 证书已过期
+    'UNABLE_TO_GET_ISSUER_CERT',       // 无法获得颁发者证书。
+    'UNABLE_TO_GET_CRL',               // 无法获得证书 CRL。
+    'UNABLE_TO_DECRYPT_CERT_SIGNATURE',// 无法解密证书的签名。
+    'UNABLE_TO_DECRYPT_CRL_SIGNATURE', // 无法解密 CRL 的签名。
+    'UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY', // 无法解码发行者公钥。
+    'CERT_SIGNATURE_FAILURE',          // 证书签名失败。
+    'CRL_SIGNATURE_FAILURE',           // CRL 签名失败。
+    'CERT_NOT_YET_VALID',              // 证书尚未生效。
+    'CERT_HAS_EXPIRED',                // 证书已过期。
+    'CRL_NOT_YET_VALID',               // CRL 尚未生效。
+    'CRL_HAS_EXPIRED',                 // CRL 已过期。
+    'ERROR_IN_CERT_NOT_BEFORE_FIELD',  // 证书的 notBefore 字段中的格式错误。
+    'ERROR_IN_CERT_NOT_AFTER_FIELD',   // 证书的 notAfter 字段中的格式错误。
+    'ERROR_IN_CRL_LAST_UPDATE_FIELD',  // CRL 的 lastUpdate 字段中的格式错误。
+    'ERROR_IN_CRL_NEXT_UPDATE_FIELD',  // CRL 的 nextUpdate 字段中的格式错误。
+    'OUT_OF_MEM',                      // 内存不足。
+    'DEPTH_ZERO_SELF_SIGNED_CERT',     // 自签名证书。
+    'SELF_SIGNED_CERT_IN_CHAIN',       // 证书链中的自签名证书。
+    'UNABLE_TO_GET_ISSUER_CERT_LOCALLY', // 无法获得本地颁发者证书。
+    'UNABLE_TO_VERIFY_LEAF_SIGNATURE', // 无法验证第一个证书。
+    'CERT_CHAIN_TOO_LONG',             // 证书链太长。
+    'CERT_REVOKED',                    // 证书已撤销。
+    'INVALID_CA',                      // 无效的 CA 证书。
+    'PATH_LENGTH_EXCEEDED',            // 超出路径长度限制。
+    'INVALID_PURPOSE',                 // 不支持的证书用途。
+    'CERT_UNTRUSTED',                  // 证书不受信任。
+    'CERT_REJECTED',                   // 证书被拒绝。
+    'HOSTNAME_MISMATCH',               // 主机名不匹配。
     'ERR_TLS_CERT_ALTNAME_INVALID',    // 主机名/证书名称不匹配
-    'CERT_SIGNATURE_FAILURE',          // 证书签名失败
-    // ... 可以根据需要添加其他来自 OpenSSL 的错误码
 ]);
 
 // 新的、更可靠的错误检查函数
