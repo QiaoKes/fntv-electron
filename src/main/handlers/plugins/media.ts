@@ -7,7 +7,7 @@ import { registerAppHook } from '../core/appHook';
 import * as log from '../../../modules/logger';
 import * as os from 'os';
 import * as fs from 'fs';
-import { PlayStatusData } from '../../../modules/fn_api/types';
+import { PlayStatusData, ItemListRequest } from '../../../modules/fn_api/types';
 import { escape } from 'querystring';
 import { isTrusted } from '../../../modules/cert_trust';
 import { checkLibraryPageUrl } from '../../common/utils';
@@ -261,7 +261,30 @@ async function handlePlayMovie(event: IpcMainEvent, { id, token }: PlayRequest):
             playList.push(mediaItem);
             log.info('添加剧集到播放列表:', mediaItem);
         }
-    } else {
+    } 
+    if (type === 'Video' || parentGuid) {
+        log.info('当前为其他视频，添加到播放列表');
+        const req: ItemListRequest = {
+            parent_guid: parentGuid,
+            exclude_folder: 1,
+            sort_column: 'sort_title',
+            sort_type: 'ASC',
+        };
+
+        const mediaList = await fnapi.getItemList(req);
+        log.info('获取媒体列表响应:', mediaList);
+        if (!mediaList.success || !mediaList.data || !mediaList.data.list) {
+            log.error('获取媒体列表失败:', mediaList ? mediaList.message : '未知错误');
+            return;
+        }
+
+        for (const media of mediaList.data.list) {
+            const mediaItem = processEpisodeMedia(config, media);
+            playList.push(mediaItem);
+            log.info('添加剧集到播放列表:', mediaItem);
+        }
+    }
+    else {
         const mediaItem = processSingleMedia(config, response.data);
         playList.push(mediaItem);
         log.info('添加单集到播放列表:', mediaItem);

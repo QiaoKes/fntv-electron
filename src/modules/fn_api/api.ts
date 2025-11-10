@@ -208,6 +208,22 @@ export class ApiService {
         return fn.request(this.baseURL, `/v/api/v1/episode/list/${id}`, HttpMethod.GET, this.token);
     }
 
+    /**
+     * 获取其他视频列表
+     * @param req - 项目列表请求参数
+     * @returns 返回项目列表的Promise
+     */
+    getItemList(req: types.ItemListRequest): Promise<fn.ApiResponse<types.ItemListResponse>> {
+        return fn.request(this.baseURL, '/v/api/v1/item/list', HttpMethod.POST, this.token, req);
+    }
+
+    /** 获取其他视频列表（带缓存）
+     */
+    getItemListCached = (() => {
+        const cachedFn = this.createCachedFunction(this.getItemList.bind(this), 600);
+        Object.defineProperty(cachedFn, 'name', { value: 'getItemList' });
+        return cachedFn;
+    })(); // 10分钟缓存
 
     /**
      * 获取字幕文件列表
