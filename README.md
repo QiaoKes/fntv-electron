@@ -104,10 +104,10 @@
 ```bash
 brew install mpv
 # 安装dmg后执行
-sudo xattr -rd com.apple.quarantine /Applications/飞牛影视.app
+sudo find "/Applications/飞牛影视.app" -exec xattr -d com.apple.quarantine {} \; 2>/dev/null
 ```
 
-- linux请先安装mpv播放器(版本>0.37.0)再使用，插件前往[fntv-mpv](https://github.com/QiaoKes/fntv-mpv-config/releases) 自行安装
+- linux请先安装mpv播放器(版本>0.37.0)再使用，插件前往[fntv-mpv](https://github.com/QiaoKes/fntv-mpv-config/releases) 自行安装，可以参考[issue#54](https://github.com/QiaoKes/fntv-electron/issues/54)
 
 ### 从源码构建
 
@@ -118,23 +118,13 @@ git clone https://github.com/QiaoKes/fntv-electron.git
 cd fntv-electron
 ```
 
-2. 下载第三方依赖
-
-```bash
-# Windows
-# 1.下载https://github.com/QiaoKes/fntv-electron/releases/tag/v0.0.0中的electron-v36.2.1-patch-win32-x64.zip
-# 解压到third_party中的electron文件夹中
-# 2.下载https://github.com/QiaoKes/fntv-mpv-config/releases
-# 解压到third_party中的fntv-mpv文件夹中
-```
-
-3. 安装依赖：
+2. 安装依赖：
 
 ```bash
 npm i
 ```
 
-4. 运行开发模式：
+3. 运行开发模式：
 
 ```bash
 npm start
@@ -143,11 +133,9 @@ npm start
 5. 构建安装包：
 
 ```bash
-# Windows
-# 进入到C:\Users\{your_user_name}\AppData\Local\electron\Cache
-# 创建文件夹b3ef7c180a968a1775be99205920d296f99e12cd36db5a1b9a5a2a3bb292f8ae
-# 将electron-v36.2.1-patch-win32-x64.zip拷贝到文件夹内
-npm run build
+npm run build:win
+npm run build:mac
+npm run build:linux
 ```
 
 ## 常用问题Q&A
@@ -185,19 +173,15 @@ npm run build
 
 弹幕问题查看uosc_danmaku的文档，根据文档内容调整配置。
 
-### 8. 遇到dandanplay.exe报毒？
-
-已去除二进制文件，请更新到最新版本，go的二进制压缩会被误报。可以查看这个issue，二进制由dandanplay提供 https://github.com/Tony15246/uosc_danmaku/issues/267
-
-### 9.登录完客户端后，如果服务器连接不上登录会超时卡透明屏，无法切换或修改服务器配置，卸载重装也不行
+### 8.登录完客户端后，如果服务器连接不上登录会超时卡透明屏，无法切换或修改服务器配置，卸载重装也不行
 
 去C:\\Users\\{你的计算机用户名}\\.fntv 下面把config.json删除了，因为连接成功后实际上加载的还是飞牛网页端，没响应当然会透明了。
 
-### 10.打开弹幕视频掉帧
+### 9.打开弹幕视频掉帧
 
 打开弹幕时，默认开启fps平滑滤镜，比较吃性能，不需要可以去安装目录下的third_party\fntv-mpv\portable_config\script-opts下uosc_danmaku.conf关闭相关配置
 
-### 11.双显卡，调用时发现使用核显
+### 10.双显卡，调用时发现使用核显
 
 以下两种方法任选其一：
 
@@ -229,20 +213,9 @@ third_party\fntv-mpv\portable_config\input.conf
 - [fnos-tv](https://github.com/thshu/fnos-tv) - fnos-tv 支持弹幕的飞牛影视
 - [mpv弹幕插件](https://github.com/Tony15246/uosc_danmaku) - uosc_danmaku 基于uosc的弹幕插件
 
-## 🛠️ 开发指南
+## Star History
 
-### 项目结构
-
-```
-fntv-electron/
-├── third_party/          # 三方依赖
-├── resource/             # 示例图片
-├── release/              # 编译包目录
-├── build/                # 构建资源
-├── src/                  # 源码
-├── config.json           # 调试用服务器地址配置
-└── package.json
-```
+[![Star History Chart](https://api.star-history.com/svg?repos=QiaoKes/fntv-electron&type=date&legend=top-left)](https://www.star-history.com/#QiaoKes/fntv-electron&type=date&legend=top-left)
 
 ## 📄 许可证
 

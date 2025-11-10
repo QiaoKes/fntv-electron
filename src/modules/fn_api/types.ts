@@ -688,3 +688,40 @@ export interface StreamResponse {
     /** 直接链接音频流列表 */
     direct_link_audio_streams: DirectLinkAudioStream[];
 }
+
+/** * 项目列表请求数据
+ * {"parent_guid":"fv_30006e2fdaa44c7aac2c3cb25c10121d","exclude_folder":1,"sort_column":"sort_title","sort_type":"ASC"}
+ */
+export interface ItemListRequest {
+    /** 父级项目的唯一标识符 */
+    parent_guid: string;
+    /** 是否排除文件夹，1表示排除，0表示不排除 */
+    exclude_folder: number;
+    /** 排序列，如"sort_title" */
+    sort_column: string;
+    /** 排序类型，如"ASC"或"DESC" */
+    sort_type: string;
+}
+
+/** * 项目列表响应数据
+ *  "mdb_name": "测试",
+    "mdb_category": "Others",
+    "top_dir": "",
+    "dir": "/vol1/1000/docker/ani-rss/Media/番剧/B/拔作岛/Season 1",
+    "total": 10,
+    "list": []
+ */
+export interface ItemListResponse {
+    /** 媒体数据库名称 */
+    mdb_name: string;
+    /** 媒体数据库分类 */
+    mdb_category: string;
+    /** 顶级目录 */
+    top_dir: string;
+    /** 目录路径 */
+    dir: string;
+    /** 总项目数 */
+    total: number;
+    /** 项目列表 */
+    list: PlayListItem[];
+}
