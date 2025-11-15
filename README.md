@@ -36,6 +36,9 @@
 
 <!-- AFDIAN-ACTION:START -->
 
+<a href="https://afdian.com/u/ec6015fcd0ca11ef8f8e52540025c377">
+    <img src="https://pic1.afdiancdn.com/default/avatar/avatar-purple.png?imageView2/1/?imageView2/1/w/120/h/120" width="40" height="40" alt="爱发电用户_ec601" title="爱发电用户_ec601"/>
+</a>
 <a href="https://afdian.com/u/713bc866afc811f093a952540025c377">
     <img src="https://pic1.afdiancdn.com/default/avatar/avatar-purple.png?imageView2/1/w/120/h/120" width="40" height="40" alt="爱发电用户_7WxX" title="爱发电用户_7WxX"/>
 </a>
@@ -55,6 +58,10 @@
 <details>
   <summary>点我 打开/关闭 赞助者列表</summary>
 
+<a href="https://afdian.com/u/ec6015fcd0ca11ef8f8e52540025c377">
+爱发电用户_ec601
+</a>
+<span>( 1 次赞助, 共 ￥10 ) 留言: 不错不错</span><br>
 <a href="https://afdian.com/u/713bc866afc811f093a952540025c377">
 爱发电用户_7WxX
 </a>
