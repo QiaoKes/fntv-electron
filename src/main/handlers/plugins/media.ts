@@ -262,7 +262,7 @@ async function handlePlayMovie(event: IpcMainEvent, { id, token }: PlayRequest):
             log.info('添加剧集到播放列表:', mediaItem);
         }
     } 
-    if (type === 'Video' && parentGuid) {
+    else if (type === 'Video' && parentGuid) {
         log.info('当前为其他视频，添加到播放列表');
         const req: ItemListRequest = {
             parent_guid: parentGuid,
