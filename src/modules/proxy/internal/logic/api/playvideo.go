@@ -117,9 +117,9 @@ func PlayVideoHandler(c *gin.Context) {
 		extraHeaders["Cookie"] = cloudInfo.Cookie
 		logger.Infof("检测到云存储信息: type=%d, url=%s", cloudInfo.CloudType, cloudInfo.DownloadURL)
 		switch cloudInfo.CloudType {
-		case QuarkPan, AliPan, BaiduPan, Cloud123Pan:
+		case QuarkPan:
 			proxyType = ChunkedProxy
-		case Cloud115Pan:
+		case Cloud115Pan, AliPan, BaiduPan, Cloud123Pan:
 			proxyType = TransparentProxy
 		default:
 			proxyType = TransparentProxy
