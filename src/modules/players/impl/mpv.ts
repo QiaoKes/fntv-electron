@@ -257,7 +257,8 @@ export class MpvPlayer extends BasePlayer {
                         }
                     });
 
-                    if (currentItem.ts > 0) {
+                    // 尝试跳转到上次播放位置, 即将到达片尾不跳转
+                    if (currentItem.ts > 0 && currentItem.ts <= 0.98 * currentItem.duration) {
                         // 使用重试机制进行跳转, 这里粗暴了点, 视频没加载没法跳，只能重试
                         this.seekWithRetry(currentItem.ts, 50000, 10);
                     }
