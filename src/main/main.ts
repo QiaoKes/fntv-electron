@@ -11,7 +11,7 @@ import * as fnConfig from '../modules/fn_config/config';
 import * as log from '../modules/logger';
 import { getMainWindow } from './common/mainwin';
 import { isTrusted } from '../modules/cert_trust';
-import { startProxyProcess } from './proxy';
+import { startProxyProcess, shutdownProxyProcess } from './common/proxy';
 
 // 禁用输入法自动切换
 app.commandLine.appendSwitch('--lang', 'en-US');
@@ -227,20 +227,12 @@ function showMacNotification(): void {
 app.on('before-quit', async () => {
     (app as any).isQuiting = true;
 
-    // 停止proxy进程
-    if (proxyProcess) {
-        log.info('应用退出前停止proxy进程');
-        try {
-            proxyProcess.kill('SIGTERM');
-            // 等待进程退出，最多等待5秒
-            setTimeout(() => {
-                if (!proxyProcess?.killed) {
-                    proxyProcess?.kill('SIGKILL');
-                }
-            }, 5000);
-        } catch (error) {
-            log.error('停止proxy进程失败:', error);
-        }
+    // 使用守护程序优雅关闭proxy进程
+    log.info('应用退出前关闭proxy进程');
+    try {
+        await shutdownProxyProcess();
+    } catch (error) {
+        log.error('关闭proxy进程出错:', error);
     }
 
     // 销毁托盘图标
