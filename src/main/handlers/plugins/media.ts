@@ -313,6 +313,7 @@ async function handlePlayMovie(event: IpcMainEvent, { id, token }: PlayRequest):
         // },
         extraArgs: [
             '--force-window=immediate',
+            '--network-timeout=180'
             // "--user-agent=Lavf/59.27.100",
         ],
         debug: true,
