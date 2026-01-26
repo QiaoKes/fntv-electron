@@ -42,7 +42,7 @@ async function playWithMpv(button: HTMLElement): Promise<void> {
             logger.info('Successfully obtained item_guid from original logic:', itemGuid);
             const token = getCookie('Trim-MC-token');
             if (token) {
-                const playData: PlayMovieData = { id: itemGuid, token };
+                const playData: PlayMovieData = { id: itemGuid, token: token, sourceIndex: 0 };
                 ipcRenderer.send('play-movie', playData);
             } else {
                 logger.error('No token found');
@@ -212,7 +212,7 @@ function sendPlayEventToMain(button: HTMLElement | null = null): string | null {
     const token = getCookie('Trim-MC-token');
 
     if (id && token) {
-        const playData: PlayMovieData = { id, token };
+        const playData: PlayMovieData = { id, token, sourceIndex: 0 };
         ipcRenderer.send('play-movie', playData);
         return id;
     } else {
