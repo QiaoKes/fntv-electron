@@ -40,13 +40,46 @@ function sendPlayEventToMain(button: HTMLElement | null = null): string | null {
 
     const token = getCookie('Trim-MC-token');
 
+    // 获取当前UI上选中的是第几个播放源
+    const sourceIndex = getCurrentSelectedVersionIndex();
+
     if (id && token) {
-        const playData: PlayMovieData = { id, token };
+        // 将动态获取的 sourceIndex 传给主进程
+        const playData: PlayMovieData = { id, token, sourceIndex };
         ipcRenderer.send('play-movie', playData);
         return id;
     } else {
         logger.error('Failed to extract ID or token. ID:', id, 'Token:', token);
         return null;
+    }
+}
+
+/**
+ * 获取当前高亮的版本按钮 Index
+ * 原理：在点击播放的瞬间，扫描版本列表，找到那个样式为 primary 的按钮
+ */
+function getCurrentSelectedVersionIndex(): number {
+    try {
+        const buttons = Array.from(document.querySelectorAll('button.semi-button.\\!h-9.\\!px-6'));
+        
+        if (buttons.length === 0) {
+            logger.warn('No version buttons found via selector.');
+            return 0;
+        }
+
+        const selectedIndex = buttons.findIndex(btn => 
+            btn.classList.contains('semi-button-primary')
+        );
+
+        const result = selectedIndex === -1 ? 0 : selectedIndex;
+        logger.info(`Found ${buttons.length} buttons, selected index: ${result}`);
+        
+        return result;
+
+    } catch (e) {
+        logger.error('Error calculating version index:', e);
+        // 出错时降级处理，默认播放第0个
+        return 0;
     }
 }
 

@@ -11,16 +11,16 @@ on:
       - '.github/workflows/afdian-action.yml'
       - 'docs/**'
       - '*.md'
-  pull_request:
-    branches:
-      - release
-    # 排除爱发电相关文件的变更和文档更新
-    paths-ignore:
-      - 'README.md'
-      - '.github/afdian-action.cshtml'
-      - '.github/workflows/afdian-action.yml'
-      - 'docs/**'
-      - '*.md'
+#   pull_request:
+#     branches:
+#       - release
+#     # 排除爱发电相关文件的变更和文档更新
+#     paths-ignore:
+#       - 'README.md'
+#       - '.github/afdian-action.cshtml'
+#       - '.github/workflows/afdian-action.yml'
+#       - 'docs/**'
+#       - '*.md'
   workflow_dispatch:
 
 permissions:
