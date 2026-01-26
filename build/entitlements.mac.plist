@@ -58,10 +58,6 @@
     <key>com.apple.security.inherit</key>
     <true/>
     
-    <!-- 允许访问环境变量 -->
-    <key>com.apple.security.cs.allow-dyld-environment-variables</key>
-    <true/>
-    
     <!-- 允许访问系统路径下的可执行文件 -->
     <key>com.apple.security.temporary-exception.files.absolute-path.read-only</key>
     <array>
