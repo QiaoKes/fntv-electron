@@ -84,15 +84,24 @@ func PlayVideoHandler(c *gin.Context) {
 
 	// 获取播放信息（带缓存）
 	logger.Infof("开始获取播放信息: itemGuid=%s", params.ItemGuid)
-	resp, err := fnApi.GetPlayInfoCached(params.ItemGuid)
+	resp, err := fnApi.GetStreamListCached(params.ItemGuid)
 	if err != nil || !resp.Success {
 		logger.Errorf("获取播放信息失败: %v", err)
 		c.JSON(500, gin.H{"error": "Failed to get play info"})
 		return
 	}
 
-	playInfo := resp.Data
-	mediaGuid := playInfo.MediaGUID
+	playInfo := resp.Data.VideoStreams
+	if len(playInfo) <= 0 {
+		logger.Errorf("播放信息为空: itemGuid=%s", params.ItemGuid)
+		c.JSON(500, gin.H{"error": "No play info found"})
+		return
+	}
+
+	mediaGuid := playInfo[0].MediaGUID
+	if params.SourceIndex > 0 && int(params.SourceIndex) < len(playInfo) {
+		mediaGuid = playInfo[params.SourceIndex].MediaGUID
+	}
 
 	// 获取流信息
 	logger.Infof("开始获取流信息: mediaGuid=%s, account=%s", mediaGuid, params.Account)

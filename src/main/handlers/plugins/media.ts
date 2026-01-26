@@ -20,6 +20,7 @@ import { getMainWindow } from '../../common/mainwin';
 interface PlayRequest {
     id: string;
     token: string;
+    sourceIndex: number; // 可选，播放源
 }
 
 // 全局播放器实例引用
@@ -219,14 +220,14 @@ function eventHandler(fnapi: fn.ApiService) {
 }
 
 // 处理播放事件
-async function handlePlayMovie(event: IpcMainEvent, { id, token }: PlayRequest): Promise<void> {
+async function handlePlayMovie(event: IpcMainEvent, { id, token, sourceIndex }: PlayRequest): Promise<void> {
     // 检查是否已有播放器在播放
     if (currentPlayer && currentPlayer.isPlaying()) {
         log.warn('已有播放器在播放，无法重复播放');
         return;
     }
 
-    log.info('Play movie event received id:', id, 'with token:', token);
+    log.info('Play movie event received id:', id, ' with token:', token, ' index:', sourceIndex);
 
     const config = fnConfig.readConfig();
     if (!config || !config.domain) {
@@ -298,6 +299,13 @@ async function handlePlayMovie(event: IpcMainEvent, { id, token }: PlayRequest):
     // 寻找当前播放的媒体在数组中的位置
     const currentIndex = playList.findIndex(item => item.itemGuid === itemGuid);
 
+    // 检查是否选择了特定的播放源索引
+    if (sourceIndex > 0) {
+        log.info(`使用指定的播放源索引: ${sourceIndex}`);
+        // 修改播放列表中的源索引
+        playList[currentIndex].playLink = getProxyUrl(config, playList[currentIndex].itemGuid, sourceIndex);
+    }
+
     // 获取MPV播放器路径
     const playerPath = getMpvPlayerPath();
     if (!playerPath) {
@@ -313,6 +321,7 @@ async function handlePlayMovie(event: IpcMainEvent, { id, token }: PlayRequest):
         // },
         extraArgs: [
             '--force-window=immediate',
+            '--network-timeout=180'
             // "--user-agent=Lavf/59.27.100",
         ],
         debug: true,
@@ -330,13 +339,13 @@ async function handlePlayMovie(event: IpcMainEvent, { id, token }: PlayRequest):
 }
 
 // 生成代理URL
-function getProxyUrl(cfg: fnConfig.Config, itemGuid: string): string {
+function getProxyUrl(cfg: fnConfig.Config, itemGuid: string, sourceIndex: number = 0): string {
     const skipVerify = isTrusted(cfg.domain || '') ? '1' : '0';
     const useNasLocal = cfg.nasProxyEnabled === true ? '1' : '0';
     // urlencode
     const domain = escape(cfg.domain || '');
     // const skipVerify = '1'; // 永远跳过证书验证
-    return `http://127.0.0.1:22345/api/v1/playvideo/${itemGuid}?token=${cfg.token}&skipVerify=${skipVerify}&account=${cfg.account}&domain=${domain}&useNasLocal=${useNasLocal}`;
+    return `http://127.0.0.1:22345/api/v1/playvideo/${itemGuid}?token=${cfg.token}&skipVerify=${skipVerify}&account=${cfg.account}&domain=${domain}&useNasLocal=${useNasLocal}&sourceIndex=${sourceIndex}`;
 }
 
 // 处理当前播放的媒体信息

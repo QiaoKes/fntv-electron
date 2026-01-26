@@ -72,7 +72,7 @@ async function handleLogin(event: IpcMainEvent, loginData: LoginData): Promise<v
     }
 
     // 构建服务器地址
-    const server = loginData.useHttps ? `https://${loginData.domain}` : `http://${loginData.domain}`;
+    let server = loginData.useHttps ? `https://${loginData.domain}` : `http://${loginData.domain}`;
     const fnapi = new fn.ApiService(server);
 
     try {
@@ -117,6 +117,8 @@ async function handleLogin(event: IpcMainEvent, loginData: LoginData): Promise<v
             return;
         }
 
+        // 登录成功，处理返回的 token 和可能的重定向 URL
+        server = response.moveUrl || server;
         const token = response.data.token;
         if (!token) {
             log.error('登录失败: 没有有效的登录信息，无法恢复 cookies');

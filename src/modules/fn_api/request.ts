@@ -15,6 +15,7 @@ export interface ApiResponse<T = any> {
     data?: T;
     message?: string;
     certificateError?: boolean; // 标识是否为证书错误
+    moveUrl?: string; // 重定向URL
 }
 
 export interface FnApiResponseData<T = any> {
@@ -65,13 +66,14 @@ export const DEFAULT_TIMEOUT = 10000;
 
 // API请求函数
 export async function request<T = any>(
-    baseUrl: string, 
-    url: string, 
-    method: HttpMethod, 
-    token: string, 
+    baseUrl: string,
+    url: string,
+    method: HttpMethod,
+    token: string,
     data?: any,
     extraHeaders?: Record<string, string>,
-    timeout: number = DEFAULT_TIMEOUT, 
+    axiosConfig?: Record<string, any>, // 外部传入的 axios 配置
+    timeout: number = DEFAULT_TIMEOUT,
     tryTimes: number = 5,
 ): Promise<ApiResponse<T>> {
     const fullUrl = baseUrl + url;
@@ -91,39 +93,68 @@ export async function request<T = any>(
 
     // 根据URL是否已被信任来决定是否验证证书
     const shouldIgnoreCert = isTrusted(baseUrl);
-    
-    // 设置请求配置，包含超时时间和动态SSL证书验证
+
     const config = {
         headers,
         timeout: timeout,
+        // 禁止 Axios 自动处理重定向，手动处理
+        maxRedirects: 0,
+        // 允许 3xx 状态码进入 .then() 而不是 .catch()
+        validateStatus: (status: number) => status >= 200 && status < 400,
         httpsAgent: new https.Agent({
-            rejectUnauthorized: !shouldIgnoreCert, // 根据信任状态决定是否验证证书
-            keepAlive: true, // 启用keep-alive
-            timeout: timeout, // 设置连接超时
-            maxSockets: 10, // 限制最大并发连接数
-        })
+            rejectUnauthorized: !shouldIgnoreCert,
+            keepAlive: true,
+            timeout: timeout,
+            maxSockets: 10,
+        }),
+        ...axiosConfig
     };
 
-    // 使用循环实现重试逻辑
     for (let attempt = 0; attempt <= tryTimes; attempt++) {
         try {
             let response: AxiosResponse<FnApiResponseData<T>>;
 
             switch (method) {
-                case HttpMethod.GET:
-                    response = await axios.get(fullUrl, config);
-                    break;
-                case HttpMethod.POST:
-                    response = await axios.post(fullUrl, data, config);
-                    break;
-                case HttpMethod.PUT:
-                    response = await axios.put(fullUrl, data, config);
-                    break;
-                case HttpMethod.DELETE:
-                    response = await axios.delete(fullUrl, config);
-                    break;
-                default:
-                    throw new Error(`Unsupported method: ${method}`);
+                case HttpMethod.GET: response = await axios.get(fullUrl, config); break;
+                case HttpMethod.POST: response = await axios.post(fullUrl, data, config); break;
+                case HttpMethod.PUT: response = await axios.put(fullUrl, data, config); break;
+                case HttpMethod.DELETE: response = await axios.delete(fullUrl, config); break;
+                default: throw new Error(`Unsupported method: ${method}`);
+            }
+
+            if ([301, 302, 307, 308].includes(response.status)) {
+                const location = response.headers.location;
+                log.warn(`检测到重定向 (${response.status}) -> ${location}`);
+
+                if (location) {
+                    // 1. 解析新地址
+                    let newBaseUrl = baseUrl;
+                    let newUrlPath = location;
+
+                    // 如果是绝对路径 (http开头)，重新拆解 baseUrl 和 path
+                    if (location.startsWith('http')) {
+                        const parsedUrl = new URL(location);
+                        newBaseUrl = `${parsedUrl.protocol}//${parsedUrl.host}`;
+                        newUrlPath = parsedUrl.pathname + parsedUrl.search;
+                    }
+
+                    const recursiveResult = await request<T>(
+                        newBaseUrl,
+                        newUrlPath,
+                        method,
+                        token,
+                        data,
+                        extraHeaders,
+                        axiosConfig,
+                        timeout,
+                        tryTimes - 1
+                    );
+
+                    return {
+                        ...recursiveResult,
+                        moveUrl: recursiveResult.moveUrl || newBaseUrl
+                    };
+                }
             }
 
             const res = response.data;
@@ -144,11 +175,9 @@ export async function request<T = any>(
 
             // 处理业务错误
             if (res.code !== 0) {
-                log.error(`fn_api 请求失败 url:${fullUrl}`, ' header:', headers, ' req:', data || 'null', ' resp:', res);
-                return {
-                    success: false,
-                    message: res.msg
-                };
+                // 注意：如果重定向返回 HTML，res.code 会是 undefined，这里要小心
+                log.error(`fn_api 请求失败`, res);
+                return { success: false, message: res.msg || `HTTP Error ${response.status}` };
             }
 
             return {
@@ -157,33 +186,31 @@ export async function request<T = any>(
             };
 
         } catch (error: any) {
-            const errorCode = error.code || ''
-            const errorMessage = error.response?.data || error.message || '未知错误';
-            log.info(`检测到错误: code: ${errorCode}, msg: ${errorMessage}, URL: ${fullUrl}`);
+            const errorCode = error.code || 'UNKNOWN';
+            // 优先获取 error.message，因为 connection error 没有 response
+            const errorMsg = error.message;
+            const respData = error.response ? JSON.stringify(error.response.data) : 'No Response Data';
+
+            log.error(`请求异常: [${errorCode}] ${errorMsg} | Resp: ${respData} | URL: ${fullUrl}`);
+
             // 检查是否为证书验证错误且URL未被信任
             if (isCertificateError(error) && !isTrusted(baseUrl)) {
-                log.warn(`检测到证书验证错误: code: ${errorCode}, msg: ${errorMessage}, URL: ${fullUrl}`);
-                
+                log.warn(`检测到证书验证错误: code: ${errorCode}, msg: ${errorMsg}, URL: ${fullUrl}`);
+
                 // 返回特殊的证书错误响应，让上层处理
                 return {
                     success: false,
-                    message: errorMessage,
+                    message: errorMsg,
                     // 添加一个特殊标识表示这是证书错误
                     certificateError: true
                 } as ApiResponse<T> & { certificateError?: boolean };
             }
-            
+
             // 如果是最后一次尝试，返回错误
             if (attempt >= tryTimes) {
-                log.error(`axios 请求失败 - `, errorMessage);
-                return {
-                    success: false,
-                    message: errorMessage
-                };
+                return { success: false, message: errorMsg };
             }
 
-            // 等待后重试
-            log.warn(`请求失败，重试中 attempt = ${attempt + 1}, error: ${errorMessage}`);
             await setTimeout(100);
         }
     }

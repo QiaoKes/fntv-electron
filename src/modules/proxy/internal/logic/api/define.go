@@ -33,6 +33,7 @@ type PlayVideoParams struct {
 	Domain      string `json:"domain" form:"domain"`
 	SkipVerify  int32  `json:"skipVerify" form:"skipVerify"`
 	UseNasLocal int32  `json:"useNasLocal" form:"useNasLocal"`
+	SourceIndex int32  `json:"sourceIndex" form:"sourceIndex"`
 }
 
 // CloudStorageInfo 云存储信息
