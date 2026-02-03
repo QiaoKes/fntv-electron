@@ -137,15 +137,20 @@ func PlayVideoHandler(c *gin.Context) {
 		skipVerify = false
 	}
 
-	// 等待速率限制, 防止风控
-	if cloudInfo != nil && cloudInfo.CloudType == Cloud115Pan {
-		_ = waitLimiter()
-	}
-
 	// 通用头部
 	extraHeaders["Authorization"] = params.Token
 	// User-Agent
 	extraHeaders["User-Agent"] = "trim_player"
+
+	if cloudInfo != nil && cloudInfo.CloudType == Cloud115Pan {
+		switch cloudInfo.CloudType {
+		case Cloud115Pan:
+			// 等待速率限制, 防止风控
+			_ = waitLimiter()
+		case BaiduPan:
+			extraHeaders["User-Agent"] = "pan.baidu.com"
+		}
+	}
 
 	// 开始代理
 	switch proxyType {
