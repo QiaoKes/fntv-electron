@@ -142,7 +142,7 @@ func PlayVideoHandler(c *gin.Context) {
 	// User-Agent
 	extraHeaders["User-Agent"] = "trim_player"
 
-	if cloudInfo != nil && cloudInfo.CloudType == Cloud115Pan {
+	if cloudInfo != nil {
 		switch cloudInfo.CloudType {
 		case Cloud115Pan:
 			// 等待速率限制, 防止风控
