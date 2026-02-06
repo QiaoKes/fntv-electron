@@ -1,15 +1,12 @@
 package utils
 
 import (
-	"bytes"
 	"crypto/sha1"
 	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
 	"io"
 	"net/http"
-	"net/http/httputil"
-	"net/url"
 	"time"
 
 	"proxy/pkg/logger"
@@ -74,94 +71,91 @@ func PassthroughHeaders(req *http.Request) map[string]string {
 	return headers
 }
 
-// DynamicProxy 执行透明代理
+// DynamicProxy 实现流式管道代理，支持自动跟随重定向
 func DynamicProxy(c *gin.Context, targetURL string, extraHeaders map[string]string, skipVerify bool) {
-	// 使用recover来捕获可能的panic
-	defer func() {
-		if err := recover(); err != nil {
-			// 检查是否是http.ErrAbortHandler错误
-			if err == http.ErrAbortHandler {
-				// logger.Debugf("客户端断开连接，忽略错误: %v", err)
-				return
-			}
-			// 其他panic重新抛出
-			panic(err)
-		}
-	}()
-
-	// 解析目标URL
-	target, err := url.Parse(targetURL)
+	// 1. 创建 HTTP 请求
+	// 注意：使用 c.Request.Context()，这样客户端断开连接时，下载也会自动停止
+	req, err := http.NewRequestWithContext(c.Request.Context(), c.Request.Method, targetURL, c.Request.Body)
 	if err != nil {
-		c.JSON(500, gin.H{"error": "Invalid target URL"})
+		c.JSON(500, gin.H{"error": "Failed to create request"})
 		return
 	}
 
-	// 创建反向代理
-	proxy := httputil.NewSingleHostReverseProxy(target)
+	// 2. 复制客户端的 Header 到新请求
+	// 我们需要小心过滤掉一些 Hop-by-hop 的 Header
+	skipHeaders := map[string]bool{
+		"Host":                true, // Host 由 http.Client 根据 URL 自动设置
+		"Content-Length":      true, // 由 req.Body 自动处理
+		"Transfer-Encoding":   true,
+		"Connection":          true,
+		"Keep-Alive":          true,
+		"Proxy-Authenticate":  true,
+		"Proxy-Authorization": true,
+		"Te":                  true,
+		"Trailers":            true,
+		"Upgrade":             true,
+	}
 
-	// 设置超时时间
-	proxy.Transport = &http.Transport{
-		ResponseHeaderTimeout: 30 * time.Second,
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: skipVerify,
+	for k, v := range c.Request.Header {
+		if !skipHeaders[k] {
+			for _, vv := range v {
+				req.Header.Add(k, vv)
+			}
+		}
+	}
+
+	// 添加额外的 Header
+	for k, v := range extraHeaders {
+		req.Header.Set(k, v)
+	}
+
+	// 3. 配置 HTTP Client
+	client := &http.Client{
+		// 自动跟随重定向是 http.Client 的默认行为，无需额外配置
+		// 只要不设置 CheckRedirect，它就会自动处理 302 直到拿到 200
+		Timeout: 0, // 设置为 0，因为下载大文件或视频流需要长时间保持连接
+		Transport: &http.Transport{
+			TLSClientConfig:    &tls.Config{InsecureSkipVerify: skipVerify},
+			MaxIdleConns:       100,
+			IdleConnTimeout:    90 * time.Second,
+			DisableCompression: true, // 对于视频流，通常不需要压缩，且压缩可能导致流式传输问题
 		},
 	}
 
-	// 修改请求前的处理
-	proxy.Director = func(req *http.Request) {
-		// 设置原始请求信息
-		req.URL.Scheme = target.Scheme
-		req.URL.Host = target.Host
-		req.URL.Path = target.Path
-		req.URL.RawQuery = target.RawQuery
-		req.Host = target.Host
-
-		// 复制原始请求的头部
-		for key, values := range c.Request.Header {
-			for _, value := range values {
-				req.Header.Set(key, value)
-			}
+	// 4. 发起请求 (这一步会自动处理 302 跳转)
+	resp, err := client.Do(req)
+	if err != nil {
+		logger.Errorf("代理请求失败: %v", err)
+		// 如果客户端已经断开，就不返回错误了
+		if c.Request.Context().Err() == nil {
+			c.Status(http.StatusBadGateway)
 		}
+		return
+	}
+	defer resp.Body.Close()
 
-		// 添加额外的头部信息
-		for key, value := range extraHeaders {
-			req.Header.Set(key, value)
-		}
-
-		logger.Infof("method:%s path:%s query:%s, header:%v", req.Method, req.URL.Path, req.URL.RawQuery, req.Header)
-
-		// 设置请求方法
-		req.Method = c.Request.Method
-
-		// 如果有请求体，复制它
-		if c.Request.Body != nil {
-			bodyBytes, err := io.ReadAll(c.Request.Body)
-			if err == nil {
-				req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
-				req.ContentLength = int64(len(bodyBytes))
+	// 5. 将目标服务器的响应 Header 复制回给客户端
+	for k, v := range resp.Header {
+		// 同样过滤掉一些 Header
+		if !skipHeaders[k] {
+			for _, vv := range v {
+				c.Writer.Header().Add(k, vv)
 			}
 		}
 	}
 
-	// 修改响应后的处理
-	proxy.ModifyResponse = func(resp *http.Response) error {
-		// 打印相应头
-		logger.Infof("响应状态: %s, 头部: %v", resp.Status, resp.Header)
-		// 可以在这里修改响应头部或内容
-		return nil
-	}
+	// 设置状态码
+	c.Status(resp.StatusCode)
 
-	// 处理错误 - 修复：避免重复写入响应头
-	proxy.ErrorHandler = func(w http.ResponseWriter, req *http.Request, err error) {
-		// 检查响应是否已经开始写入
-		if c.Writer.Written() {
-			logger.Debugf("代理错误，但响应已开始写入: %v", err)
-			return
-		}
-		logger.Debugf("代理错误: %v", err)
-		c.JSON(500, gin.H{"error": "Proxy error", "details": err.Error()})
-	}
+	// 6. 关键步骤：建立数据管道
+	// 直接将上游的 Body 流式拷贝到 ResponseWriter
+	// 这样数据来多少发多少，不会占用服务器内存
+	buf := make([]byte, 32*1024) // 32KB 缓冲区
+	_, err = io.CopyBuffer(c.Writer, resp.Body, buf)
 
-	// 执行代理
-	proxy.ServeHTTP(c.Writer, c.Request)
+	if err != nil {
+		// 这里的错误通常是因为客户端（播放器）关闭了连接，或者是网络中断
+		// 不需要 panic，只需要记录日志即可
+		logger.Debugf("流式传输中断 (可能是客户端主动断开): %v", err)
+	}
 }
