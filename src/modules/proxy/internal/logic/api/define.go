@@ -9,6 +9,8 @@ const (
 	Cloud115Pan CloudType = 3 // Cloud115Pan 115网盘
 	QuarkPan    CloudType = 4 // QuarkPan 夸克云盘
 	Cloud123Pan CloudType = 5 // Cloud123Pan 123云盘
+
+	Strm CloudType = 9001 // Strm Strm链接
 )
 
 const (

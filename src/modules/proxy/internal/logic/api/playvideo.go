@@ -67,7 +67,6 @@ func ParseCloudInfo(info fnapi.StreamResponse) *CloudStorageInfo {
 }
 
 func PlayVideoHandler(c *gin.Context) {
-	// 解析参数
 	params, err := parseQueryParam(c)
 	if err != nil {
 		logger.Errorf("解析参数失败: %v", err)
@@ -75,95 +74,80 @@ func PlayVideoHandler(c *gin.Context) {
 		return
 	}
 
-	// 忽略证书错误
-	skipVerify := params.SkipVerify == 1
-	// 使用本地NAS代理
-	useNasLocal := params.UseNasLocal == 1
-
-	fnApi := fnapi.NewApiService(params.Domain, params.Token, skipVerify)
-
-	// 获取播放信息（带缓存）
-	logger.Infof("开始获取播放信息: itemGuid=%s", params.ItemGuid)
+	fnApi := fnapi.NewApiService(params.Domain, params.Token, params.SkipVerify == 1)
 	resp, err := fnApi.GetStreamListCached(params.ItemGuid)
-	if err != nil || !resp.Success {
-		logger.Errorf("获取播放信息失败: %v", err)
+	if err != nil || !resp.Success || len(resp.Data.VideoStreams) == 0 {
+		logger.Errorf("获取播放信息失败或为空: %v", err)
 		c.JSON(500, gin.H{"error": "Failed to get play info"})
 		return
 	}
 
-	playInfo := resp.Data.VideoStreams
-	if len(playInfo) <= 0 {
-		logger.Errorf("播放信息为空: itemGuid=%s", params.ItemGuid)
-		c.JSON(500, gin.H{"error": "No play info found"})
-		return
+	// 选择视频流
+	videoStreams := resp.Data.VideoStreams
+	targetMediaGuid := videoStreams[0].MediaGUID
+	if params.SourceIndex > 0 && int(params.SourceIndex) < len(videoStreams) {
+		targetMediaGuid = videoStreams[params.SourceIndex].MediaGUID
 	}
 
-	mediaGuid := playInfo[0].MediaGUID
-	if params.SourceIndex > 0 && int(params.SourceIndex) < len(playInfo) {
-		mediaGuid = playInfo[params.SourceIndex].MediaGUID
-	}
-
-	// 获取流信息
-	logger.Infof("开始获取流信息: mediaGuid=%s, account=%s", mediaGuid, params.Account)
-	streamResp, err := fnApi.GetStreamCached(mediaGuid, params.Account)
+	// 获取流地址信息
+	streamResp, err := fnApi.GetStreamCached(targetMediaGuid, params.Account)
 	if err != nil || !streamResp.Success {
 		logger.Errorf("获取视频流失败: %v", err)
 		c.JSON(500, gin.H{"error": "Failed to get stream"})
 		return
 	}
 
-	// 代理URL
-	target := fnApi.GetVideoURL(mediaGuid)
-	// 代理模式, 默认透明代理
-	proxyType := TransparentProxy
-	// 额外头部
-	extraHeaders := utils.PassthroughHeaders(c.Request)
+	var (
+		targetUrl    = fnApi.GetVideoURL(targetMediaGuid)
+		proxyType    = TransparentProxy
+		skipVerify   = params.SkipVerify == 1
+		extraHeaders = utils.PassthroughHeaders(c.Request)
+	)
 
 	cloudInfo := ParseCloudInfo(streamResp.Data)
-	// 有云盘信息，并且没有启用NAS本地代理模式
-	if cloudInfo != nil && !useNasLocal {
-		target = cloudInfo.DownloadURL
-		extraHeaders["Cookie"] = cloudInfo.Cookie
-		logger.Infof("检测到云存储信息: type=%d, url=%s", cloudInfo.CloudType, cloudInfo.DownloadURL)
+	useCloudDirect := cloudInfo != nil && params.UseNasLocal != 1
+
+	// 云盘直链模式
+	if useCloudDirect {
+		logger.Infof("启用云存储直连: type=%d", cloudInfo.CloudType)
+
+		targetUrl = cloudInfo.DownloadURL
+		// 禁止跳过证书验证，云厂商的证书通常是合法的，不需要跳过验证
+		skipVerify = false
+
+		// 注入云盘需要的 Cookie
+		if cloudInfo.Cookie != "" {
+			extraHeaders["Cookie"] = cloudInfo.Cookie
+		}
+
+		// 选择播放策略
 		switch cloudInfo.CloudType {
 		case QuarkPan:
-			proxyType = ChunkedProxy
-		case Cloud115Pan, AliPan, BaiduPan, Cloud123Pan:
-			proxyType = TransparentProxy
-		default:
-			proxyType = TransparentProxy
-		}
-		// 云盘直链模式不允许忽略证书错误
-		skipVerify = false
-	}
-
-	// 通用头部
-	extraHeaders["Authorization"] = params.Token
-	// User-Agent
-	extraHeaders["User-Agent"] = "trim_player"
-
-	if cloudInfo != nil {
-		switch cloudInfo.CloudType {
+			proxyType = ChunkedProxy // 夸克需要切片
 		case Cloud115Pan:
-			// 等待速率限制, 防止风控
+			// 115 特殊处理：UA 和限流
+			extraHeaders["User-Agent"] = "trim_player"
 			_ = waitLimiter()
 		case BaiduPan:
 			extraHeaders["User-Agent"] = "pan.baidu.com"
+			// 其他网盘使用默认的 TransparentProxy
 		}
+	} else {
+		// 本地 NAS 转发模式 ---
+		// 只有请求 NAS 时才需要 Authorization Token
+		extraHeaders["Authorization"] = params.Token
 	}
 
-	// 开始代理
+	// 执行代理
+	logger.Infof("开始代理 | 模式: %v | URL: %s", proxyType, targetUrl)
+
 	switch proxyType {
-	case TransparentProxy:
-		logger.Infof("开始透明代理到: %s", target)
-		utils.DynamicProxy(c, target, extraHeaders, skipVerify)
 	case ChunkedProxy:
-		logger.Infof("开始切片对齐代理到: %s", target)
-		// 使用云盘处理器处理边下边播请求
-		handler := utils.NewCloudStorageHandler(target, extraHeaders, skipVerify)
+		// 边下边播处理 (如夸克)
+		handler := utils.NewCloudStorageHandler(targetUrl, extraHeaders, skipVerify)
 		handler.HandleRequest(c)
 	default:
-		logger.Infof("unknown proxy type, default to transparent: %s", target)
-		utils.DynamicProxy(c, target, extraHeaders, skipVerify)
+		// 透明代理 (本地 NAS 或 115/阿里等直链)
+		utils.DynamicProxy(c, targetUrl, extraHeaders, skipVerify)
 	}
 }
