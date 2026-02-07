@@ -266,16 +266,19 @@ export class MpvPlayer extends BasePlayer {
 
                 const fnapi = this.getFnApi();
                 // 获取并下载字幕
-                fnapi.getSubtitle(itemGuid).then(fnapi.downloadSubtitle).then(subPaths => {
-                    // 加载字幕
-                    subPaths.forEach(subPath => {
-                        this.mpvInstance?.addSubtitles(subPath).catch(err => {
-                            if (this.config.debug) {
-                                log.debug('加载字幕失败:', err);
-                            }
+                fnapi.getSubtitle(itemGuid)
+                    .then(fnapi.downloadSubtitle)
+                    .then(subPaths => {
+                        // 加载字幕
+                        subPaths.forEach(subPath => {
+                            const subName = path.basename(subPath).split("@")[0]; // 获取原始字幕名称
+                            this.mpvInstance?.addSubtitles(subPath, "select", subName).catch(err => {
+                                if (this.config.debug) {
+                                    log.debug('加载字幕失败:', err);
+                                }
+                            });
                         });
                     });
-                });
             }
         });
 

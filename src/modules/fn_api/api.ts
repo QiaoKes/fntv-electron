@@ -273,23 +273,11 @@ export class ApiService {
             await this.cleanupSubtitleDirectory();
         }
 
-        // 创建Axios实例，根据信任状态决定是否验证证书
-        const shouldIgnoreCert = isTrusted(this.baseURL);
-        const api: AxiosInstance = axios.create({
-            baseURL: this.baseURL,
-            timeout: 10000,
-            responseType: 'text',
-            httpsAgent: new https.Agent({
-                rejectUnauthorized: !shouldIgnoreCert // 根据信任状态决定是否验证证书
-            }),
-        });
-
         // 准备下载任务
         const downloadTasks = subs.map(sub => {
             const { id, name = id, format = 'srt' } = sub;
             const safeName = name.replace(/[^a-z0-9]/gi, '_'); // 文件名安全处理
-            const filePath = path.join(this.tempDir, `${safeName}_${id}.${format}`);
-            const url = `/v/api/v1/subtitle/dl/${id}`;
+            const filePath = path.join(this.tempDir, `${safeName}@${id}.${format}`);
 
             // 检查文件是否已存在
             if (fs.existsSync(filePath)) {
@@ -297,17 +285,17 @@ export class ApiService {
                 return Promise.resolve({ id, filePath, success: true } as types.SubtitleDownloadResult);
             }
 
-            return api.get(url)
+            return fn.request(this.baseURL, `/v/api/v1/subtitle/dl/${id}`, HttpMethod.GET, this.token)
                 .then(response => {
-                    if (response.status >= 200 && response.status < 300) {
+                    if (response.success && response.data) {
                         return fs.promises.writeFile(filePath, response.data)
                             .then(() => {
                                 log.info(`✅ 字幕文件已下载到: ${filePath}`);
                                 return { id, filePath, success: true } as types.SubtitleDownloadResult;
                             });
                     } else {
-                        log.error(`❌ 服务端错误: ${response.status} (ID: ${id})`);
-                        return { id, filePath, success: false, error: `HTTP ${response.status}` } as types.SubtitleDownloadResult;
+                        log.error(`❌ 服务端错误: ${response.message} (ID: ${id})`);
+                        return { id, filePath, success: false, error: `HTTP ${response.message}` } as types.SubtitleDownloadResult;
                     }
                 })
                 .catch((error: any) => {
