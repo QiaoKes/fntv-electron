@@ -96,12 +96,30 @@ func DynamicProxy(c *gin.Context, targetURL string, extraHeaders map[string]stri
 		return
 	}
 
+	// 兼容webdav 取出 userinfo（如果有）
+	var (
+		uName   string
+		uPass   string
+		hasUser bool
+	)
+	if target.User != nil {
+		uName = target.User.Username()
+		if p, ok := target.User.Password(); ok {
+			uPass = p
+		}
+		hasUser = (uName != "")
+	}
+
+	// 清除URL中的用户信息，避免泄露
+	targetNoUser := *target
+	targetNoUser.User = nil
+
 	// 创建反向代理
-	proxy := httputil.NewSingleHostReverseProxy(target)
+	proxy := httputil.NewSingleHostReverseProxy(&targetNoUser)
 
 	// 设置超时时间
 	proxy.Transport = &http.Transport{
-		ResponseHeaderTimeout: 30 * time.Second,
+		ResponseHeaderTimeout: 120 * time.Second,
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: skipVerify,
 		},
@@ -129,6 +147,11 @@ func DynamicProxy(c *gin.Context, targetURL string, extraHeaders map[string]stri
 		}
 
 		logger.Infof("method:%s path:%s query:%s, header:%v", req.Method, req.URL.Path, req.URL.RawQuery, req.Header)
+
+		// 如果客户端没带 Authorization，但 URL 有 userinfo，就补上 BasicAuth
+		if req.Header.Get("Authorization") == "" && hasUser {
+			req.SetBasicAuth(uName, uPass)
+		}
 
 		// 设置请求方法
 		req.Method = c.Request.Method
