@@ -20,10 +20,10 @@ export async function restoreCookies(domain: string, token: string, isLogin: boo
         return false;
     }
 
+    // 验证token是否有效
     if (!isLogin) {
-        // 验证token是否有效
         const fnapi = new ApiService(domain, token);
-        const response = await fnapi.getUserInfo();
+        const response = await fnapi.getUserInfo(5000, 0);
         if (!response || !response.success) {
             log.warn('无效的token:', token);
             return false;
@@ -38,7 +38,7 @@ export async function restoreCookies(domain: string, token: string, isLogin: boo
     // 根据登录接口返回的 token 格式设置相应的 cookie
     try {
         const isHttps = domain.startsWith('https://');
-        
+
         // 先清除可能存在的旧cookie
         await ses.cookies.remove(domain, 'Trim-MC-token')
 
@@ -55,7 +55,18 @@ export async function restoreCookies(domain: string, token: string, isLogin: boo
             httpOnly: false,
             sameSite: isHttps ? 'no_restriction' : 'lax'  // HTTP 下用 lax
         });
-        
+
+        // 设置 mode=relay Cookie（FN Connect 外网访问必需）
+        await ses.cookies.set({
+            url: domain,
+            name: 'mode',
+            value: 'relay',
+            path: '/',
+            secure: isHttps,
+            httpOnly: false,
+            sameSite: isHttps ? 'no_restriction' : 'lax'
+        });
+
         return true;
     } catch (error) {
         log.error('Cookie 设置失败:', error);
@@ -65,5 +76,5 @@ export async function restoreCookies(domain: string, token: string, isLogin: boo
 
 // CommonJS导出，确保与现有代码兼容
 module.exports = {
-    restoreCookies
+    restoreCookies,
 };

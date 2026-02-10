@@ -1,8 +1,5 @@
 ﻿# fntv-electron 桌面客户端
 
-![Electron](https://img.shields.io/badge/Electron-47848F?style=for-the-badge&logo=Electron&logoColor=white)
-![Vue](https://img.shields.io/badge/Vue.js-4FC08D?style=for-the-badge&logo=vue.js&logoColor=white)
-
 飞牛影视桌面客户端，基于Electron构建，提供更好的桌面体验和增强功能。
 
 <img src="resource/docs/switch.png" width="90%">
@@ -14,6 +11,7 @@
 
 - **原生桌面体验** - 基于飞牛影视Web端构建的桌面应用，提供类原生体验
 - **多账户管理** - 支持自动登录，支持多账户管理，自由切换账户和服务器
+- **远程访问** - 支持使用FN Connect，通过FN ID登录实现远程访问
 - **硬解播放** - 使用MPV播放器，支持H264 / HEVC / VP9 / AV1等编码格式
 - **直链播放** - 适配官方直链 / STRM播放，默认使用302重定向，可以在托盘处调整为nas代理模式
 - **进度回传** - MPV播放器支持实时将进度回传到飞牛服务器
@@ -181,23 +179,19 @@ npm run build:linux
 
 目前我这边没有使用potplayer的需求，如果需要的话可以自行修改源码适配一下，已留好interface，只需要适配。
 
-### 3. 是否支持飞牛connect登录？
-
-官方未开放相关API，无法支持。
-
-### 4. 弹幕相关问题？
+### 3. 弹幕相关问题？
 
 弹幕问题查看uosc_danmaku的文档，根据文档内容调整配置。
 
-### 5. 登录完客户端后，如果服务器连接不上登录会超时卡透明屏，无法切换或修改服务器配置，卸载重装也不行
+### 4. 登录完客户端后，如果服务器连接不上登录会超时卡透明屏，无法切换或修改服务器配置，卸载重装也不行
 
 去C:\\Users\\{你的计算机用户名}\\.fntv 下面把config.json删除了，因为连接成功后实际上加载的还是飞牛网页端，没响应当然会透明了。
 
-### 6. 打开弹幕视频掉帧
+### 5. 打开弹幕视频掉帧
 
 打开弹幕时，默认开启fps平滑滤镜，比较吃性能，不需要可以去安装目录下的third_party\fntv-mpv\portable_config\script-opts下uosc_danmaku.conf关闭相关配置
 
-### 7. 视频播放卡慢，双显卡，调用时发现使用核显
+### 6. 视频播放卡慢，双显卡，调用时发现使用核显
 
 以下两种方法任选其一：
 
