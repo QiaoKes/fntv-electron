@@ -92,7 +92,7 @@ if (!gotTheLock) {
             winctrl.setupWindowShowEvents(mainWindow);
 
             // 恢复 Cookie
-            winctrl.setupCookieRestore(mainWindow);
+            await winctrl.setupCookieRestore(mainWindow);
 
             // 延迟3秒后进行自动更新检查，避免影响应用启动速度
             setTimeout(() => {
@@ -114,11 +114,11 @@ function setupWindowEvents(mainWindow: BrowserWindow): void {
         mainWindow.on('close', async (event) => {
             if (!(app as any).isQuiting) {
                 event.preventDefault();
-                
+
                 if (process.platform === 'darwin') {
                     // macOS 上的特殊处理
                     const action = getMacCloseAction();
-                    
+
                     if (action === 'ask') {
                         // 询问用户偏好
                         const result = await dialog.showMessageBox(mainWindow, {
@@ -132,7 +132,7 @@ function setupWindowEvents(mainWindow: BrowserWindow): void {
                             checkboxLabel: '记住我的选择',
                             checkboxChecked: false
                         });
-                        
+
                         if (result.response === 0) {
                             // 隐藏到状态栏
                             if (result.checkboxChecked) {
@@ -260,7 +260,7 @@ app.on('activate', () => {
             }
             mainWindow.focus();
         }
-        
+
         // 确保 dock 图标显示
         app.dock?.show();
     }

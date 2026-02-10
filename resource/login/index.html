@@ -896,13 +896,13 @@
             </div>
         </div>
         <div class="form-group has-button">
-            <label for="domain">域名/IP地址</label>
-            <input type="text" id="domain" placeholder="请输入服务器域名或IP地址" spellcheck="false" tabindex="1" />
+            <label for="domain">域名/IP地址/FN ID</label>
+            <input type="text" id="domain" placeholder="请输入服务器域名、IP地址或 FN ID" spellcheck="false" tabindex="1" />
             <button type="button" class="history-btn" id="historyBtn" title="选择历史记录">📝</button>
             <div class="history-dropdown" id="historyDropdown">
                 <div class="no-history">暂无历史记录</div>
             </div>
-            <div id="domainError" class="error-msg" style="display:none;">请正确填写IPV4、IPV6或者域名</div>
+            <div id="domainError" class="error-msg" style="display:none;">请正确填写IPV4、IPV6、域名或 FN ID（6-30位，不含点号）</div>
         </div>
         <div class="form-group">
             <label for="username">用户名</label>
@@ -1155,7 +1155,13 @@
             }
         }
 
+        function isFnId(value) {
+            return value && !value.includes('.') && value.length >= 6 && value.length <= 30;
+        }
+
         function isValidDomainOrIP(value) {
+            // 先检查是否为 FN ID 格式
+            if (isFnId(value)) return true;
             const domainRegex = /^([\u4e00-\u9fa5a-zA-Z0-9-]+\.)+[\u4e00-\u9fa5a-zA-Z]{2,}(:\d+)?$/;
             const ipv4Regex = /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}(:\d+)?$/;
             const ipv6Regex = /^\[((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?\](:\d+)?$/;

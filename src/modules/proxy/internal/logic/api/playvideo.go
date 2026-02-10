@@ -136,6 +136,7 @@ func PlayVideoHandler(c *gin.Context) {
 		// 本地 NAS 转发模式 ---
 		// 只有请求 NAS 时才需要 Authorization Token
 		extraHeaders["Authorization"] = params.Token
+		extraHeaders["Cookie"] = extraHeaders["Cookie"] + "; mode=relay"
 	}
 
 	// 执行代理
