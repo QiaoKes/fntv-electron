@@ -84,10 +84,10 @@ function getInjectionScript(username: string, password: string): string {
                             setTimeout(function() {
                                 var btn = document.querySelector('button[type="submit"]');
                                 if (btn) btn.click();
-                            }, 500);
+                            }, 200);
                         }
                     }
-                }, 1500);
+                }, 200);
             }
 
             // 在 /signin 页面自动点击授权按钮
@@ -100,7 +100,7 @@ function getInjectionScript(username: string, password: string): string {
                             break;
                         }
                     }
-                }, 1000);
+                }, 200);
             }
 
             // Hook XMLHttpRequest
@@ -242,7 +242,7 @@ export async function handleFnIdLogin(event: IpcMainEvent, loginData: LoginData)
         oauthWindow = new BrowserWindow({
             width: 800,
             height: 600,
-            show: true,
+            show: false, // Wait for ready-to-show
             title: 'FN ID 登录',
             webPreferences: {
                 nodeIntegration: false,
@@ -250,6 +250,11 @@ export async function handleFnIdLogin(event: IpcMainEvent, loginData: LoginData)
                 // 使用独立 session 避免干扰主窗口
                 partition: 'persist:fnid-oauth',
             }
+        });
+
+        // 平滑显示
+        oauthWindow.once('ready-to-show', () => {
+            oauthWindow?.show();
         });
 
         const oauthSession = oauthWindow.webContents.session;
@@ -457,7 +462,7 @@ export async function handleFnIdLogin(event: IpcMainEvent, loginData: LoginData)
                 const currentBaseUrl = `${parsed.protocol}//${parsed.host}`;
 
                 // 使用获取到的 Cookie，通过 API 获取 sys_config
-                const extraHeaders: Record<string, string> = { 'Cookie': cookie };
+                const extraHeaders: Record<string, string> = { 'Cookie': cookie + '; mode=relay' };
 
                 const configResponse = await request(
                     currentBaseUrl,
