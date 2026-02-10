@@ -76,7 +76,7 @@ export function setupWindowShowEvents(mainWindow: BrowserWindow): void {
  * 设置 cookie 恢复
  * @param {Electron.BrowserWindow} mainWindow - 主窗口实例
  */
-export function setupCookieRestore(mainWindow: BrowserWindow): void {
+export async function setupCookieRestore(mainWindow: BrowserWindow): Promise<void> {
     // 从配置中恢复 cookie
     const savedConfig = readConfig();
     if (!savedConfig || !savedConfig.token || !savedConfig.domain) {
@@ -89,7 +89,7 @@ export function setupCookieRestore(mainWindow: BrowserWindow): void {
     log.info('恢复登录状态，即将跳转到主页面, domain:', savedConfig.domain, ' token:', savedConfig.token);
 
     // 恢复 cookie
-    restoreCookies(savedConfig.domain, savedConfig.token).then((result) => {
+    await restoreCookies(savedConfig.domain, savedConfig.token).then((result) => {
         if (result === true) {
             // cookie 恢复成功，跳转到主页面
             mainWindow.loadURL(`${savedConfig.domain}/v`);

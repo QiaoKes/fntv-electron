@@ -115,14 +115,14 @@ export class ApiService {
             const maxSize = 100 * 1024 * 1024; // 100MB
             if (totalSize > maxSize) {
                 log.info(`字幕目录大小 ${(totalSize / 1024 / 1024).toFixed(2)}MB 超过限制，开始清理...`);
-                
+
                 files.forEach(file => {
                     const filePath = path.join(this.tempDir, file);
                     if (fs.lstatSync(filePath).isFile()) {
                         fs.unlinkSync(filePath);
                     }
                 });
-                
+
                 log.info('字幕目录清理完成');
             } else {
                 log.info(`字幕目录大小 ${(totalSize / 1024 / 1024).toFixed(2)}MB，无需清理`);
@@ -132,15 +132,32 @@ export class ApiService {
         }
     }
 
-     /**
-     * 用户登录
-     */
+    /**
+    * 用户登录
+    */
     login(username: string, password: string): Promise<fn.ApiResponse<any>> {
         return fn.request(this.baseURL, '/v/api/v1/login', HttpMethod.POST, this.token, {
             app_name: "trimemedia-web",
             username: username,
             password: password,
         } as types.LoginData);
+    }
+
+    /**
+     * 获取系统配置（含 OAuth 信息）
+     */
+    getSysConfig(): Promise<fn.ApiResponse<types.SysConfigResponse>> {
+        return fn.request(this.baseURL, '/v/api/v1/sys/config', HttpMethod.GET, this.token);
+    }
+
+    /**
+     * OAuth 授权码换取令牌
+     */
+    auth(code: string): Promise<fn.ApiResponse<types.AuthResponse>> {
+        return fn.request(this.baseURL, '/v/api/v1/auth', HttpMethod.POST, this.token, {
+            source: "Trim-NAS",
+            code: code,
+        } as types.AuthRequest);
     }
 
     /**
@@ -153,8 +170,8 @@ export class ApiService {
     /**
      * 获取用户信息
      */
-    getUserInfo(): Promise<fn.ApiResponse<types.UserInfo>> {
-        return fn.request(this.baseURL, '/v/api/v1/user/info', HttpMethod.GET, this.token);
+    getUserInfo(timeout?: number, tryTimes?: number): Promise<fn.ApiResponse<types.UserInfo>> {
+        return fn.request(this.baseURL, '/v/api/v1/user/info', HttpMethod.GET, this.token, undefined, undefined, undefined, timeout, tryTimes);
     }
 
     /**
@@ -190,7 +207,7 @@ export class ApiService {
     getStreamList(itemGuid: string): Promise<fn.ApiResponse<types.StreamListResponse>> {
         return fn.request(this.baseURL, `/v/api/v1/stream/list/${itemGuid}`, HttpMethod.GET, this.token);
     }
-    
+
     /**
      * 获取播放列表（带缓存）
      */
@@ -317,7 +334,7 @@ export class ApiService {
 
         // 处理结果
         const successfulDownloads = results
-            .filter((result): result is PromiseFulfilledResult<types.SubtitleDownloadResult> => 
+            .filter((result): result is PromiseFulfilledResult<types.SubtitleDownloadResult> =>
                 result.status === 'fulfilled' && result.value.success)
             .map(result => result.value.filePath);
 
@@ -425,7 +442,7 @@ export class ApiService {
         Object.defineProperty(cachedFn, 'name', { value: 'getStreamList' });
         return cachedFn;
     })(); // 5分钟缓存
-    
+
     /**
      * 获取流信息（带缓存）
      */

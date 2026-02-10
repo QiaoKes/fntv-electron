@@ -725,3 +725,34 @@ export interface ItemListResponse {
     /** 项目列表 */
     list: PlayListItem[];
 }
+
+/**
+ * 系统配置响应（OAuth 相关）
+ */
+export interface SysConfigResponse {
+    /** NAS OAuth 配置 */
+    nas_oauth: {
+        /** OAuth 应用 ID */
+        app_id: string;
+        /** OAuth 服务 URL */
+        url: string;
+    };
+}
+
+/**
+ * OAuth 授权请求
+ */
+export interface AuthRequest {
+    /** 应用名称 */
+    source: string;
+    /** 授权码 */
+    code: string;
+}
+
+/**
+ * OAuth 授权响应
+ */
+export interface AuthResponse {
+    /** 访问令牌 */
+    token: string;
+}
