@@ -87,6 +87,7 @@ export async function request<T = any>(
     const headers = {
         "Content-Type": "application/json",
         "Authorization": token,
+        "Cookie": "mode=relay",
         "Authx": authx,
         ...extraHeaders
     };

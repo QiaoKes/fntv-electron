@@ -115,6 +115,7 @@ func Request[T any](client *http.Client, baseURL, url string, method HttpMethod,
 		"Content-Type":  "application/json",
 		"Authorization": token,
 		"Authx":         authx,
+		"Cookie":        "mode=relay",
 	}
 	for k, v := range extraHeaders {
 		headers[k] = v
