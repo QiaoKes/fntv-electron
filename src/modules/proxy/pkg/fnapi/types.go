@@ -294,7 +294,8 @@ type StreamListResponse struct {
 }
 
 type Header struct {
-	UserAgent []string `json:"User-Agent"`
+	UserAgent []string `json:"User-Agent,omitempty"`
+	Cookie    []string `json:"Cookie,omitempty"`
 }
 
 // StreamRequestData 流请求数据
@@ -364,17 +365,15 @@ type DirectLinkAudioStream struct {
 
 // StreamResponse 流响应数据
 type StreamResponse struct {
-	FileStream       FileInfo                 `json:"file_stream"`
-	VideoStream      VideoStream              `json:"video_stream"`
-	AudioStreams     []AudioStream            `json:"audio_streams"`
-	SubtitleStreams  []SubtitleStreamExtended `json:"subtitle_streams"`
-	Qualities        []Quality                `json:"qualities"`
-	CloudStorageInfo *CloudStorageInfo        `json:"cloud_storage_info"`
-	Header           struct {
-		Cookie []string `json:"Cookie"`
-	} `json:"header"`
-	DirectLinkQualities    []DirectLinkQuality     `json:"direct_link_qualities"`
-	DirectLinkAudioStreams []DirectLinkAudioStream `json:"direct_link_audio_streams"`
+	FileStream             FileInfo                 `json:"file_stream"`
+	VideoStream            VideoStream              `json:"video_stream"`
+	AudioStreams           []AudioStream            `json:"audio_streams"`
+	SubtitleStreams        []SubtitleStreamExtended `json:"subtitle_streams"`
+	Qualities              []Quality                `json:"qualities"`
+	CloudStorageInfo       *CloudStorageInfo        `json:"cloud_storage_info"`
+	Header                 Header                   `json:"header"`
+	DirectLinkQualities    []DirectLinkQuality      `json:"direct_link_qualities"`
+	DirectLinkAudioStreams []DirectLinkAudioStream  `json:"direct_link_audio_streams"`
 }
 
 // SetSkipInfoData 设置跳过片头片尾请求数据

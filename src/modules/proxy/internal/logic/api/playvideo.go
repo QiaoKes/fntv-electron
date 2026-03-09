@@ -66,6 +66,17 @@ func ParseCloudInfo(info fnapi.StreamResponse) *CloudStorageInfo {
 	return result
 }
 
+func getStreamUserAgent(info fnapi.StreamResponse) string {
+	for _, userAgent := range info.Header.UserAgent {
+		userAgent = strings.TrimSpace(userAgent)
+		if userAgent != "" {
+			return userAgent
+		}
+	}
+
+	return ""
+}
+
 func PlayVideoHandler(c *gin.Context) {
 	params, err := parseQueryParam(c)
 	if err != nil {
@@ -105,6 +116,7 @@ func PlayVideoHandler(c *gin.Context) {
 	)
 
 	cloudInfo := ParseCloudInfo(streamResp.Data)
+	streamUserAgent := getStreamUserAgent(streamResp.Data)
 	useCloudDirect := cloudInfo != nil && params.UseNasLocal != 1
 
 	// 云盘直链模式
@@ -120,16 +132,17 @@ func PlayVideoHandler(c *gin.Context) {
 			extraHeaders["Cookie"] = cloudInfo.Cookie
 		}
 
+		if streamUserAgent != "" {
+			extraHeaders["User-Agent"] = streamUserAgent
+		}
+
 		// 选择播放策略
 		switch cloudInfo.CloudType {
 		case QuarkPan:
 			proxyType = ChunkedProxy // 夸克需要切片
 		case Cloud115Pan:
 			// 115 特殊处理：UA 和限流
-			extraHeaders["User-Agent"] = "trim_player"
 			_ = waitLimiter()
-		case BaiduPan:
-			extraHeaders["User-Agent"] = "pan.baidu.com"
 			// 其他网盘使用默认的 TransparentProxy
 		}
 	} else {
