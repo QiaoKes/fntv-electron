@@ -495,8 +495,8 @@
         .password-toggle {
             position: absolute;
             right: 12px;
-            top: 46px; /* 精确计算：label(18px) + margin(8px) + border(1px) + padding(12px) + 文本中心(7px) */
-            transform: translateY(-50%);
+            bottom: 21px;/* input height 42px / 2 */
+            transform: translateY(50%);
             background: none;
             border: none;
             color: rgba(255, 255, 255, 0.6);
@@ -521,8 +521,8 @@
         .history-btn {
             position: absolute;
             right: 12px;
-            top: 46px; /* 精确计算：label(18px) + margin(8px) + border(1px) + padding(12px) + 文本中心(7px) */
-            transform: translateY(-50%);
+            bottom: 21px;/* input height 42px / 2 */
+            transform: translateY(50%);
             background: none;
             border: none;
             color: rgba(255, 255, 255, 0.6);
@@ -898,7 +898,7 @@
         <div class="form-group has-button">
             <label for="domain">域名/IP地址/FN ID</label>
             <input type="text" id="domain" placeholder="请输入服务器域名、IP地址或 FN ID" spellcheck="false" tabindex="1" />
-            <button type="button" class="history-btn" id="historyBtn" title="选择历史记录">📝</button>
+            <button type="button" class="history-btn" id="historyBtn" title="选择历史记录"><img width="20px" src="./image/history.png" alt="历史记录" /></button>
             <div class="history-dropdown" id="historyDropdown">
                 <div class="no-history">暂无历史记录</div>
             </div>
@@ -911,7 +911,7 @@
         <div class="form-group has-button">
             <label for="password">密码</label>
             <input type="password" id="password" placeholder="请输入密码" spellcheck="false" tabindex="3" />
-            <button type="button" class="password-toggle" id="passwordToggle" title="显示/隐藏密码">👁</button>
+            <button type="button" class="password-toggle" id="passwordToggle" title="显示/隐藏密码"><img id="passwordToggleImg" width="20px" src="./image/password-show.png" alt="显示密码" /></button>
         </div>
         <div class="switch-container">
             <label class="switch">
@@ -1001,6 +1001,7 @@
         const usernameInput = document.getElementById('username');
         const passwordInput = document.getElementById('password');
         const passwordToggle = document.getElementById('passwordToggle');
+        const passwordToggleImg = document.getElementById('passwordToggleImg');
         const historyBtn = document.getElementById('historyBtn');
         const historyDropdown = document.getElementById('historyDropdown');
         const customConfirm = document.getElementById('customConfirm');
@@ -1265,11 +1266,11 @@
         passwordToggle.addEventListener('click', function () {
             if (passwordInput.type === 'password') {
                 passwordInput.type = 'text';
-                passwordToggle.textContent = '🙈';
+                passwordToggleImg.src = './image/password-hide.png';
                 passwordToggle.title = '隐藏密码';
             } else {
                 passwordInput.type = 'password';
-                passwordToggle.textContent = '👁';
+                passwordToggleImg.src = './image/password-show.png';
                 passwordToggle.title = '显示密码';
             }
         });
