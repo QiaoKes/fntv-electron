@@ -13,6 +13,7 @@ import {
     PlayItem // <-- Add PlayItem to the import list
 } from '../types';
 import { PlayerFactory } from '../factory';
+import { isNearEnd } from '../../playback/nearEnd';
 import log from '../../logger';
 import NodeMpv, { TimePosition } from 'node-mpv-2';
 
@@ -167,6 +168,40 @@ export class MpvPlayer extends BasePlayer {
     }
 
     /**
+     * 播放项切换时，报告被离开的那一项已结束播放
+     *
+     * 只陈述"这一项结束了"这个事实，携带它的最终播放状态快照；
+     * 够不够格算已观看由业务层判定，播放器层不做任何价值判断。
+     *
+     * 必须在 `updateCurrentItemStatus` 之前调用：那里会用**新**播放项的信息
+     * 覆盖全局播放状态，之后再读就是下一项的数据了。快照也必须是**拷贝**，
+     * 因为 `getStatus()` 返回的是全局状态对象本身，`updateCurrentItemStatus`
+     * 会就地修改它，否则消费者手里的快照会被改掉。
+     *
+     * @param nextIndex - 即将切换到的播放列表位置
+     */
+    private emitItemEnd(nextIndex: number): void {
+        const previous = this.getStatus();
+
+        // 刚开始播放时没有"上一项"，playlist-pos 的首次回调不应产生 ITEM_END
+        if (previous.itemGuid.length === 0) {
+            return;
+        }
+
+        // 位置回调重复落到同一播放项时，这一项并没有结束
+        const nextItem = this.playlistItems[nextIndex];
+        if (nextItem && nextItem.itemGuid === previous.itemGuid) {
+            return;
+        }
+
+        const snapshot: PlayStatusData = { ...previous };
+        if (this.config.debug) {
+            log.debug('播放项结束:', snapshot);
+        }
+        this.emitEvent(EventType.ITEM_END, snapshot);
+    }
+
+    /**
      * 更新当前播放项状态
      */
     private updateCurrentItemStatus(index: number): void {
@@ -231,6 +266,8 @@ export class MpvPlayer extends BasePlayer {
             }
 
             if (status.property === 'playlist-pos' && typeof status.value === 'number') {
+                // 先报告上一项已结束（内部会抓快照），再用新播放项覆盖全局状态
+                this.emitItemEnd(status.value);
                 // 更新当前播放项状态
                 this.updateCurrentItemStatus(status.value);
             }
@@ -261,7 +298,9 @@ export class MpvPlayer extends BasePlayer {
                     });
 
                     // 尝试跳转到上次播放位置, 即将到达片尾不跳转
-                    if (currentItem.ts > 0 && currentItem.ts <= 0.98 * currentItem.duration) {
+                    // duration > 0 不可省略：isNearEnd 对 duration <= 0 返回 false，
+                    // 取反后会变成「时长不可靠的源也照样跳转」，与本意相反。
+                    if (currentItem.ts > 0 && currentItem.duration > 0 && !isNearEnd(currentItem.ts, currentItem.duration)) {
                         // 使用重试机制进行跳转, 这里粗暴了点, 视频没加载没法跳，只能重试
                         this.seekWithRetry(currentItem.ts, 50000, 10);
                     }

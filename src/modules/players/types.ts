@@ -5,6 +5,9 @@ export enum EventType {
     PROGRESS = 'progress',
     ERROR = 'error',
     EXIT = 'exit',
+    // 一个播放项结束了它的播放（播放器切到下一项）。
+    // 只陈述事实，不含"看完了"的价值判断——是否够格标记已观看由业务层判定。
+    ITEM_END = 'item_end',
 }
 
 // 单个播放源信息(非当前播放只需要传itemGuid)
